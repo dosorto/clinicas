@@ -17,7 +17,15 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->rememberToken();
+
+            // $table->unsignedBigInteger('nacionalidad_id')->nullable()->after('email');
+
+            // $table->foreign('nacionalidad_id')
+            //     ->references('id')
+            //     ->on('nacionalidades')
+            //     ->onDelete('set null');
+
+            +$table->rememberToken();
             $table->timestamps();
         });
 
