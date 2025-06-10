@@ -25,7 +25,7 @@ return new class extends Migration
             //     ->on('nacionalidades')
             //     ->onDelete('set null');
 
-            +$table->rememberToken();
+            $table->rememberToken();
             $table->timestamps();
         });
 
