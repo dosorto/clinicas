@@ -17,7 +17,7 @@ class MedicoFactory extends Factory
     public function definition(): array
     {
         return [
-        'persona_id'         => $this->faker->numberBetween(1, 100),
+        'persona_id'         => $this->faker->numberBetween(1, 50),
         'numero_colegiacion' => $this->faker->unique()->numerify('COL-#####'),
         'especialidad_id'    => \App\Models\Especialidad::inRandomOrder()->first()?->id ?? 1,
         'created_at'         => now(),

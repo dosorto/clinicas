@@ -14,9 +14,12 @@ return new class extends Migration
         Schema::create('consultas', function (Blueprint $table) {
             $table->id();
     
-            $table->foreignId('cita_id');
-            $table->foreignId('paciente_id');
-            $table->foreignId('medico_id');
+            $table->unsignedBigInteger('cita_id');
+            $table->foreign('cita_id')->references('id')->on('citas');
+            $table->unsignedBigInteger('paciente_id');
+            $table->foreign('paciente_id')->references('id')->on('pacientes');
+            $table->unsignedBigInteger('medico_id');
+            $table->foreign('medico_id')->references('id')->on('medicos');
     
             $table->text('diagnostico');
             $table->text('tratamiento');

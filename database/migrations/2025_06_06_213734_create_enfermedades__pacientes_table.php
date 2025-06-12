@@ -11,24 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('recetas', function (Blueprint $table) {
+        Schema::create('enfermedades__pacientes', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('paciente_id');
-            $table->foreignId('medico_id');
-            $table->foreignId('consulta_id');
-
-            $table->text('medicamentos');
-            $table->text('indicaciones');
-
+            $table->unsignedBigInteger('paciente_id');
+            $table->foreign('paciente_id')->references('id')->on('pacientes');
+            $table->unsignedBigInteger('enfermedad_id');
+            $table->foreign('enfermedad_id')->references('id')->on('enfermedades');
+            $table->date('fecha_diagnostico');
+            $table->text('tratamiento');
+            
             $table->integer('created_by');
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
-
+            
             $table->timestamps();
-            $table->softDeletes(); 
+            $table->softDeletes();
         });
-
     }
 
     /**
@@ -36,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('recetas');
+        Schema::dropIfExists('enfermedades__pacientes');
     }
 };

@@ -27,7 +27,10 @@ class DatabaseSeeder extends Seeder
         
         $this->call([
           EspecialidadSeeder::class,
+          NacionalidadSeeder::class,
+          PersonaSeeder::class,
           MedicoSeeder::class,
+          
         ]);
 
         #$this->call([
@@ -35,8 +38,6 @@ class DatabaseSeeder extends Seeder
         #    RecetaSeeder::class,
         #]);
 
-        $this->call([
-            NacionalidadSeeder::class,
-        ]);
+        
     } 
 }

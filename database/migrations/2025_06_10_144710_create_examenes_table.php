@@ -11,18 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('citas', function (Blueprint $table) {
+        Schema::create('examenes', function (Blueprint $table) {
             $table->id();
-            
-            $table->unsignedBigInteger('medico_id');
-            $table->foreign('medico_id')->references('id')->on('medicos');
             $table->unsignedBigInteger('paciente_id');
             $table->foreign('paciente_id')->references('id')->on('pacientes');
+            $table->unsignedBigInteger('consulta_id');
+            $table->foreign('consulta_id')->references('id')->on('consultas');
+            $table->unsignedBigInteger('medico_id');
+            $table->foreign('medico_id')->references('id')->on('medicos');
 
-            $table->date('fecha');
-            $table->time('hora');
-            $table->text('motivo', 255)->nullable();
-            $table->enum('estado', ['Pendiente', 'Confirmado', 'Cancelado', 'Realizado']);
+            $table->text('descripcion');
+            $table->string('url_archivo')->nullable();
+            $table->date('fecha_resultado');
 
             $table->timestamps();
             $table->softDeletes();
@@ -30,7 +30,8 @@ return new class extends Migration
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
-        });
+
+        }); 
     }
 
     /**
@@ -38,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('citas');
+        Schema::dropIfExists('examenes');
     }
 };

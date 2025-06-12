@@ -11,24 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('examenes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('paciente_id');
-            $table->foreignId('consulta_id');
-            $table->foreignId('medico_id');
+        Schema::create('especialidads', function (Blueprint $table) {
+            $table->id(); // ID autoincremental
+            $table->string('especialidad'); // nombre de la especialidad
+            $table->timestamps(); // created_at y updated_at
+            $table->softDeletes(); // deleted_at
 
-            $table->text('descripcion');
-            $table->string('url_archivo')->nullable();
-            $table->date('fecha_resultado');
-
-            $table->timestamps();
-            $table->softDeletes();
-
+            // campos de auditoría
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
-
-        }); 
+        });
     }
 
     /**
@@ -36,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('examenes');
+        Schema::dropIfExists('especialidads');
     }
 };

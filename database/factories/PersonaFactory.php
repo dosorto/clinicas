@@ -26,7 +26,8 @@ class PersonaFactory extends Factory
             'sexo'=>$this->faker->randomElement(["F","M"]),
             'fecha_Nacimiento'=>$this->faker->date('Y-m-d'),
             'nacionalidad_id'=>$this->faker->numberBetween(1,10),
-            'fotografia'=>$this->faker->text()
+            'fotografia'=>$this->faker->text(),
+            'created_by' => 1, // Assuming a default user ID for created_by
         ];
     }
 }
