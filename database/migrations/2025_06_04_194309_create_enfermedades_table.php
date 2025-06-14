@@ -11,17 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('centros__medicos__medicos', function (Blueprint $table) {
+        Schema::create('enfermedades', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('medico_id');
-            $table->foreignId('centro_medico_id');
-            $table->string('horario');
+            $table->string("enfermedades");
+            
+             //  campos de logs
 
-            $table->integer('created_by');
-            $table->integer('updated_by')->nullable();
-            $table->integer('deleted_by')->nullable();
+            $table->integer("created_by");
+            $table->integer("updated_by")->nullable();
+            $table->integer("deleted_by")->nullable();
+
 
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -30,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('centros__medicos__medicos');
+        Schema::dropIfExists('enfermedades');
     }
 };

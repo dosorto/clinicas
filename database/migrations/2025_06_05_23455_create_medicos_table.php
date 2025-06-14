@@ -14,19 +14,21 @@ return new class extends Migration
         Schema::create('medicos', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('persona_id'); // referencia a persona
+            $table->foreign('persona_id')->references('id')->on('personas');
             $table->string('numero_colegiacion')->unique(); // número de colegiación
             $table->unsignedBigInteger('especialidad_id'); // referencia a especialidad
+            $table->foreign('especialidad_id')->references('id')->on('especialidads');
 
             $table->timestamps(); // created_at y updated_at
             $table->softDeletes(); // deleted_at
 
             // campos de auditoría
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
-            $table->unsignedBigInteger('deleted_by')->nullable();
+            $table->integer('created_by')->nullable();
+            $table->integer('updated_by')->nullable();
+            $table->integer('deleted_by')->nullable();
 
             // Claves foráneas
-            $table->foreign('especialidad_id')->references('id')->on('especialidads');
+            
             // Si ya tienes una tabla personas, puedes descomentar esto:
             // $table->foreign('persona_id')->references('id')->on('personas');
         });

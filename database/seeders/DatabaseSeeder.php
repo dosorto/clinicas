@@ -24,10 +24,13 @@ class DatabaseSeeder extends Seeder
         ]);
         $user = User::find(1);
         $user->assignRole('root');
-
+        
         $this->call([
           EspecialidadSeeder::class,
+          NacionalidadSeeder::class,
+          PersonaSeeder::class,
           MedicoSeeder::class,
+          
         ]);
 
         #$this->call([
@@ -35,5 +38,6 @@ class DatabaseSeeder extends Seeder
         #    RecetaSeeder::class,
         #]);
 
+        
     } 
 }
