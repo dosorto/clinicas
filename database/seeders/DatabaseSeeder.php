@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
           NacionalidadSeeder::class,
           PersonaSeeder::class,
           MedicoSeeder::class,
+          EspecialidadMedicoSeeder::class,
           
         ]);
 

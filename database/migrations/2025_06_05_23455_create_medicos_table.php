@@ -16,8 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('persona_id'); // referencia a persona
             $table->foreign('persona_id')->references('id')->on('personas');
             $table->string('numero_colegiacion')->unique(); // número de colegiación
-            $table->unsignedBigInteger('especialidad_id'); // referencia a especialidad
-            $table->foreign('especialidad_id')->references('id')->on('especialidads');
+          
 
             $table->timestamps(); // created_at y updated_at
             $table->softDeletes(); // deleted_at
