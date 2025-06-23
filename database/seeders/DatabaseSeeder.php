@@ -26,11 +26,11 @@ class DatabaseSeeder extends Seeder
         $user->assignRole('root');
         
         $this->call([
-          EspecialidadSeeder::class,
+          //EspecialidadSeeder::class,
           NacionalidadSeeder::class,
-          PersonaSeeder::class,
-          MedicoSeeder::class,
-          EspecialidadMedicoSeeder::class,
+          //PersonaSeeder::class,
+          //MedicoSeeder::class,
+          //EspecialidadMedicoSeeder::class,
           
         ]);
 

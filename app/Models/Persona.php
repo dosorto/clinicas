@@ -5,11 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Persona extends Model
 {
     /** @use HasFactory<\Database\Factories\PersonaFactory> */
     use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
         'primer_nombre',
@@ -23,6 +25,7 @@ class Persona extends Model
         'fecha_nacimiento',
         'nacionalidad_id',
         'fotografia',
+        'created_by', // Agrega este campo para almacenar el ID del usuario que creó la persona
     ];
 
     public function nacionalidad(): BelongsTo
