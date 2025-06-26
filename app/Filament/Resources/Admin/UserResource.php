@@ -18,6 +18,7 @@ use Althinect\FilamentSpatieRolesPermissions\Forms\Components\RoleSelect;
 use Althinect\FilamentSpatieRolesPermissions\Forms\Components\PermissionSelect;
 use Filament\Forms\Components\DatePicker;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\FileUpload;
 
 class UserResource extends Resource
 {
@@ -61,8 +62,12 @@ class UserResource extends Resource
                         ->label('Nacionalidad')
                         ->relationship('nacionalidad', 'nacionalidad')
                         ->required(),
-                    TextInput::make('fotografia')->label('Fotografía'),
-                ])
+                    FileUpload::make('fotografia')
+                        ->label('Fotografía')
+                        ->image()
+                        ->directory('personas')
+                        ->nullable(),
+                    ])
                 ->createOptionAction(function ($action) {
                 return $action->mutateFormDataUsing(function (array $data) {
                 $data['created_by'] = Filament::auth()->id() ?? auth()->id();
@@ -75,11 +80,7 @@ class UserResource extends Resource
                 ->relationship('roles', 'name')
                 ->preload()
                 ->required(),
-            Select::make('permissions')
-                ->label('Permisos')
-                ->multiple()
-                ->relationship('permissions', 'name')
-                ->preload(),
+            
         ]);
 }
 
