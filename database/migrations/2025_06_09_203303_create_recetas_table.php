@@ -24,7 +24,7 @@ return new class extends Migration
             $table->text('medicamentos');
             $table->text('indicaciones');
 
-            $table->integer('created_by');
+            $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
 

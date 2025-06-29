@@ -20,7 +20,7 @@ return new class extends Migration
             $table->date('fecha_diagnostico');
             $table->text('tratamiento');
             
-            $table->integer('created_by');
+            $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
             

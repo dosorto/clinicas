@@ -22,6 +22,10 @@ use Filament\Forms\Components\FileUpload;
 
 class UserResource extends Resource
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+    return auth()->user()?->can('crear usuario');
+    }
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -36,18 +40,24 @@ class UserResource extends Resource
                 ->password()
                 ->required(fn($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
                 ->dehydrateStateUsing(fn($state) => !empty($state) ? bcrypt($state) : null)
+                ->dehydrated(fn($state) => filled($state))
                 ->label('Password'),
             Select::make('persona_id')
                 ->label('Persona')
-                ->relationship('persona', 'primer_nombre')
+                   ->relationship(
+                    name: 'persona',
+                    titleAttribute: 'primer_nombre', // Usa un campo real para búsqueda y orden
+                    modifyQueryUsing: fn ($query) => $query->select(['id', 'primer_nombre', 'primer_apellido'])
+                )
+                ->getOptionLabelFromRecordUsing(fn ($record) => $record->primer_nombre . ' ' . $record->primer_apellido)
                 ->searchable()
-                ->required()
+                
                  ->createOptionForm([
                     TextInput::make('primer_nombre')->label('Primer Nombre')->required(),
                     TextInput::make('segundo_nombre')->label('Segundo Nombre'),
                     TextInput::make('primer_apellido')->label('Apellido')->required(),
                     TextInput::make('segundo_apellido')->label('Segundo Apellido'),
-                    TextInput::make('dni')->label('DNI')->required(),
+                    TextInput::make('dni')->label('DNI')->required()->unique(),
                     TextInput::make('telefono')->label('Teléfono')->required(),
                     TextInput::make('direccion')->label('Dirección')->required(),
                     Select::make('sexo')
@@ -99,6 +109,8 @@ class UserResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+                
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -25,8 +25,13 @@ class Persona extends Model
         'fecha_nacimiento',
         'nacionalidad_id',
         'fotografia',
-        'created_by', // Agrega este campo para almacenar el ID del usuario que creó la persona
+        
     ];
+
+    public function getNombreCompletoAttribute()
+    {
+    return $this->primer_nombre . ' ' . $this->primer_apellido;
+    }
 
     public function nacionalidad(): BelongsTo
     {

@@ -17,17 +17,22 @@ class RolesAndPermissionsSeeder extends Seeder
         // Limpiar caché de permisos
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Crear permisos
-        Permission::create(['name' => 'edit articles']);
-        Permission::create(['name' => 'delete articles']);
-        Permission::create(['name' => 'publish articles']);
-        Permission::create(['name' => 'unpublish articles']);
+        // Crear permisos (evitar duplicados)
+        $editArticles = Permission::firstOrCreate(['name' => 'edit articles']);
+        $deleteArticles = Permission::firstOrCreate(['name' => 'delete articles']);
+        $publishArticles = Permission::firstOrCreate(['name' => 'publish articles']);
+        $crearPersonas = Permission::firstOrCreate(['name' => 'crear personas']);
+        $crearNacionalidad = Permission::firstOrCreate(['name' => 'crear nacionalidad']);
+        $crearUsuario = Permission::firstOrCreate(['name' => 'crear usuario']);
 
-        // Crear roles y asignar permisos
-        $roleAdmin = Role::create(['name' => 'root']);
-        $roleAdmin->givePermissionTo(['edit articles', 'delete articles', 'publish articles', 'unpublish articles']);
+        // Crear roles y asignar permisos (evitar duplicados)
+        $roleAdmin = Role::firstOrCreate(['name' => 'root']);
+        $roleAdmin->givePermissionTo([$editArticles, $deleteArticles, $publishArticles, $crearPersonas, $crearNacionalidad, $crearUsuario]);
 
-        $roleEditor = Role::create(['name' => 'editor']);
-        $roleEditor->givePermissionTo(['edit articles', 'publish articles']);
+        $roleEditor = Role::firstOrCreate(['name' => 'editor']);
+        $roleEditor->givePermissionTo([$editArticles, $publishArticles, $crearNacionalidad]);
+
+        $roleAdminPersonas = Role::firstOrCreate(['name' => 'admin personas']);
+        $roleAdminPersonas->givePermissionTo([$crearPersonas]);        
     }
 }
