@@ -24,7 +24,7 @@ class PersonaResource extends Resource
 {
     public static function shouldRegisterNavigation(): bool
     {
-    return auth()->user()?->can('admin personas');
+    return auth()->user()?->can('crear personas');
     }
     protected static ?string $model = Persona::class;
 
@@ -105,5 +105,17 @@ class PersonaResource extends Resource
             'create' => Pages\CreatePersona::route('/create'),
             'edit' => Pages\EditPersona::route('/{record}/edit'),
         ];
+    }
+
+    // Controlar quién puede eliminar según permiso
+    public static function canDelete(
+        \Illuminate\Database\Eloquent\Model $record
+    ): bool {
+        return auth()->user()?->can('borrar personas');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('borrar personas');
     }
 }

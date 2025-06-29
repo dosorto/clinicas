@@ -50,40 +50,7 @@ class UserResource extends Resource
                     modifyQueryUsing: fn ($query) => $query->select(['id', 'primer_nombre', 'primer_apellido'])
                 )
                 ->getOptionLabelFromRecordUsing(fn ($record) => $record->primer_nombre . ' ' . $record->primer_apellido)
-                ->searchable()
-                
-                 ->createOptionForm([
-                    TextInput::make('primer_nombre')->label('Primer Nombre')->required(),
-                    TextInput::make('segundo_nombre')->label('Segundo Nombre'),
-                    TextInput::make('primer_apellido')->label('Apellido')->required(),
-                    TextInput::make('segundo_apellido')->label('Segundo Apellido'),
-                    TextInput::make('dni')->label('DNI')->required()->unique(),
-                    TextInput::make('telefono')->label('Teléfono')->required(),
-                    TextInput::make('direccion')->label('Dirección')->required(),
-                    Select::make('sexo')
-                        ->label('Sexo')
-                        ->options([
-                            'M' => 'Masculino',
-                            'F' => 'Femenino',
-                        ])
-                        ->required(),
-                    DatePicker::make('fecha_nacimiento')->label('Fecha de Nacimiento')->date()->required(),
-                    Select::make('nacionalidad_id')
-                        ->label('Nacionalidad')
-                        ->relationship('nacionalidad', 'nacionalidad')
-                        ->required(),
-                    FileUpload::make('fotografia')
-                        ->label('Fotografía')
-                        ->image()
-                        ->directory('personas')
-                        ->nullable(),
-                    ])
-                ->createOptionAction(function ($action) {
-                return $action->mutateFormDataUsing(function (array $data) {
-                $data['created_by'] = Filament::auth()->id() ?? auth()->id();
-                return $data;
-                    });
-                }),
+                ->searchable(),
             Select::make('roles')
                 ->label('Roles')
                 ->multiple()

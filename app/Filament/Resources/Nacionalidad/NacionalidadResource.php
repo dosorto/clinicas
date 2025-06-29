@@ -75,4 +75,16 @@ class NacionalidadResource extends Resource
             'edit' => Pages\EditNacionalidad::route('/{record}/edit'),
         ];
     }
+
+     // Controlar quién puede eliminar según permiso
+    public static function canDelete(
+        \Illuminate\Database\Eloquent\Model $record
+    ): bool {
+        return auth()->user()?->can('borrar nacionalidad');
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return auth()->user()?->can('borrar nacionalidad');
+    }
 }

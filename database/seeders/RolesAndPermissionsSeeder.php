@@ -17,22 +17,23 @@ class RolesAndPermissionsSeeder extends Seeder
         // Limpiar caché de permisos
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Crear permisos (evitar duplicados)
-        $editArticles = Permission::firstOrCreate(['name' => 'edit articles']);
-        $deleteArticles = Permission::firstOrCreate(['name' => 'delete articles']);
-        $publishArticles = Permission::firstOrCreate(['name' => 'publish articles']);
-        $crearPersonas = Permission::firstOrCreate(['name' => 'crear personas']);
-        $crearNacionalidad = Permission::firstOrCreate(['name' => 'crear nacionalidad']);
-        $crearUsuario = Permission::firstOrCreate(['name' => 'crear usuario']);
+        // Crear permisos
 
-        // Crear roles y asignar permisos (evitar duplicados)
-        $roleAdmin = Role::firstOrCreate(['name' => 'root']);
-        $roleAdmin->givePermissionTo([$editArticles, $deleteArticles, $publishArticles, $crearPersonas, $crearNacionalidad, $crearUsuario]);
+        Permission::create(['name' => 'crear personas']);
+        Permission::create(['name' => 'borrar personas']);
+        Permission::create(['name' => 'crear nacionalidad']);
+        Permission::create(['name' => 'borrar nacionalidad']);
+        Permission::create(['name' => 'crear usuario']);
+        Permission::create(['name' => 'borrar usuario']);
 
-        $roleEditor = Role::firstOrCreate(['name' => 'editor']);
-        $roleEditor->givePermissionTo([$editArticles, $publishArticles, $crearNacionalidad]);
+        // Crear roles y asignar permisos
+        $roleAdmin = Role::create(['name' => 'root']);
+        $roleAdmin->givePermissionTo(['crear personas', 'crear nacionalidad', 'crear usuario', 'borrar personas', 'borrar nacionalidad', 'borrar usuario']);
 
-        $roleAdminPersonas = Role::firstOrCreate(['name' => 'admin personas']);
-        $roleAdminPersonas->givePermissionTo([$crearPersonas]);        
+        $roleEditor = Role::create(['name' => 'admin nacionalidades']);
+        $roleEditor->givePermissionTo(['crear nacionalidad']);
+
+        $roleAdminPersonas = Role::create(['name' => 'admin personas']);
+        $roleAdminPersonas->givePermissionTo(['crear personas']);        
     }
 }
