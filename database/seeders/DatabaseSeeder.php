@@ -34,11 +34,6 @@ class DatabaseSeeder extends Seeder
           
         ]);
 
-        #$this->call([
-        #    ConsultaSeeder::class,
-        #    RecetaSeeder::class,
-        #]);
-
         
     } 
 }
