@@ -7,11 +7,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
+    
+    public function persona()
+    {
+        return $this->belongsTo(Persona::class, 'persona_id');
+    }
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +29,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'persona_id', // <-- agrégalo si lo necesitas
+        'created_by', // ID del usuario que creó el registro
+        
     ];
 
     /**
