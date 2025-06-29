@@ -25,7 +25,7 @@ return new class extends Migration
             $table->date("fecha_nacimiento");
             $table->unsignedBigInteger("nacionalidad_id");
             $table->foreign("nacionalidad_id")->references("id")->on("nacionalidades");
-            $table->string("fotografia")->nulleable();
+            $table->string('fotografia')->nullable();
 
             $table->integer('created_by');
             $table->integer('updated_by')->nullable();
@@ -44,3 +44,5 @@ return new class extends Migration
         Schema::dropIfExists('personas');
     }
 };
+
+

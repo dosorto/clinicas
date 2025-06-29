@@ -4,43 +4,56 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 
-class Enfermedade extends Model
+class Enfermedades__Paciente extends Model
 {
-    /** @use HasFactory<\Database\Factories\EnfermedadeFactory> */
+    /** @use HasFactory<\Database\Factories\EnfermedadesPacienteFactory> */
     use HasFactory;
     use SoftDeletes;
 
+    protected $table = 'enfermedades_pacientes';
+
     protected $fillable = [
-        'enfermedades',
+        'paciente_id',
+        'enfermedad_id',
+        'fecha_diagnostico',
+        'tratamiento',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
-    protected $table = 'enfermedades';
+    protected $casts = [
+        'fecha_diagnostico' => 'date',
+    ];
+
+    public function paciente(): BelongsTo
+    {
+        return $this->belongsTo(Pacientes::class, 'paciente_id');
+    }
+
+    public function enfermedad(): BelongsTo
+    {
+        return $this->belongsTo(Enfermedade::class, 'enfermedad_id');
+    }
 
     // Relaciones para mostrar quién creó/editó
-    public function createdBy()
+    public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updatedBy()
+    public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    public function deletedBy()
+    public function deletedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');
-    }
-
-    public function enfermedades_paciente()
-    {
-        return $this->hasMany(Enfermedades_Paciente::class, 'enfermedad_id');
     }
 
     protected static function boot()
