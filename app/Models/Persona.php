@@ -54,15 +54,6 @@ class Persona extends Model
         return $this->hasOne(User::class, 'persona_id');
     }
 
-    // Accessor para nombre completo
-    public function getNombreCompletoAttribute(): string
-    {
-        return trim(
-            $this->primer_nombre . ' ' . 
-            $this->segundo_nombre . ' ' . 
-            $this->primer_apellido . ' ' . 
-            $this->segundo_apellido
-        );
-    }
+   
 
 }
