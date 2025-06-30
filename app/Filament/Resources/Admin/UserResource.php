@@ -22,10 +22,10 @@ use Filament\Forms\Components\FileUpload;
 
 class UserResource extends Resource
 {
-    public static function shouldRegisterNavigation(): bool
+    /*public static function shouldRegisterNavigation(): bool
     {
     return auth()->user()?->can('crear usuario');
-    }
+    }*/
     protected static ?string $model = User::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
