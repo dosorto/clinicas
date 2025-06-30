@@ -6,6 +6,7 @@ use App\Filament\Resources\CentrosMedicosMedico\CentrosMedicosMedicoResource\Pag
 use App\Filament\Resources\CentrosMedicosMedico\CentrosMedicosMedicoResource\RelationManagers;
 use App\Models\Centros_Medicos_Medico;
 use Filament\Forms;
+use App\Models\Medico;
 use App\Models\Centros_Medico;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -18,10 +19,12 @@ class CentrosMedicosMedicoResource extends Resource
 {
     protected static ?string $model = Centros_Medicos_Medico::class;
 
-    /*public static function shouldRegisterNavigation(): bool
+    protected static ?string $modelLabel = 'Médico en Centros Médicos';
+
+    public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->can('crear CentrosMedicosMedico');
-    }*/
+        return auth()->user()?->can('borrar MedicoCentroMedico');
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -29,10 +32,17 @@ class CentrosMedicosMedicoResource extends Resource
     {
         return $form->schema([
             Forms\Components\Select::make('medico_id')
-                ->label('Médico')
-                ->relationship('medico', 'id') // Puedes cambiar 'id' por nombre completo si está disponible
-                ->searchable()
-                ->required(),
+            ->label('Médico')
+            ->options(
+                Medico::with('persona')->get()->mapWithKeys(function ($medico) {
+                    $persona = $medico->persona;
+                    return [
+                        $medico->id => "{$persona->primer_nombre} {$persona->primer_apellido}"
+                    ];
+                })
+            )
+            ->searchable()
+            ->required(),
 
             Forms\Components\Select::make('centro_medico_id')
                 ->label('Centro Médico')
@@ -40,6 +50,7 @@ class CentrosMedicosMedicoResource extends Resource
                 ->searchable()
                 ->required(),
 
+                
             Forms\Components\TimePicker::make('horario')
                 ->label('Horario')
                 ->seconds(false)
@@ -50,17 +61,29 @@ class CentrosMedicosMedicoResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table->columns([
-            Tables\Columns\TextColumn::make('medico.id')->label('ID Médico'),
-            Tables\Columns\TextColumn::make('centro.nombre_centro')->label('Centro Médico'),
-            Tables\Columns\TextColumn::make('horario')->limit(50),
+        return $table
+        ->columns([
+            Tables\Columns\TextColumn::make('medico_id')
+                ->label('Médico')
+                ->formatStateUsing(function ($state) {
+                    $medico = \App\Models\Medico::with('persona')->find($state);
+                    if (!$medico || !$medico->persona) return 'No definido';
+                    return $medico->persona->primer_nombre . ' ' . $medico->persona->primer_apellido;
+                }),
+
+            Tables\Columns\TextColumn::make('centro_medico_id')
+                ->label('Centro Médico')
+                ->formatStateUsing(function ($state) {
+                    $centro = \App\Models\Centros_Medico::find($state);
+                    return $centro?->nombre_centro ?? 'No definido';
+                }),
+
+            Tables\Columns\TextColumn::make('horario')
+                ->label('Horario')
+                ->time(),
         ])
-        ->filters([])
         ->actions([
-            Tables\Actions\EditAction::make(),
-        ])
-        ->actions([
-            Tables\Actions\ViewAction::make(), // Opcional
+            Tables\Actions\ViewAction::make(),
             Tables\Actions\EditAction::make(),
             Tables\Actions\DeleteAction::make(),
         ])

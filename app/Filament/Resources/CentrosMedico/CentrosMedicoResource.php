@@ -17,10 +17,12 @@ class CentrosMedicoResource extends Resource
 {
     protected static ?string $model = Centros_Medico::class;
 
-    /*public static function shouldRegisterNavigation(): bool
+    protected static ?string $modelLabel = 'Centro Médico';
+
+    public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->can('crear CentrosMedico');
-    }*/
+        return auth()->user()?->can('Crear CentroMedico');
+    }
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 

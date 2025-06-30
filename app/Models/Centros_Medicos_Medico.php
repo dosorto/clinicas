@@ -15,6 +15,16 @@ class Centros_Medicos_Medico extends Model
 
     protected $table = 'centros_medicos_medicos';
 
+    protected $fillable = [
+        'medico_id',
+        'centro_medico_id',
+        'horario',
+        'created_by',
+        'updated_by',
+        'deleted_by',
+    ];
+
+
     public function centro_medico(){
         return $this->belongsTo(Centros_Medico::class, 'centro_medico_id');
     }
