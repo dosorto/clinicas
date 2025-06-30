@@ -18,10 +18,10 @@ use Filament\Forms\Components\Searchable;
 
 class NacionalidadResource extends Resource
 {
-    /*public static function shouldRegisterNavigation(): bool
+    public static function shouldRegisterNavigation(): bool
     {
     return auth()->user()?->can('crear nacionalidad');
-    }*/
+    }
 
     protected static ?string $model = Nacionalidad::class;
 

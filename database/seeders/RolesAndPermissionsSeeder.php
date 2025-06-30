@@ -25,15 +25,20 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'borrar nacionalidad']);
         Permission::create(['name' => 'crear usuario']);
         Permission::create(['name' => 'borrar usuario']);
+        Permission::create(['name' => 'crear pacientes']);
+        Permission::create(['name' => 'borrar pacientes']);
 
         // Crear roles y asignar permisos
         $roleAdmin = Role::create(['name' => 'root']);
-        $roleAdmin->givePermissionTo(['crear personas', 'crear nacionalidad', 'crear usuario', 'borrar personas', 'borrar nacionalidad', 'borrar usuario']);
+        $roleAdmin->givePermissionTo(['crear personas', 'crear nacionalidad', 'crear usuario', 'borrar personas', 'borrar nacionalidad', 'borrar usuario','crear pacientes', 'borrar pacientes']);
 
-        $roleEditor = Role::create(['name' => 'admin nacionalidades']);
-        $roleEditor->givePermissionTo(['crear nacionalidad']);
+        $roleAdminNacionalidades = Role::create(['name' => 'admin nacionalidades']);
+        $roleAdminNacionalidades->givePermissionTo(['crear nacionalidad']);
 
         $roleAdminPersonas = Role::create(['name' => 'admin personas']);
-        $roleAdminPersonas->givePermissionTo(['crear personas']);        
+        $roleAdminPersonas->givePermissionTo(['crear personas']);
+        
+        $roleAdminPacientes = Role::create(['name' => 'admin pacientes']);
+        $roleAdminPacientes->givePermissionTo(['crear pacientes']);
     }
 }

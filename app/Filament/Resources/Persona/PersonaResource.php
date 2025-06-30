@@ -22,10 +22,10 @@ use Filament\Forms\Components\Section;
 
 class PersonaResource extends Resource
 {
-    /*public static function shouldRegisterNavigation(): bool
+    public static function shouldRegisterNavigation(): bool
     {
     return auth()->user()?->can('crear personas');
-    }*/
+    }
     protected static ?string $model = Persona::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
