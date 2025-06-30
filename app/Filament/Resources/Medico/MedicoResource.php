@@ -43,7 +43,7 @@ class MedicoResource extends Resource
     {
         return $table
             ->columns([
-               Tables\Columns\TextColumn::make('persona.nombre_completo')
+               Tables\Columns\TextColumn::make('persona.primer_nombre')
             ->label('Nombre Completo')
             ->getStateUsing(fn ($record) => $record->persona->primer_nombre.' 
             '.$record->persona->primer_apellido),
@@ -80,4 +80,4 @@ class MedicoResource extends Resource
             'edit' => Pages\EditMedico::route('/{record}/edit'),
         ];
     }
-}
+};
