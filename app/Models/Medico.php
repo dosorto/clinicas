@@ -15,6 +15,7 @@ class Medico extends Model
 protected $table = 'medicos';
 
     protected $fillable = [
+        'persona_id',
         'numero_colegiacion',
     ];
 

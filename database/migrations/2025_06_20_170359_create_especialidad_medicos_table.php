@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreign('medico_id')->references('id')->on('medicos');
 
             // Campos de logs
-            $table->integer('created_by');
+            $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
             $table->timestamps();

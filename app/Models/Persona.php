@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Persona extends Model
@@ -25,12 +26,41 @@ class Persona extends Model
         'fecha_nacimiento',
         'nacionalidad_id',
         'fotografia',
-        'created_by', // Agrega este campo para almacenar el ID del usuario que creó la persona
+        
     ];
+
+    public function getNombreCompletoAttribute()
+    {
+    return $this->primer_nombre . ' ' . $this->primer_apellido;
+    }
 
     public function nacionalidad(): BelongsTo
     {
         return $this->belongsTo(Nacionalidad::class);
     }
+
+     public function paciente()
+    {
+        return $this->hasOne(Pacientes::class, 'persona_id');
+    }
+
+    public function medico(): HasOne
+    {
+        return $this->hasOne(Medico::class, 'persona_id');
+    }
+
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class, 'persona_id');
+    }
+   
+    protected static function booted()
+{
+    static::creating(function ($model) {
+        $model->created_by = auth()->id();
+    });
+}
+
+   
 
 }

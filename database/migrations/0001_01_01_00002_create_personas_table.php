@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::create('personas', function (Blueprint $table) {
             $table->id();
-           $table->string ("primer_nombre");
+            $table->string ("primer_nombre");
             $table->string ("segundo_nombre")->nullable();
             $table->string ("primer_apellido");
             $table->string ("segundo_apellido")->nullable();
@@ -25,9 +25,9 @@ return new class extends Migration
             $table->date("fecha_nacimiento");
             $table->unsignedBigInteger("nacionalidad_id");
             $table->foreign("nacionalidad_id")->references("id")->on("nacionalidades");
-            $table->string("fotografia")->nulleable();
+            $table->string("fotografia")->nullable();
 
-            $table->integer('created_by');
+            $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
 
@@ -44,3 +44,5 @@ return new class extends Migration
         Schema::dropIfExists('personas');
     }
 };
+
+

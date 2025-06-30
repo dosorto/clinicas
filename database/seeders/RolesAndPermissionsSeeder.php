@@ -18,16 +18,27 @@ class RolesAndPermissionsSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Crear permisos
-        Permission::create(['name' => 'edit articles']);
-        Permission::create(['name' => 'delete articles']);
-        Permission::create(['name' => 'publish articles']);
-        Permission::create(['name' => 'unpublish articles']);
+
+        Permission::create(['name' => 'crear personas']);
+        Permission::create(['name' => 'borrar personas']);
+        Permission::create(['name' => 'crear nacionalidad']);
+        Permission::create(['name' => 'borrar nacionalidad']);
+        Permission::create(['name' => 'crear usuario']);
+        Permission::create(['name' => 'borrar usuario']);
+        Permission::create(['name' => 'crear pacientes']);
+        Permission::create(['name' => 'borrar pacientes']);
 
         // Crear roles y asignar permisos
         $roleAdmin = Role::create(['name' => 'root']);
-        $roleAdmin->givePermissionTo(['edit articles', 'delete articles', 'publish articles', 'unpublish articles']);
+        $roleAdmin->givePermissionTo(['crear personas', 'crear nacionalidad', 'crear usuario', 'borrar personas', 'borrar nacionalidad', 'borrar usuario','crear pacientes', 'borrar pacientes']);
 
-        $roleEditor = Role::create(['name' => 'editor']);
-        $roleEditor->givePermissionTo(['edit articles', 'publish articles']);
+        $roleAdminNacionalidades = Role::create(['name' => 'admin nacionalidades']);
+        $roleAdminNacionalidades->givePermissionTo(['crear nacionalidad']);
+
+        $roleAdminPersonas = Role::create(['name' => 'admin personas']);
+        $roleAdminPersonas->givePermissionTo(['crear personas']);
+        
+        $roleAdminPacientes = Role::create(['name' => 'admin pacientes']);
+        $roleAdminPacientes->givePermissionTo(['crear pacientes']);
     }
 }
