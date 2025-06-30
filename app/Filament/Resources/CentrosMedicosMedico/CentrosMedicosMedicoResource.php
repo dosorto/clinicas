@@ -23,7 +23,7 @@ class CentrosMedicosMedicoResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return auth()->user()?->can('borrar MedicoCentroMedico');
+        return auth()->user()?->can('crear MedicoCentroMedico');
     }
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';

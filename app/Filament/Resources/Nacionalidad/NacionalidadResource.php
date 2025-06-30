@@ -23,6 +23,8 @@ class NacionalidadResource extends Resource
     return auth()->user()?->can('crear nacionalidad');
     }
 
+    protected static ?string $modelLabel = 'Nacionalidades';
+
     protected static ?string $model = Nacionalidad::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
