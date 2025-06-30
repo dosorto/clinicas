@@ -16,11 +16,11 @@ return new class extends Migration
             $table->string("nombre_centro");
             $table->string("direccion");
             $table->string("telefono");
-            $table->string("fotografia");
+            $table->string("fotografia")->nullable();
             
             //  campos de logs
 
-            $table->integer("created_by");
+            $table->integer("created_by")->nullable();
             $table->integer("updated_by")->nullable();
             $table->integer("deleted_by")->nullable();
 

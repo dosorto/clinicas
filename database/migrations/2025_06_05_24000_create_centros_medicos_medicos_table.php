@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreign('centro_medico_id')->references('id')->on('centros_medicos');
             $table->string('horario');
 
-            $table->integer('created_by');
+            $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
 

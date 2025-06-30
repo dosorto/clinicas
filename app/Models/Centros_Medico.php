@@ -13,7 +13,7 @@ class Centros_Medico extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $table = 'centros__medicos';
+    protected $table = 'centros_medicos';
 
     protected $fillable = [
         'nombre_centro',
@@ -24,6 +24,14 @@ class Centros_Medico extends Model
 
     public function centro_medico_medico() {
         return $this->hasMany(Centros_Medicos_Medico::class, 'centro_medico_id');
+    }
+    
+    public function medicos()
+    {
+        return $this->hasMany(
+            \App\Models\Centros_Medicos_Medico::class,
+            'centro_medico_id'
+        );
     }
 
 
