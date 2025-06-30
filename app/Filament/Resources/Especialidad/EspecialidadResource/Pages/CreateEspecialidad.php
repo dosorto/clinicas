@@ -10,6 +10,8 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateEspecialidad extends CreateRecord
 {
     protected static string $resource = EspecialidadResource::class;
+    protected static ?string $title = 'Crear Especialidad'; 
+
 
     protected function getFormActions(): array
     {

@@ -10,15 +10,20 @@ class CreateMedico extends CreateRecord
 {
     protected static string $resource = MedicoResource::class;
 
-    protected static ?string $title = 'Crear Médico';
+    protected static ?string $title = 'Crear Médico'; // Título personalizado en la página
 
     protected function getFormActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            Actions\Action::make('create')
                 ->label('Crear Médico')
                 ->submit('create')
-                ->icon('heroicon-o-user-plus'),
+                ->icon('heroicon-o-user-plus')
+                ->color('primary')
+                ->action(function () {
+                    $this->create();
+                    $this->redirect($this->getRedirectUrl());
+                }),
                 
             Actions\Action::make('cancel')
                 ->label('Cancelar')

@@ -11,7 +11,8 @@ class EditEspecialidad extends EditRecord
 {
     protected static string $resource = EspecialidadResource::class;
 
-    
+    protected static ?string $title = 'Editar Especialidad'; // Título personalizado en la página
+
 
     protected function getRedirectUrl(): string
     {

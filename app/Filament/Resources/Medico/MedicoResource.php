@@ -40,30 +40,36 @@ class MedicoResource extends Resource
     }
 
     public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-               Tables\Columns\TextColumn::make('persona.primer_nombre')
-            ->label('Nombre Completo')
-            ->getStateUsing(fn ($record) => $record->persona->primer_nombre.' 
-            '.$record->persona->primer_apellido),
+{
+    return $table
+        ->columns([
+            Tables\Columns\TextColumn::make('persona.primer_nombre')
+                ->label('Nombre Completo')
+                ->getStateUsing(fn ($record) => $record->persona->primer_nombre.' '.$record->persona->primer_apellido)
+                ->searchable(['primer_nombre', 'primer_apellido']),
                 
             Tables\Columns\TextColumn::make('numero_colegiacion')
                 ->label('N° Colegiación')
                 ->searchable(),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
+        ])
+        ->filters([
+            //
+        ])
+        ->actions([
+            Tables\Actions\EditAction::make()
+                ->icon('heroicon-o-pencil') // Icono de edición
+                ->color('primary'),
+                
+            Tables\Actions\DeleteAction::make()
+                ->icon('heroicon-o-trash') // Icono de borrado
+                ->color('danger'),
+        ])
+        ->bulkActions([
+            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]),
+        ]);
+}
 
     public static function getRelations(): array
     {
