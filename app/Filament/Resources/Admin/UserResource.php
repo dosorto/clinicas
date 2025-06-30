@@ -51,7 +51,9 @@ class UserResource extends Resource
                     modifyQueryUsing: fn ($query) => $query->select(['id', 'primer_nombre', 'primer_apellido'])
                 )
                 ->getOptionLabelFromRecordUsing(fn ($record) => $record->primer_nombre . ' ' . $record->primer_apellido)
-                ->searchable(),
+                ->preload()
+                ->searchable()
+                ->required(),
             Select::make('roles')
                 ->label('Roles')
                 ->multiple()
