@@ -53,6 +53,13 @@ class Persona extends Model
     {
         return $this->hasOne(User::class, 'persona_id');
     }
+   
+    protected static function booted()
+{
+    static::creating(function ($model) {
+        $model->created_by = auth()->id();
+    });
+}
 
    
 
