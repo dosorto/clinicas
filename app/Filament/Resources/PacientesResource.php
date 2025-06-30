@@ -20,6 +20,10 @@ use Filament\Notifications\Notification;
 
 class PacientesResource extends Resource
 {
+     public static function shouldRegisterNavigation(): bool
+    {
+    return auth()->user()?->can('crear pacientes');
+    }
     protected static ?string $model = Pacientes::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
