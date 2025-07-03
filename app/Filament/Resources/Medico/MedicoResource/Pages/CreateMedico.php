@@ -1,16 +1,43 @@
 <?php
-
+/*
 namespace App\Filament\Resources\Medico\MedicoResource\Pages;
 
 use App\Filament\Resources\Medico\MedicoResource;
+use App\Models\Persona;
+use App\Models\Medico;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateMedico extends CreateRecord
 {
     protected static string $resource = MedicoResource::class;
+    protected static ?string $title = 'Crear Médico';
 
-    protected static ?string $title = 'Crear Médico'; // Título personalizado en la página
+    protected function handleRecordCreation(array $data): Medico
+    {
+        // Primero creamos o actualizamos la persona
+        $persona = Persona::updateOrCreate(
+            ['dni' => $data['dni']],
+            [
+                'primer_nombre' => $data['primer_nombre'],
+                'segundo_nombre' => $data['segundo_nombre'] ?? null,
+                'primer_apellido' => $data['primer_apellido'],
+                'segundo_apellido' => $data['segundo_apellido'] ?? null,
+                'telefono' => $data['telefono'] ?? null,
+                'direccion' => $data['direccion'] ?? null,
+                'sexo' => $data['sexo'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+                'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
+            ]
+        );
+
+        // Luego creamos el médico asociado
+        return Medico::create([
+            'persona_id' => $persona->id,
+            'numero_colegiacion' => $data['numero_colegiacion']
+        ]);
+    }
 
     protected function getFormActions(): array
     {
@@ -19,11 +46,7 @@ class CreateMedico extends CreateRecord
                 ->label('Crear Médico')
                 ->submit('create')
                 ->icon('heroicon-o-user-plus')
-                ->color('primary')
-                ->action(function () {
-                    $this->create();
-                    $this->redirect($this->getRedirectUrl());
-                }),
+                ->color('primary'),
                 
             Actions\Action::make('cancel')
                 ->label('Cancelar')
@@ -42,8 +65,75 @@ class CreateMedico extends CreateRecord
         return 'Médico creado exitosamente';
     }
 
+    protected function getCreatedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->success()
+            ->title($this->getCreatedNotificationTitle())
+            ->body('El médico y sus datos personales han sido registrados correctamente.');
+    }
+
     protected function getHeaderActions(): array
     {
-        return []; // Elimina acciones del header
+        return [];
     }
+}*/
+
+namespace App\Filament\Resources\Medico\MedicoResource\Pages;
+
+use App\Filament\Resources\Medico\MedicoResource;
+use App\Models\Persona;
+use Filament\Actions;
+use App\Models\Medico;
+use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Support\Facades\DB;
+
+class CreateMedico extends CreateRecord
+{
+    protected static string $resource = MedicoResource::class;
+
+    protected function handleRecordCreation(array $data): Medico
+    {
+        DB::beginTransaction();
+
+        try {
+            // 1. Crear la persona primero
+            $persona = Persona::create([
+                'primer_nombre' => $data['primer_nombre'],
+                'segundo_nombre' => $data['segundo_nombre'],
+                'primer_apellido' => $data['primer_apellido'],
+                'segundo_apellido' => $data['segundo_apellido'],
+                'dni' => $data['dni'],
+                'telefono' => $data['telefono'],
+                'direccion' => $data['direccion'],
+                'sexo' => $data['sexo'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'],
+                'nacionalidad_id' => $data['nacionalidad_id'],
+            ]);
+
+            // 2. Crear el médico con el persona_id
+            $medico = Medico::create([
+                'numero_colegiacion' => $data['numero_colegiacion'],
+                'persona_id' => $persona->id, // Asegurar que persona_id está asignado
+            ]);
+
+            // 3. Asignar especialidades
+            if (isset($data['especialidades'])) {
+                $medico->especialidades()->sync($data['especialidades']);
+            }
+
+            DB::commit();
+            return $medico;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
+    
 }
