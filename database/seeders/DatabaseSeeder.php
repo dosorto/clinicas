@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Citas;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -24,17 +25,19 @@ class DatabaseSeeder extends Seeder
         ]);
         $user = User::find(1);
         $user->assignRole('root');
-        
+
         $this->call([
           EspecialidadSeeder::class,
           NacionalidadSeeder::class,
           PersonaSeeder::class,
-          //MedicoSeeder::class,
-          //EspecialidadMedicoSeeder::class,
-          EnfermedadeSeeder::class,
-          
+          MedicoSeeder::class,
+          EspecialidadMedicoSeeder::class,
+          PacientesSeeder::class,
+          CitasSeeder::class,
+
+
         ]);
 
-        
-    } 
+
+    }
 }

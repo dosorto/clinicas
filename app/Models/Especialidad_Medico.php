@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Especialidad_Medico extends Model 
+class Especialidad_Medico extends Model
 {
     /** @use HasFactory<\Database\Factories\EspecialidadMedicoFactory> */
     use HasFactory;
@@ -25,5 +25,10 @@ class Especialidad_Medico extends Model
     public function especialidad()
     {
         return $this->belongsTo(Especialidad::class, 'especialidad_id');
+    }
+
+    public static function newFactory()
+    {
+    return \Database\Factories\EspecialidadMedicoFactory::new();
     }
 }
