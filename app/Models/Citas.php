@@ -14,6 +14,15 @@ class Citas extends Model
     use SoftDeletes;
 
     protected $table = 'citas';
+    
+     protected $fillable = [
+        'medico_id',
+        'paciente_id',
+        'fecha',
+        'hora',
+        'motivo',
+        'estado',
+    ];
 
     public function paciente(){
         return $this->belongsTo(Pacientes::class, 'paciente_id');
