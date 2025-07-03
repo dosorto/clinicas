@@ -13,6 +13,6 @@ class EspecialidadMedicoSeeder extends Seeder
      */
     public function run(): void
     {
-        Especialidad_Medico::factory()->count(10)->create();
+        Especialidad_Medico::factory()->count(20)->create();
     }
 }
