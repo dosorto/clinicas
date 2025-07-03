@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
           PersonaSeeder::class,
           //MedicoSeeder::class,
           //EspecialidadMedicoSeeder::class,
+          EnfermedadeSeeder::class,
           
         ]);
 

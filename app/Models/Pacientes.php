@@ -25,7 +25,6 @@ class Pacientes extends Model
         return $this->belongsTo(Persona::class, 'persona_id');
     }
 
-
     public function citas(): HasMany
     {
         return $this->hasMany(Citas::class, 'paciente_id');
@@ -46,12 +45,11 @@ class Pacientes extends Model
         return $this->hasMany(Receta::class, 'paciente_id');
     }
 
+    // CORRECCIÓN: Nombre correcto de la tabla y campos pivot
     public function enfermedades(): BelongsToMany
     {
-        return $this->belongsToMany(Enfermedade::class, 'enfermedades_paciente', 'paciente_id', 'enfermedad_id')
-                    ->withPivot('fecha_diagnostico', 'tratamiento')
+        return $this->belongsToMany(Enfermedade::class, 'enfermedades_pacientes', 'paciente_id', 'enfermedad_id')
+                    ->withPivot('fecha_diagnostico', 'tratamiento', 'created_by', 'updated_by', 'deleted_by')
                     ->withTimestamps();
     }
-
-    
 }

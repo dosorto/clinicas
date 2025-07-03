@@ -17,8 +17,8 @@ class EnfermedadeFactory extends Factory
     public function definition(): array
     {
         return [
-            'enfermedades' => $this->faker->name(),
-            'created_by' =>1,
+            'enfermedades' => $this->faker->word(),  // usa word para un nombre corto
+            'created_by' => 1,
         ];
     }
 }
