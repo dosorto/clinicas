@@ -50,9 +50,13 @@ class CentrosMedicosMedicoResource extends Resource
                 ->searchable()
                 ->required(),
 
-                
-            Forms\Components\TimePicker::make('horario')
-                ->label('Horario')
+            Forms\Components\TimePicker::make('horario_entrada')
+                ->label('Horario de Entrada')
+                ->seconds(false)
+                ->required(),
+
+            Forms\Components\TimePicker::make('horario_salida')
+                ->label('Horario de Salida')
                 ->seconds(false)
                 ->required(),
 
@@ -78,9 +82,14 @@ class CentrosMedicosMedicoResource extends Resource
                     return $centro?->nombre_centro ?? 'No definido';
                 }),
 
-            Tables\Columns\TextColumn::make('horario')
-                ->label('Horario')
+            Tables\Columns\TextColumn::make('horario_entrada')
+                ->label('Hora de Entrada')
                 ->time(),
+
+            Tables\Columns\TextColumn::make('horario_salida')
+                ->label('Hora de Salida')
+                ->time(),
+
         ])
         ->actions([
             Tables\Actions\ViewAction::make(),
