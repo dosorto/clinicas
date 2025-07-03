@@ -12,6 +12,7 @@ use Filament\Tables\Table;
 
 class EspecialidadMedicoResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $model = Especialidad_Medico::class;
     protected static ?string $navigationLabel = 'Especialidades y Médicos';
     protected static ?string $modelLabel = 'Especialidad y Médicos';
