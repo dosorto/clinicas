@@ -18,7 +18,11 @@ class PacientesFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'persona_id' => \App\Models\Persona::inRandomOrder()->first()?->id,
+            'grupo_sanguineo' => $this->faker->randomElement(['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']),
+            'contacto_emergencia' => $this->faker->phoneNumber(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ];
     }
 }
