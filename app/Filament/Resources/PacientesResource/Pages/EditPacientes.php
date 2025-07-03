@@ -6,6 +6,7 @@ use App\Filament\Resources\PacientesResource;
 use App\Models\Persona;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 
 class EditPacientes extends EditRecord
@@ -14,7 +15,6 @@ class EditPacientes extends EditRecord
 
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        // Cargar los datos de la persona relacionada al formulario
         $persona = $this->record->persona;
         
         if ($persona) {
@@ -28,6 +28,17 @@ class EditPacientes extends EditRecord
             $data['sexo'] = $persona->sexo;
             $data['fecha_nacimiento'] = $persona->fecha_nacimiento;
             $data['nacionalidad_id'] = $persona->nacionalidad_id;
+            $data['foto'] = $persona->foto;
+        }
+
+        // Obtener la primera enfermedad del paciente (si existe)
+        if ($this->record->enfermedades->isNotEmpty()) {
+            $enfermedad = $this->record->enfermedades->first();
+            $pivot = $enfermedad->pivot;
+            
+            $data['enfermedad_id'] = $enfermedad->id;
+            $data['fecha_diagnostico'] = $pivot->fecha_diagnostico;
+            $data['tratamiento'] = $pivot->tratamiento;
         }
 
         return $data;
@@ -35,44 +46,51 @@ class EditPacientes extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        // Separar datos de persona y paciente
-        $personaData = [
-            'primer_nombre' => $data['primer_nombre'],
-            'segundo_nombre' => $data['segundo_nombre'] ?? null,
-            'primer_apellido' => $data['primer_apellido'],
-            'segundo_apellido' => $data['segundo_apellido'] ?? null,
-            'dni' => $data['dni'],
-            'telefono' => $data['telefono'] ?? null,
-            'direccion' => $data['direccion'] ?? null,
-            'sexo' => $data['sexo'],
-            'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-            'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
-            'updated_by' => Auth::id(),
-        ];
+        DB::beginTransaction();
 
-        $pacienteData = [
-            'grupo_sanguineo' => $data['grupo_sanguineo'] ?? null,
-            'contacto_emergencia' => $data['contacto_emergencia'] ?? null,
-        ];
+        try {
+            // 1. Actualizar datos de la persona
+            $record->persona->update([
+                'primer_nombre' => $data['primer_nombre'],
+                'segundo_nombre' => $data['segundo_nombre'],
+                'primer_apellido' => $data['primer_apellido'],
+                'segundo_apellido' => $data['segundo_apellido'],
+                'telefono' => $data['telefono'],
+                'direccion' => $data['direccion'],
+                'sexo' => $data['sexo'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'],
+                'nacionalidad_id' => $data['nacionalidad_id'],
+                'foto' => $data['foto'] ?? null,
+                'updated_by' => Auth::id(),
+            ]);
 
-        // Verificar si el DNI cambió y ya existe en otra persona
-        if ($record->persona->dni !== $personaData['dni']) {
-            $existePersona = Persona::where('dni', $personaData['dni'])
-                                  ->where('id', '!=', $record->persona->id)
-                                  ->first();
+            // 2. Actualizar el paciente
+            $record->update([
+                'grupo_sanguineo' => $data['grupo_sanguineo'],
+                'contacto_emergencia' => $data['contacto_emergencia'],
+            ]);
+
+            // 3. Sincronizar enfermedades - CORRECCIÓN AQUÍ
+            $record->enfermedades()->detach();
             
-            if ($existePersona) {
-                throw new \Exception('Ya existe otra persona con este DNI.');
+            if (isset($data['enfermedad_id'])) {
+                $record->enfermedades()->attach($data['enfermedad_id'], [
+                    'fecha_diagnostico' => $data['fecha_diagnostico'],
+                    'tratamiento' => $data['tratamiento'] ?? null,
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
+
+            DB::commit();
+            return $record;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        // Actualizar la persona
-        $record->persona->update($personaData);
-
-        // Actualizar el paciente
-        $record->update($pacienteData);
-
-        return $record;
     }
 
     protected function getRedirectUrl(): string

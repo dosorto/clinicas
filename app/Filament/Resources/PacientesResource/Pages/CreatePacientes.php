@@ -6,7 +6,8 @@ use App\Filament\Resources\PacientesResource;
 use App\Models\Pacientes;
 use App\Models\Persona;
 use Filament\Resources\Pages\CreateRecord;
-use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class CreatePacientes extends CreateRecord
 {
@@ -14,74 +15,55 @@ class CreatePacientes extends CreateRecord
 
     protected function handleRecordCreation(array $data): Pacientes
     {
-        // Separar datos de persona y paciente
-        $personaData = [
-            'primer_nombre' => $data['primer_nombre'],
-            'segundo_nombre' => $data['segundo_nombre'] ?? null,
-            'primer_apellido' => $data['primer_apellido'],
-            'segundo_apellido' => $data['segundo_apellido'] ?? null,
-            'dni' => $data['dni'],
-            'telefono' => $data['telefono'] ?? null,
-            'direccion' => $data['direccion'] ?? null,
-            'sexo' => $data['sexo'],
-            'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-            'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
-            'created_by' => 1// Agregar el ID del usuario autenticado
-        ];
+        DB::beginTransaction();
 
-        $pacienteData = [
-            'grupo_sanguineo' => $data['grupo_sanguineo'] ?? null,
-            'contacto_emergencia' => $data['contacto_emergencia'] ?? null,
-        ];
+        try {
+            // 1. Crear o actualizar persona
+            $personaData = [
+                'primer_nombre' => $data['primer_nombre'],
+                'segundo_nombre' => $data['segundo_nombre'],
+                'primer_apellido' => $data['primer_apellido'],
+                'segundo_apellido' => $data['segundo_apellido'],
+                'dni' => $data['dni'],
+                'telefono' => $data['telefono'],
+                'direccion' => $data['direccion'],
+                'sexo' => $data['sexo'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'],
+                'nacionalidad_id' => $data['nacionalidad_id'],
+                'foto' => $data['foto'] ?? null,
+            ];
 
-        // Verificar si ya existe persona por DNI
-        $persona = Persona::where('dni', $personaData['dni'])->first();
-        
-        if ($persona) {
-            // Persona existe, mostrar notificación
-            Notification::make()
-                ->title('Persona encontrada')
-                ->body("Se usó registro existente: {$persona->nombre_completo}")
-                ->success()
-                ->send();
-        } else {
-            // Crear nueva persona
-            $persona = Persona::create($personaData);
-            
-            Notification::make()
-                ->title('Nueva persona creada')
-                ->body("Se creó nuevo registro: {$persona->nombre_completo}")
-                ->success()
-                ->send();
+            $persona = Persona::updateOrCreate(
+                ['dni' => $data['dni']],
+                $personaData
+            );
+
+            // 2. Crear paciente
+            $paciente = Pacientes::create([
+                'persona_id' => $persona->id,
+                'grupo_sanguineo' => $data['grupo_sanguineo'],
+                'contacto_emergencia' => $data['contacto_emergencia'],
+            ]);
+
+            // 3. Agregar enfermedad si existe - CORRECCIÓN AQUÍ
+            if (isset($data['enfermedad_id'])) {
+                $paciente->enfermedades()->attach($data['enfermedad_id'], [
+                    'fecha_diagnostico' => $data['fecha_diagnostico'],
+                    'tratamiento' => $data['tratamiento'] ?? null,
+                    'created_by' => Auth::id(),
+                    'updated_by' => Auth::id(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::commit();
+            return $paciente;
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        // Verificar si ya existe un paciente para esta persona
-        $existingPaciente = Pacientes::where('persona_id', $persona->id)->first();
-        
-        if ($existingPaciente) {
-            // Actualizar paciente existente
-            $existingPaciente->update($pacienteData);
-            
-            Notification::make()
-                ->title('Paciente actualizado')
-                ->body('Se actualizaron los datos del paciente existente')
-                ->warning()
-                ->send();
-                
-            return $existingPaciente;
-        }
-
-        // Crear nuevo paciente
-        $pacienteData['persona_id'] = $persona->id;
-        $paciente = Pacientes::create($pacienteData);
-        
-        Notification::make()
-            ->title('Paciente creado exitosamente')
-            ->body('Se creó un nuevo paciente')
-            ->success()
-            ->send();
-
-        return $paciente;
     }
 
     protected function getRedirectUrl(): string

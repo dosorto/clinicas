@@ -371,7 +371,7 @@ return $form
                     Forms\Components\TextInput::make('telefono')
                         ->label('Teléfono')
                         ->maxLength(255)
-                        ->nullable(),
+                        ->required(),
                         
                     Forms\Components\Textarea::make('direccion')
                         ->label('Dirección')
@@ -389,7 +389,7 @@ return $form
                     Forms\Components\DatePicker::make('fecha_nacimiento')
                         ->label('Fecha de Nacimiento')
                         ->native(false)
-                        ->nullable(),
+                        ->required(),
                     Forms\Components\FileUpload::make('persona.foto')
                     ->label('Fotografía')
                     ->image()
@@ -402,7 +402,7 @@ return $form
                         ->label('Nacionalidad')
                         ->options(Nacionalidad::pluck('nacionalidad', 'id'))
                         ->searchable()
-                        ->nullable(),
+                        ->required(),
                 ])
                 ->columns(2),
 

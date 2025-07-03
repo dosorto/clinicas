@@ -6,26 +6,24 @@ use App\Filament\Resources\PacientesResource\Pages;
 use App\Models\Pacientes;
 use App\Models\Persona;
 use App\Models\Nacionalidad;
+use App\Models\Enfermedade;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Fieldset;
+use Filament\Forms\Components\Wizard;
 use Filament\Notifications\Notification;
+use Illuminate\Validation\Rule;
 
 class PacientesResource extends Resource
 {
-     public static function shouldRegisterNavigation(): bool
+    public static function shouldRegisterNavigation(): bool
     {
-    return auth()->user()?->can('crear pacientes');
+        return auth()->user()?->can('crear pacientes');
     }
+    
     protected static ?string $model = Pacientes::class;
-
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationLabel = 'Pacientes';
     protected static ?string $modelLabel = 'Paciente';
@@ -35,200 +33,254 @@ class PacientesResource extends Resource
     {
         return $form
             ->schema([
-                Fieldset::make('Datos Personales')
-                    ->schema([
-                        TextInput::make('primer_nombre')
-                            ->label('Primer Nombre')
-                            ->required()
-                            ->maxLength(255)
-                            ->reactive()
-                            ->afterStateUpdated(fn ($state, callable $set) => self::checkPersonExists($state, $set)),
-                        
-                        TextInput::make('segundo_nombre')
-                            ->label('Segundo Nombre')
-                            ->nullable()
-                            ->maxLength(255),
-                        
-                        TextInput::make('primer_apellido')
-                            ->label('Primer Apellido')
-                            ->required()
-                            ->maxLength(255)
-                            ->reactive()
-                            ->afterStateUpdated(fn ($state, callable $set) => self::checkPersonExists($state, $set)),
-                        
-                        TextInput::make('segundo_apellido')
-                            ->label('Segundo Apellido')
-                            ->nullable()
-                            ->maxLength(255),
-                        
-                        TextInput::make('dni')
-                            ->label('DNI/Cédula')
-                            ->required()
-                            ->maxLength(255)
-                            ->reactive()
-                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                if ($state) {
-                                    $existingPersona = Persona::where('dni', $state)->first();
-                                    if ($existingPersona) {
-                                        // Llenar automáticamente los campos con datos existentes
-                                        $set('primer_nombre', $existingPersona->primer_nombre);
-                                        $set('segundo_nombre', $existingPersona->segundo_nombre);
-                                        $set('primer_apellido', $existingPersona->primer_apellido);
-                                        $set('segundo_apellido', $existingPersona->segundo_apellido);
-                                        $set('telefono', $existingPersona->telefono);
-                                        $set('direccion', $existingPersona->direccion);
-                                        $set('sexo', $existingPersona->sexo);
-                                        $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
-                                        $set('nacionalidad_id', $existingPersona->nacionalidad_id);
-                                        $set('persona_id', $existingPersona->id);
-                                        
-                                        Notification::make()
-                                            ->title('Persona encontrada')
-                                            ->body("Se encontró: {$existingPersona->nombre_completo}")
-                                            ->success()
-                                            ->send();
-                                    } else {
-                                        $set('persona_id', null);
+                Wizard::make([
+                    Wizard\Step::make('Datos Personales')
+                        ->schema([
+                            // DNI COMO PRIMER CAMPO
+                            Forms\Components\TextInput::make('dni')
+                                ->label('DNI/Cédula *')
+                                ->required()
+                                ->maxLength(255)
+                                ->reactive()
+                                ->disabled(fn ($operation) => $operation === 'edit')
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    if ($state) {
+                                        $existingPersona = Persona::where('dni', $state)->first();
+                                        if ($existingPersona) {
+                                            $set('primer_nombre', $existingPersona->primer_nombre);
+                                            $set('segundo_nombre', $existingPersona->segundo_nombre);
+                                            $set('primer_apellido', $existingPersona->primer_apellido);
+                                            $set('segundo_apellido', $existingPersona->segundo_apellido);
+                                            $set('telefono', $existingPersona->telefono);
+                                            $set('direccion', $existingPersona->direccion);
+                                            $set('sexo', $existingPersona->sexo);
+                                            $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
+                                            $set('nacionalidad_id', $existingPersona->nacionalidad_id);
+                                            $set('persona_id', $existingPersona->id);
+                                            
+                                            Notification::make()
+                                                ->title('Persona encontrada')
+                                                ->body("Se encontró: {$existingPersona->nombre_completo}")
+                                                ->success()
+                                                ->send();
+                                        } else {
+                                            $set('persona_id', null);
+                                        }
                                     }
-                                }
-                            }),
-                        
-                        Forms\Components\Hidden::make('persona_id'),
-                        
-                        TextInput::make('telefono')
-                            ->label('Teléfono')
-                            ->nullable()
-                            ->maxLength(255),
-                        
-                        Textarea::make('direccion')
-                            ->label('Dirección')
-                            ->nullable()
-                            ->rows(3),
-                        
-                        Select::make('sexo')
-                            ->label('Sexo')
-                            ->options([
-                                'M' => 'M',
-                                'F' => 'F',
-                            ])
-                            ->required(),
-                        
-                        DatePicker::make('fecha_nacimiento')
-                            ->label('Fecha de Nacimiento')
-                            ->nullable()
-                            ->native(false),
+                                }),
                             
-                        Select::make('nacionalidad_id')
-                            ->label('Nacionalidad')
-                            ->options(\App\Models\Nacionalidad::pluck('nacionalidad', 'id')->toArray())
-                            ->searchable()
-                            ->nullable(),
-                    ])
-                    ->columns(2),
+                            Forms\Components\Hidden::make('persona_id'),
+                            
+                            Forms\Components\TextInput::make('primer_nombre')
+                                ->label('Primer Nombre *')
+                                ->required()
+                                ->maxLength(255)
+                                ->reactive()
+                                ->afterStateUpdated(fn ($state, callable $set) => self::checkPersonExists($state, $set)),
+                            
+                            Forms\Components\TextInput::make('segundo_nombre')
+                                ->label('Segundo Nombre')
+                                ->maxLength(255),
+                            
+                            Forms\Components\TextInput::make('primer_apellido')
+                                ->label('Primer Apellido *')
+                                ->required()
+                                ->maxLength(255)
+                                ->reactive()
+                                ->afterStateUpdated(fn ($state, callable $set) => self::checkPersonExists($state, $set)),
+                            
+                            Forms\Components\TextInput::make('segundo_apellido')
+                                ->label('Segundo Apellido')
+                                ->maxLength(255),
+                            
+                            Forms\Components\TextInput::make('telefono')
+                                ->label('Teléfono *')
+                                ->required()
+                                ->maxLength(255),
+                            
+                            Forms\Components\Textarea::make('direccion')
+                                ->label('Dirección *')
+                                ->required()
+                                ->rows(3),
+                            
+                            Forms\Components\Select::make('sexo')
+                                ->label('Sexo *')
+                                ->options([
+                                    'M' => 'Masculino',
+                                    'F' => 'Femenino',
+                                ])
+                                ->required(),
+                            
+                            Forms\Components\DatePicker::make('fecha_nacimiento')
+                                ->label('Fecha de Nacimiento *')
+                                ->required()
+                                ->native(false),
+                                
+                            Forms\Components\Select::make('nacionalidad_id')
+                                ->label('Nacionalidad *')
+                                ->options(Nacionalidad::pluck('nacionalidad', 'id'))
+                                ->required()
+                                ->searchable(),
+                                
+                            Forms\Components\FileUpload::make('foto')
+                                ->label('Fotografía')
+                                ->image()
+                                ->directory('personas/fotos')
+                                ->visibility('public')
+                                ->imageEditor()
+                                ->columnSpanFull(),
+                        ])
+                        ->columns(2)
+                        ->afterValidation(function (callable $get) {
+                            // Validar que todos los campos obligatorios estén llenos
+                            $requiredFields = [
+                                'dni' => 'DNI/Cédula',
+                                'primer_nombre' => 'Primer Nombre',
+                                'primer_apellido' => 'Primer Apellido',
+                                'telefono' => 'Teléfono',
+                                'direccion' => 'Dirección',
+                                'sexo' => 'Sexo',
+                                'fecha_nacimiento' => 'Fecha de Nacimiento',
+                                'nacionalidad_id' => 'Nacionalidad',
+                            ];
+                            
+                            $missingFields = [];
+                            foreach ($requiredFields as $field => $label) {
+                                if (empty($get($field))) {
+                                    $missingFields[] = $label;
+                                }
+                            }
+                            
+                            if (!empty($missingFields)) {
+                                Notification::make()
+                                    ->title('Campos obligatorios faltantes')
+                                    ->body('Complete los siguientes campos: ' . implode(', ', $missingFields))
+                                    ->danger()
+                                    ->send();
+                                    
+                                throw new \Exception('Campos obligatorios faltantes');
+                            }
+                        }),
 
-                Fieldset::make('Datos del Paciente')
-                    ->schema([
-                        Select::make('grupo_sanguineo')
-                            ->label('Grupo Sanguíneo')
-                            ->options([
-                                'A+' => 'A+',
-                                'A-' => 'A-',
-                                'B+' => 'B+',
-                                'B-' => 'B-',
-                                'O+' => 'O+',
-                                'O-' => 'O-',
-                                'AB+' => 'AB+',
-                                'AB-' => 'AB-',
-                            ])
-                            ->nullable(),
-                        
-                        TextInput::make('contacto_emergencia')
-                            ->label('Contacto de Emergencia')
-                            ->nullable()
-                            ->maxLength(255),
-                    ])
-                    ->columns(2),
+                    Wizard\Step::make('Datos del Paciente')
+                        ->schema([
+                            Forms\Components\Select::make('grupo_sanguineo')
+                                ->label('Grupo Sanguíneo *')
+                                ->options([
+                                    'A+' => 'A+',
+                                    'A-' => 'A-',
+                                    'B+' => 'B+',
+                                    'B-' => 'B-',
+                                    'O+' => 'O+',
+                                    'O-' => 'O-',
+                                    'AB+' => 'AB+',
+                                    'AB-' => 'AB-',
+                                ])
+                                ->required(),
+                            
+                            Forms\Components\TextInput::make('contacto_emergencia')
+                                ->label('Contacto de Emergencia *')
+                                ->required()
+                                ->maxLength(255),
+                        ])
+                        ->columns(2)
+                        ->afterValidation(function (callable $get) {
+                            // Validar campos obligatorios del paciente
+                            $requiredFields = [
+                                'grupo_sanguineo' => 'Grupo Sanguíneo',
+                                'contacto_emergencia' => 'Contacto de Emergencia',
+                            ];
+                            
+                            $missingFields = [];
+                            foreach ($requiredFields as $field => $label) {
+                                if (empty($get($field))) {
+                                    $missingFields[] = $label;
+                                }
+                            }
+                            
+                            if (!empty($missingFields)) {
+                                Notification::make()
+                                    ->title('Campos obligatorios faltantes')
+                                    ->body('Complete los siguientes campos: ' . implode(', ', $missingFields))
+                                    ->danger()
+                                    ->send();
+                                    
+                                throw new \Exception('Campos obligatorios faltantes');
+                            }
+                        }),
+                    
+                    Wizard\Step::make('Enfermedades')
+                        ->schema([
+                            Forms\Components\Select::make('enfermedad_id')
+                                ->label('Enfermedad *')
+                                ->options(Enfermedade::all()->pluck('enfermedades', 'id'))
+                                ->searchable()
+                                ->required(),
+                            
+                            Forms\Components\DatePicker::make('fecha_diagnostico')
+                                ->label('Fecha de Diagnóstico *')
+                                ->default(now())
+                                ->required()
+                                ->native(false),
+                            
+                            Forms\Components\Textarea::make('tratamiento')
+                                ->label('Tratamiento')
+                                ->rows(3)
+                                ->columnSpanFull(),
+                        ])
+                        ->columns(2)
+                        ->afterValidation(function (callable $get) {
+                            // Validar campos obligatorios de enfermedades
+                            $requiredFields = [
+                                'enfermedad_id' => 'Enfermedad',
+                                'fecha_diagnostico' => 'Fecha de Diagnóstico',
+                            ];
+                            
+                            $missingFields = [];
+                            foreach ($requiredFields as $field => $label) {
+                                if (empty($get($field))) {
+                                    $missingFields[] = $label;
+                                }
+                            }
+                            
+                            if (!empty($missingFields)) {
+                                Notification::make()
+                                    ->title('Campos obligatorios faltantes')
+                                    ->body('Complete los siguientes campos: ' . implode(', ', $missingFields))
+                                    ->danger()
+                                    ->send();
+                                    
+                                throw new \Exception('Campos obligatorios faltantes');
+                            }
+                        }),
+                ])
+                ->columnSpanFull()
+                ->persistStepInQueryString(),
             ]);
     }
 
-    // Método para verificar si existe persona
     protected static function checkPersonExists($state, callable $set)
     {
-        // Este método se puede expandir para verificaciones adicionales
-        // Por ahora, la verificación principal está en el campo DNI
-    }
-
-    // Método para crear o encontrar persona y crear paciente
-    public static function createPacienteWithPersona(array $data): Pacientes
-    {
-        // Separar datos de persona y paciente
-        $personaData = [
-            'primer_nombre' => $data['primer_nombre'],
-            'segundo_nombre' => $data['segundo_nombre'] ?? null,
-            'primer_apellido' => $data['primer_apellido'],
-            'segundo_apellido' => $data['segundo_apellido'] ?? null,
-            'dni' => $data['dni'],
-            'telefono' => $data['telefono'] ?? null,
-            'direccion' => $data['direccion'] ?? null,
-            'sexo' => $data['sexo'],
-            'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-            'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
-            'created_by' => 1,
-        ];
-
-        $pacienteData = [
-            'grupo_sanguineo' => $data['grupo_sanguineo'] ?? null,
-            'contacto_emergencia' => $data['contacto_emergencia'] ?? null,
-        ];
-
-        // Buscar persona existente
-        $persona = null;
-        
-        // Verificar por DNI primero
-        if (!empty($personaData['dni'])) {
-            $persona = Persona::where('dni', $personaData['dni'])->first();
-        }
-        
-        // Si no existe, crear nueva persona
-        if (!$persona) {
-            $persona = Persona::create($personaData);
-        }
-
-        // Verificar si ya existe un paciente para esta persona
-        $existingPaciente = Pacientes::where('persona_id', $persona->id)->first();
-        
-        if ($existingPaciente) {
-            // Actualizar datos del paciente existente
-            $existingPaciente->update($pacienteData);
-            return $existingPaciente;
-        }
-
-        // Crear nuevo paciente
-        $pacienteData['persona_id'] = $persona->id;
-        return Pacientes::create($pacienteData);
+        // Lógica de verificación si es necesario
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
+                Tables\Columns\ImageColumn::make('persona.foto')
+                    ->label('Foto')
+                    ->circular()
+                    ->defaultImageUrl(url('/images/default-avatar.png')),
+                
                 Tables\Columns\TextColumn::make('persona.primer_nombre')
-                    ->label('Primer Nombre')
-                    ->searchable()
-                    ->sortable(),
-                
-                Tables\Columns\TextColumn::make('persona.primer_apellido')
-                    ->label('Primer Apellido')
-                    ->searchable()
-                    ->sortable(),
-                
+                    ->label('Nombre')
+                    ->formatStateUsing(fn ($record) => 
+                        "{$record->persona->primer_nombre} {$record->persona->primer_apellido}")
+                    ->searchable(['primer_nombre', 'primer_apellido']),
+                    
                 Tables\Columns\TextColumn::make('persona.dni')
                     ->label('DNI')
-                    ->searchable()
-                    ->sortable(),
-                
-                Tables\Columns\TextColumn::make('persona.telefono')
-                    ->label('Teléfono')
                     ->searchable(),
                 
                 Tables\Columns\TextColumn::make('grupo_sanguineo')
@@ -236,14 +288,8 @@ class PacientesResource extends Resource
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('contacto_emergencia')
-                    ->label('Contacto de Emergencia')
+                    ->label('Contacto Emergencia')
                     ->limit(30),
-                    
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Creado')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('grupo_sanguineo')

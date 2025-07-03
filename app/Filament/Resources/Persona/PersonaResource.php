@@ -26,7 +26,7 @@ class PersonaResource extends Resource
     {
     return auth()->user()?->can('crear personas');
     }
-    
+
     protected static ?string $model = Persona::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -60,7 +60,7 @@ class PersonaResource extends Resource
                         ->directory('personas')
                         ->maxSize(2048)
                         ->deleteUploadedFileUsing(fn ($file) => Storage::disk('public')->delete($file))
-                        ->nullable(),    
+                        ->nullable(),
             ]);
     }
 
@@ -74,7 +74,7 @@ class PersonaResource extends Resource
                 Tables\Columns\TextColumn::make('telefono')->label('Teléfono')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('direccion')->label('Dirección')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('nacionalidad.nacionalidad')->label('Nacionalidad')->searchable()->sortable(),
-                
+
             ])
             ->filters([
                 //
@@ -83,8 +83,8 @@ class PersonaResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\DeleteAction::make()
-                
-                
+
+
 
             ])
             ->bulkActions([
