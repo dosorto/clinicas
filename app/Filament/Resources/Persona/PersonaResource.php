@@ -81,8 +81,10 @@ class PersonaResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-                Tables\Actions\ViewAction::make()
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\DeleteAction::make()
+                
+                
 
             ])
             ->bulkActions([
