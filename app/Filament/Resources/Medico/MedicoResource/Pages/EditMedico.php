@@ -105,7 +105,8 @@ class EditMedico extends EditRecord
             Actions\Action::make('cancel')
                 ->label('Cancelar')
                 ->url($this->getResource()::getUrl('index'))
-                ->color('gray')
+                ->icon('heroicon-o-x-mark')
+                ->color('danger')
         ];
     }
 
