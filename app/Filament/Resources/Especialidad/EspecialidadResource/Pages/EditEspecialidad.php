@@ -30,5 +30,16 @@ class EditEspecialidad extends EditRecord
             ->label('Guardar cambios')
             ->submit('save')
             ->keyBindings(['mod+s']);
+            
+    }
+
+
+        protected function getCancelFormAction(): Action
+    {
+        return Action::make('Cancelar')
+            ->label('Cancelar')
+            ->submit('cancel')
+            ->icon('heroicon-o-x-mark')
+            ->color('danger');
     }
 }

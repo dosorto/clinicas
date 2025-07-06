@@ -7,6 +7,7 @@ use App\Models\Persona;
 use App\Models\Medico;
 use Filament\Actions;
 use Filament\Notifications\Notification;
+use Illuminate\Validation\ValidationException;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateMedico extends CreateRecord
@@ -87,10 +88,29 @@ use Filament\Actions;
 use App\Models\Medico;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
+use Filament\Notifications\Notification;
+use Illuminate\Validation\ValidationException;
 
 class CreateMedico extends CreateRecord
 {
     protected static string $resource = MedicoResource::class;
+
+    protected static ?string $title = 'Crear Médico';
+
+
+
+        public static function canCreateAnother(): bool
+    {
+        return false; // Evita creación automática si lo necesitas
+    }
+
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        // Si quieres manipular datos antes de crear
+        return $data;
+    }
+
+
 
     protected function handleRecordCreation(array $data): Medico
     {
@@ -131,9 +151,41 @@ class CreateMedico extends CreateRecord
         }
     }
 
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getCreateFormAction()
+                ->label('Crear')
+                ->icon('heroicon-o-check')
+                ->color('primary'),
+                
+            Actions\Action::make('back')
+                ->label('Cancelar')
+                ->icon('heroicon-o-x-mark')
+                ->color('danger')
+                ->url($this->getResource()::getUrl('index')),
+                
+        ];
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
     }
-    
+
+    protected function getCreatedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->success()
+            ->title('Médico creado')
+            ->body('El médico se ha registrado correctamente.');
+    }
+
+
+    protected function getHeaderActions(): array
+    {
+        return [];
+    }
+
 }

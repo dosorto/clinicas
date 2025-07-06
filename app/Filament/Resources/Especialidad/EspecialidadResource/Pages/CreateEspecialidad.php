@@ -19,6 +19,9 @@ class CreateEspecialidad extends CreateRecord
             Actions\Action::make('create')
                 ->label('Crear Especialidad')
                 ->submit('create')
+                ->icon('heroicon-o-plus')
+                ->color('primary')
+                ->keyBindings(['mod+s']) // Permite guardar con Ctrl+S o Cmd+
                 ->action(function () {
                     $this->create();
                     $this->redirect($this->getRedirectUrl());
@@ -26,8 +29,10 @@ class CreateEspecialidad extends CreateRecord
                 
             Actions\Action::make('cancel')
                 ->label('Cancelar')
+                ->icon('heroicon-o-x-mark')
+
                 ->url($this->getResource()::getUrl('index'))
-                ->color('gray')
+                ->color('danger')
         ];
     }
 
