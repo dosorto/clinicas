@@ -31,4 +31,14 @@ class Citas extends Model
     public function medico(){
         return $this->belongsTo(Medico::class, 'medico_id');
     }
+
+        public function confirmar(): void
+    {
+        $this->update(['estado' => 'Confirmado']);
+    }
+
+    public function cancelar(): void
+    {
+        $this->update(['estado' => 'Cancelado']);
+    }
 }

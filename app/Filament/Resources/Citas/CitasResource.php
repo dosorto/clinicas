@@ -18,6 +18,11 @@ use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Actions\DeleteAction;
 
 
 class CitasResource extends Resource
@@ -136,46 +141,40 @@ class CitasResource extends Resource
                         'Cancelado'  => 'Cancelado',
                         'Realizada'  => 'Realizada',
                     ]),
+            
             ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make()
-                    ->label('Nueva cita'),
-            ])
-            ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->label('Ver'),
+           ->actions([
+            ActionGroup::make([
+                ViewAction::make(),
 
-                Tables\Actions\EditAction::make()
-                    ->label('Editar'),
+                EditAction::make(),
 
-                Tables\Actions\Action::make('confirmar')
+                Action::make('confirmar')
                     ->label('Confirmar')
                     ->icon('heroicon-o-check')
-                    ->color('primary')
-                    ->visible(fn ($record) => $record->estado === 'Pendiente')
-                    ->action(fn ($record) => $record->update(['estado' => 'Confirmado'])),
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(fn (Citas $record, $action) => $record->update(['estado' => 'Confirmado']))
+                    // ← sólo si está aún pendiente
+                    ->visible(fn (Citas $record) => $record->estado === 'Pendiente'),
 
-                Tables\Actions\Action::make('cancelar')
+                Action::make('cancelar')
                     ->label('Cancelar')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
-                    ->visible(fn ($record) => $record->estado === 'Pendiente')
-                    ->action(fn ($record) => $record->update(['estado' => 'Cancelado'])),
+                    ->requiresConfirmation()
+                    ->action(fn (Citas $record, $action) => $record->update(['estado' => 'Cancelado']))
+                    // ← sólo si está aún pendiente
+                    ->visible(fn (Citas $record) => $record->estado === 'Pendiente'),
 
-                Tables\Actions\Action::make('realizar')
-                    ->label('Marcar realizada')
-                    ->icon('heroicon-o-x-mark')
-                    ->color('success')
-                    ->visible(fn ($record) => $record->estado === 'Confirmado')
-                    ->action(fn ($record) => $record->update(['estado' => 'Realizado'])),
-
-                Tables\Actions\DeleteAction::make()
-                    ->label('Eliminar'),
+                DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\DeleteBulkAction::make()
-                    ->label('Eliminar seleccionados'),
-            ]);
+            ->label('Acciones')
+            ->icon('heroicon-o-ellipsis-horizontal'),
+        ])
+        ->bulkActions([
+            Tables\Actions\DeleteBulkAction::make(),
+        ]);
     }
 
     public static function getRelations(): array
