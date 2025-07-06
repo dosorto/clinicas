@@ -35,8 +35,9 @@ class EspecialidadResource extends Resource
                 ->label('Nombre de la Especialidad')
                 ->required()
                 ->maxLength(255)
+                ->placeholder('Ingrese el nombre de la especialidad')
                 ->unique(ignoreRecord: true) // Evita duplicados al editar
-                ->columnSpanFull(),
+                //->columnSpanFull(),
         ]);
     }
 
@@ -60,14 +61,28 @@ class EspecialidadResource extends Resource
             // Filtros opcionales
         ])
         ->actions([
-            Tables\Actions\EditAction::make(),
-            Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make() // Botón "Editar"
+                    ->label('Editar')
+                    ->icon('heroicon-o-pencil')
+                    ->color('primary'),
+
+            Tables\Actions\DeleteAction::make()
+                ->label('Eliminar')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->modalHeading('Eliminar Especialidad')
+                ->modalDescription('¿Estás seguro de que deseas eliminar esta especialidad? Esta acción no se puede deshacer.')
+                ->modalSubmitActionLabel('Sí, eliminar')
+                ->modalCancelActionLabel('Cancelar')
+            
         ])
         ->bulkActions([
             Tables\Actions\BulkActionGroup::make([
                 Tables\Actions\DeleteBulkAction::make(),
             ]),
-        ]);
+        
+        ])
+        ->searchPlaceholder('Buscar');
     }
 
     public static function getRelations(): array
@@ -82,6 +97,7 @@ class EspecialidadResource extends Resource
         return Action::make('create')
             ->label('Crear Especialidad') // Texto personalizado del botón
             ->submit('create')
+            ->icon('heroicon-o-check')
             ->keyBindings(['mod+s']);
     }
 
