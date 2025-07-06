@@ -17,7 +17,8 @@ return new class extends Migration
             $table->foreign('medico_id')->references('id')->on('medicos');
             $table->unsignedBigInteger('centro_medico_id');
             $table->foreign('centro_medico_id')->references('id')->on('centros_medicos');
-            $table->string('horario');
+            $table->string('horario_entrada');
+            $table->string('horario_salida');
 
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();

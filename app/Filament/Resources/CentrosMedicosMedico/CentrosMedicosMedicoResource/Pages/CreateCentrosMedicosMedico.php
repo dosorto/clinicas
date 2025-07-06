@@ -10,3 +10,4 @@ class CreateCentrosMedicosMedico extends CreateRecord
 {
     protected static string $resource = CentrosMedicosMedicoResource::class;
 }
+

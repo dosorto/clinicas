@@ -16,9 +16,21 @@ class EnfermedadeFactory extends Factory
      */
     public function definition(): array
     {
-        return [
-            'enfermedades' => $this->faker->word(),  // usa word para un nombre corto
-            'created_by' => 1,
+         return [
+            'enfermedades' => $this->faker->randomElement([
+                'Diabetes',
+                'Hipertensión',
+                'Asma',
+                'Epilepsia',
+                'Gastritis',
+                'Artritis',
+                'COVID-19',
+                'Migraña',
+                'Anemia',
+                'Colesterol alto',
+                 'created_by' => 1,
+            ]),
+             // Usuario por defecto (ajústalo según tu app)
         ];
     }
 }
