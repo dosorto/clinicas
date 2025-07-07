@@ -18,6 +18,9 @@ class Consulta extends Model
         'diagnostico',
         'tratamiento',
         'observaciones',
+        'paciente_id',
+        'medico_id',
+        'cita_id',
     ];
 
     public function paciente()

@@ -15,9 +15,12 @@ class Receta extends Model
 
     protected $table = 'recetas';
 
-    protected $filable = [
+    protected $fillable = [
         'medicamentos',
         'indicaciones',
+        'paciente_id',
+        'consulta_id',
+        'medico_id',
     ];
 
     public function paciente()

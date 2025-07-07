@@ -48,14 +48,11 @@ class ConsultasResource extends Resource
                                 Forms\Components\Select::make('paciente_id')
                                     ->label('Paciente')
                                     ->options(function () {
-                                        return Pacientes::with('persona')->get()->mapWithKeys(function ($p) {
-                                            $nombre = $p->persona->nombre ?? 'Sin nombre';
-                                            return [$p->id => $nombre];
-                                        });
-                                    })
-                                    ->default(function () {
-                                        $paciente = Pacientes::with('persona')->first();
-                                        return $paciente ? $paciente->id : null;
+                                        return ['' => 'Seleccionar'] + Pacientes::with('persona')->get()->filter(function ($p) {
+                                            return $p->persona !== null;
+                                        })->mapWithKeys(function ($p) {
+                                            return [$p->id => $p->persona->nombre_completo];
+                                        })->toArray();
                                     })
                                     ->searchable()
                                     ->preload()
@@ -65,14 +62,11 @@ class ConsultasResource extends Resource
                                 Forms\Components\Select::make('medico_id')
                                     ->label('Médico')
                                     ->options(function () {
-                                        return Medico::with('persona')->get()->mapWithKeys(function ($m) {
-                                            $nombre = $m->persona->nombre ?? 'Sin nombre';
-                                            return [$m->id => $nombre];
-                                        });
-                                    })
-                                    ->default(function () {
-                                        $medico = Medico::with('persona')->first();
-                                        return $medico ? $medico->id : null;
+                                        return ['' => 'Seleccionar'] + Medico::with('persona')->get()->filter(function ($m) {
+                                            return $m->persona !== null;
+                                        })->mapWithKeys(function ($m) {
+                                            return [$m->id => $m->persona->nombre_completo];
+                                        })->toArray();
                                     })
                                     ->searchable()
                                     ->preload()
@@ -123,12 +117,12 @@ class ConsultasResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('paciente.nombre')
+                Tables\Columns\TextColumn::make('paciente.persona.nombre_completo')
                     ->label('Paciente')
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('medico.nombre')
+                Tables\Columns\TextColumn::make('medico.persona.nombre_completo')
                     ->label('Médico')
                     ->sortable()
                     ->searchable(),
@@ -181,13 +175,13 @@ class ConsultasResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('paciente_id')
                     ->label('Paciente')
-                    ->options(Pacientes::with('persona')->get()->mapWithKeys(fn($p) => [$p->id => $p->persona->nombre ?? 'Sin nombre']))
+                    ->options(Pacientes::with('persona')->get()->filter(fn($p) => $p->persona !== null)->mapWithKeys(fn($p) => [$p->id => $p->persona->nombre_completo]))
                     ->searchable()
                     ->preload(),
 
                 Tables\Filters\SelectFilter::make('medico_id')
                     ->label('Médico')
-                    ->options(Medico::with('persona')->get()->mapWithKeys(fn($m) => [$m->id => $m->persona->nombre ?? 'Sin nombre']))
+                    ->options(Medico::with('persona')->get()->filter(fn($m) => $m->persona !== null)->mapWithKeys(fn($m) => [$m->id => $m->persona->nombre_completo]))
                     ->searchable()
                     ->preload(),
 
@@ -250,10 +244,10 @@ class ConsultasResource extends Resource
                     ->schema([
                         Infolists\Components\Grid::make(3)
                             ->schema([
-                                Infolists\Components\TextEntry::make('paciente.nombre')
+                                Infolists\Components\TextEntry::make('paciente.persona.nombre_completo')
                                     ->label('Paciente'),
 
-                                Infolists\Components\TextEntry::make('medico.nombre')
+                                Infolists\Components\TextEntry::make('medico.persona.nombre_completo')
                                     ->label('Médico'),
 
                                 Infolists\Components\TextEntry::make('cita.fecha')
