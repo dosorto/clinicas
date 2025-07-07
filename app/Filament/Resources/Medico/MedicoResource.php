@@ -218,14 +218,24 @@ return $form
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
 
-            Tables\Actions\DeleteAction::make()
-                ->label('Eliminar')
-                ->icon('heroicon-o-trash')
-                ->color('danger')
-                ->modalHeading('Eliminar Médico')
-                ->modalDescription('¿Estás seguro de que deseas eliminar este médico? Esta acción no se puede deshacer.')
-                ->modalSubmitActionLabel('Sí, eliminar')
-                ->modalCancelActionLabel('Cancelar')
+Tables\Actions\DeleteAction::make()
+    ->label('Eliminar')
+    ->icon('heroicon-o-trash')
+    ->color('danger')
+    ->modalHeading('Eliminar Médico')
+    ->modalDescription('¿Estás seguro de que deseas eliminar este médico y sus datos personales? Esta acción no se puede deshacer.')
+    ->modalSubmitActionLabel('Sí, eliminar')
+    ->modalCancelActionLabel('Cancelar')
+    ->action(function (Medico $record) {
+        DB::transaction(function () use ($record) {
+            // Eliminar primero el médico
+            $record->delete();
+            
+            // Luego eliminar la persona asociada
+            $record->persona()->delete();
+        });
+    })
+    ->successNotificationTitle('Médico y datos personales eliminados correctamente'),
                 
                 
             ])
