@@ -13,8 +13,10 @@ class Examenes extends Model
     use SoftDeletes;
 
     protected $table = 'examenes';
-
     protected $fillable = [
+        'paciente_id',
+        'consulta_id',
+        'medico_id',
         'descripcion',
         'url_archivo',
         'fecha_resultado',

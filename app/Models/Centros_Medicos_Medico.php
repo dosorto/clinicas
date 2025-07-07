@@ -18,7 +18,8 @@ class Centros_Medicos_Medico extends Model
     protected $fillable = [
         'medico_id',
         'centro_medico_id',
-        'horario',
+        'horario_entrada',
+        'horario_salida',
         'created_by',
         'updated_by',
         'deleted_by',

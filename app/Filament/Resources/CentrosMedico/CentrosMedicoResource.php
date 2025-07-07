@@ -23,15 +23,14 @@ class CentrosMedicoResource extends Resource
     {
         return auth()->user()?->can('Crear CentroMedico');
     }
-
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
     {
         return $form->schema([
             Forms\Components\TextInput::make('nombre_centro')->required()->maxLength(255),
-            Forms\Components\TextInput::make('direccion')->maxLength(255),
-            Forms\Components\TextInput::make('telefono')->tel(),
+            Forms\Components\TextInput::make('direccion')->required()->maxLength(255),
+            Forms\Components\TextInput::make('telefono')->required()->tel(),
             Forms\Components\FileUpload::make('fotografia')->image()->directory('centros_medicos'),
         ]);
     }

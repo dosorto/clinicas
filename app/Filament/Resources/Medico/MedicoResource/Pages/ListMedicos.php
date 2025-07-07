@@ -13,7 +13,14 @@ class ListMedicos extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('Nuevo Médico') // Cambiado a "Nuevo Médico",
+                ->icon('heroicon-o-plus') // Icono de más
+                ->color('primary') // Color consistente con el tema
+                ->tooltip('Crear un nuevo médico'), // Tooltip para mayor claridad
         ];
     }
+
+
+
 }

@@ -14,6 +14,15 @@ class Citas extends Model
     use SoftDeletes;
 
     protected $table = 'citas';
+    
+     protected $fillable = [
+        'medico_id',
+        'paciente_id',
+        'fecha',
+        'hora',
+        'motivo',
+        'estado',
+    ];
 
     public function paciente(){
         return $this->belongsTo(Pacientes::class, 'paciente_id');
@@ -21,5 +30,15 @@ class Citas extends Model
 
     public function medico(){
         return $this->belongsTo(Medico::class, 'medico_id');
+    }
+
+        public function confirmar(): void
+    {
+        $this->update(['estado' => 'Confirmado']);
+    }
+
+    public function cancelar(): void
+    {
+        $this->update(['estado' => 'Cancelado']);
     }
 }

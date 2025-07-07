@@ -13,7 +13,11 @@ class ListEspecialidades extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label('Nueva Especialidad')
+                ->icon('heroicon-o-plus')
+                ->color('primary')
+                ->tooltip('Crear una nueva especialidad'),
         ];
     }
 }

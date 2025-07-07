@@ -30,6 +30,10 @@ class DatabaseSeeder extends Seeder
           EspecialidadSeeder::class,
           NacionalidadSeeder::class,
           PersonaSeeder::class,
+          //MedicoSeeder::class,
+          //EspecialidadMedicoSeeder::class,
+          EnfermedadeSeeder::class,
+          
           MedicoSeeder::class,
           EspecialidadMedicoSeeder::class,
           PacientesSeeder::class,

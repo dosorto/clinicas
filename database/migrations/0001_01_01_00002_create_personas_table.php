@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string ("segundo_apellido")->nullable();
             $table->string("dni")->unique();
             $table->string("telefono");
-            $table->text("direccion");
+            $table->text("direccion")->nullable();
             $table->enum("sexo",["M","F"]);
             $table->date("fecha_nacimiento");
             $table->unsignedBigInteger("nacionalidad_id");
