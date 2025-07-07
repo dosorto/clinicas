@@ -40,7 +40,7 @@ class CreateConsultas extends CreateRecord
             'consulta_id' => $this->record->id,
             'paciente_id' => $this->record->paciente_id,
             'medico_id' => $this->record->medico_id,
-            'created_by' => $this->record->id(),
+            'created_by' => $this->record->created_by ?? null,
         ]);
     }
 

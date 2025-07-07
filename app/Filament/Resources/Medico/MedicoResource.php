@@ -90,7 +90,7 @@ return $form
                         ->label('Dirección')
                         ->maxLength(255)
                         ->placeholder('Ingrese su dirección')
-                        ->required(), // 👉 hace obligatorio el campo,
+                        ->required(), // hace obligatorio el campo,
                        // ->columnSpanFull(),
                         
                     Forms\Components\Select::make('sexo')
@@ -153,7 +153,11 @@ return $form
                         ->columns(2),
                 ]),
         ])
-        ->columnSpanFull() // 👈 Esto hará que el Wizard ocupe el 100% del ancho
+        ->columnSpanFull() //  Esto hará que el Wizard ocupe el 100% del ancho
+            ->nextAction(
+                fn ($action) => $action->label('Siguiente')  // "Next" → "Siguiente"
+            )
+            
 
         ->persistStepInQueryString(),
     ]);
@@ -181,12 +185,22 @@ return $form
                 ->label('Foto')
                 ->circular() // Opcional: muestra la imagen en forma circular
                 ->defaultImageUrl(url('/images/default-avatar.png')), // Imagen por defecto si no hay foto*/
-                    
-                Tables\Columns\TextColumn::make('especialidades.especialidad')
+
+               Tables\Columns\TextColumn::make('persona.telefono')
+                    ->label('Teléfono')
+                    ->searchable(),
+
+                /*Tables\Columns\TextColumn::make('persona.direccion')
+                    ->label('Dirección')
+                    ->searchable(),*/
+
+               Tables\Columns\TextColumn::make('especialidades.especialidad')
                     ->label('Especialidades')
                     ->badge()
                     ->separator(',') // Separa los badges con coma
                     ->color('primary'), // Color consistente
+                
+
 
             ])
             ->filters([
@@ -204,14 +218,25 @@ return $form
                     ->icon('heroicon-o-pencil')
                     ->color('primary'),
 
-            Tables\Actions\DeleteAction::make()
-                ->label('Eliminar')
-                ->icon('heroicon-o-trash')
-                ->color('danger')
-                ->modalHeading('Eliminar Médico')
-                ->modalDescription('¿Estás seguro de que deseas eliminar este médico? Esta acción no se puede deshacer.')
-                ->modalSubmitActionLabel('Sí, eliminar')
-                ->modalCancelActionLabel('Cancelar')
+Tables\Actions\DeleteAction::make()
+    ->label('Eliminar')
+    ->icon('heroicon-o-trash')
+    ->color('danger')
+    ->modalHeading('Eliminar Médico')
+    ->modalDescription('¿Estás seguro de que deseas eliminar este médico y sus datos personales? Esta acción no se puede deshacer.')
+    ->modalSubmitActionLabel('Sí, eliminar')
+    ->modalCancelActionLabel('Cancelar')
+    ->action(function (Medico $record) {
+        DB::transaction(function () use ($record) {
+            // Eliminar primero el médico
+            $record->delete();
+            
+            // Luego eliminar la persona asociada
+            $record->persona()->delete();
+        });
+    })
+    ->successNotificationTitle('Médico y datos personales eliminados correctamente'),
+                
                 
             ])
             ->bulkActions([
@@ -283,3 +308,9 @@ return $form
         }
     }
 }
+
+
+
+
+
+

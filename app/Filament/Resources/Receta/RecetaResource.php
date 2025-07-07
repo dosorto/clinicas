@@ -42,22 +42,29 @@ class RecetaResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('paciente_id')
                             ->label('Paciente')
-                            ->relationship('paciente', 'id')
+                            ->options(function () {
+                                return ['' => 'Seleccionar'] + \App\Models\Pacientes::with('persona')->get()->filter(function ($p) {
+                                    return $p->persona !== null;
+                                })->mapWithKeys(function ($p) {
+                                    return [$p->id => $p->persona->nombre_completo];
+                                })->toArray();
+                            })
+                            ->searchable()
                             ->preload()
                             ->required(),
 
                         Forms\Components\Select::make('medico_id')
                             ->label('Médico')
-                            ->relationship(
-                                name: 'medico',
-                                titleAttribute: 'numero_colegiacion',
-                            )
-                            ->getOptionLabelFromRecordUsing(function (Medico $record) {
-                                $persona = $record->persona;
-                                return $persona
-                                    ? "{$persona->nombres} {$persona->apellidos} - Coleg: {$record->numero_colegiacion}"
-                                    : "Médico #{$record->id}";
-                            }),
+                            ->options(function () {
+                                return ['' => 'Seleccionar'] + \App\Models\Medico::with('persona')->get()->filter(function ($m) {
+                                    return $m->persona !== null;
+                                })->mapWithKeys(function ($m) {
+                                    return [$m->id => $m->persona->nombre_completo];
+                                })->toArray();
+                            })
+                            ->searchable()
+                            ->preload()
+                            ->required(),
 
                         Forms\Components\Select::make('consulta_id')
                             ->label('Consulta')
@@ -96,15 +103,15 @@ class RecetaResource extends Resource
                     ->label('ID')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('paciente_id')
+                Tables\Columns\TextColumn::make('paciente.persona.nombre_completo')
                     ->label('Paciente')
-                    ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
 
-                Tables\Columns\TextColumn::make('medico_id')
+                Tables\Columns\TextColumn::make('medico.persona.nombre_completo')
                     ->label('Médico')
-                    ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('consulta_id')
                     ->label('Consulta')
@@ -194,9 +201,9 @@ class RecetaResource extends Resource
             ->schema([
                 Infolists\Components\Section::make('Información General')
                     ->schema([
-                        Infolists\Components\TextEntry::make('paciente_id')
+                        Infolists\Components\TextEntry::make('paciente.persona.nombre_completo')
                             ->label('Paciente'),
-                        Infolists\Components\TextEntry::make('medico_id')
+                        Infolists\Components\TextEntry::make('medico.persona.nombre_completo')
                             ->label('Médico'),
                         Infolists\Components\TextEntry::make('consulta_id')
                             ->label('Consulta')
