@@ -59,7 +59,14 @@ class Persona extends Model
     static::creating(function ($model) {
         $model->created_by = auth()->id();
     });
+
+        static::deleting(function (Persona $persona) {
+        // Elimina el médico asociado si existe
+        $persona->medico()->delete();
+    });
 }
+
+
 
    
 
