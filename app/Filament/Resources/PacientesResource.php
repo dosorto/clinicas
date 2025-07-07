@@ -16,6 +16,7 @@ use Filament\Forms\Components\Wizard;
 use Filament\Notifications\Notification;
 use Illuminate\Validation\Rule;
 
+
 class PacientesResource extends Resource
 {
     public static function shouldRegisterNavigation(): bool
@@ -70,6 +71,9 @@ class PacientesResource extends Resource
                                 }),
                             
                             Forms\Components\Hidden::make('persona_id'),
+                            /*Forms\Components\Hidden::make('centro_id')
+                            ->default(fn () => auth()->user()->centro_id)
+                            ->dehydrated(true),*/
                             
                             Forms\Components\TextInput::make('primer_nombre')
                                 ->label('Primer Nombre *')

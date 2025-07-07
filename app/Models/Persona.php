@@ -26,6 +26,7 @@ class Persona extends Model
         'fecha_nacimiento',
         'nacionalidad_id',
         'fotografia',
+        'centro_id',
         
     ];
 
@@ -55,12 +56,26 @@ class Persona extends Model
     }
    
     protected static function booted()
-{
-    static::creating(function ($model) {
-        $model->created_by = auth()->id();
-    });
-}
-
-   
-
+    {
+        parent::booted();
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+            if (empty($model->centro_id)) {
+            $model->centro_id = \Spatie\Multitenancy\Models\Tenant::current()?->centro_id;
+            }
+        });
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+        static::deleting(function ($model) {
+            if (auth()->check()) {
+                $model->deleted_by = auth()->id();
+                $model->save();
+            }
+        });
+    }
 }

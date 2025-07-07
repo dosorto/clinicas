@@ -17,6 +17,7 @@ class Enfermedade extends Model
 
     protected $fillable = [
         'enfermedades',
+        'centro_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -47,19 +48,23 @@ class Enfermedade extends Model
 
     protected static function boot()
     {
-        parent::boot();
-
+       parent::booted();
         static::creating(function ($model) {
-            $model->created_by = Auth::id();
-        });
-
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+                }
+            });
         static::updating(function ($model) {
-            $model->updated_by = Auth::id();
-        });
-
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+                }
+            });
         static::deleting(function ($model) {
-            $model->deleted_by = Auth::id();
-            $model->save();
-        });
+            if (auth()->check()) {
+                $model->deleted_by = auth()->id();
+                $model->save();
+             }
+            });
     }
+    
 }

@@ -20,6 +20,8 @@ return new class extends Migration
             $table->foreign('medico_id')->references('id')->on('medicos');
             $table->unsignedBigInteger('consulta_id');
             $table->foreign('consulta_id')->references('id')->on('consultas');
+            $table->unsignedBigInteger("centro_id")->nullable();
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
 
             $table->text('medicamentos');
             $table->text('indicaciones');

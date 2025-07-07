@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreign('persona_id')->references('id')->on('personas');
             $table->enum('grupo_sanguineo', ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'])->nullable();
             $table->string('contacto_emergencia')->nullable();
+            $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
 
             $table->timestamps();
             $table->softDeletes();

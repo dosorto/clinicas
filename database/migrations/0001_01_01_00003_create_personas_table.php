@@ -25,6 +25,8 @@ return new class extends Migration
             $table->date("fecha_nacimiento");
             $table->unsignedBigInteger("nacionalidad_id");
             $table->foreign("nacionalidad_id")->references("id")->on("nacionalidades");
+            $table->unsignedBigInteger("centro_id")->nullable();
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
             $table->string("fotografia")->nullable();
 
             $table->integer('created_by')->nullable();

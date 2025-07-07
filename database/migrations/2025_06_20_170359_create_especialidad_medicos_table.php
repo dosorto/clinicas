@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreign('especialidad_id')->references('id')->on('especialidads');
             $table->unsignedBigInteger('medico_id');
             $table->foreign('medico_id')->references('id')->on('medicos');
+            $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
 
             // Campos de logs
             $table->integer('created_by')->nullable();

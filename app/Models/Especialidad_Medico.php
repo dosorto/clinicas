@@ -17,6 +17,7 @@ class Especialidad_Medico extends Model
     protected $fillable = [
         'medico_id',
         'especialidad_id',
+        'centro_id',
     ];
     public function medico()
     {
@@ -25,6 +26,27 @@ class Especialidad_Medico extends Model
     public function especialidad()
     {
         return $this->belongsTo(Especialidad::class, 'especialidad_id');
+    }
+
+    protected static function booted()
+    {
+        parent::booted();
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+        static::deleting(function ($model) {
+            if (auth()->check()) {
+                $model->deleted_by = auth()->id();
+                $model->save();
+            }
+        });
     }
 
     public static function newFactory()

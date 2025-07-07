@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('especialidad'); // nombre de la especialidad
             $table->timestamps(); // created_at y updated_at
             $table->softDeletes(); // deleted_at
+            $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
 
             // campos de auditoría
             $table->integer('created_by')->nullable();

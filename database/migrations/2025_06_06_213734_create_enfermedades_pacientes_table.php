@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreign('enfermedad_id')->references('id')->on('enfermedades');
             $table->date('fecha_diagnostico');
             $table->text('tratamiento');
+            $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
             
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();

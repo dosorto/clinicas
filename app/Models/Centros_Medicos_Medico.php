@@ -20,6 +20,7 @@ class Centros_Medicos_Medico extends Model
         'centro_medico_id',
         'horario_entrada',
         'horario_salida',
+        'centro_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -32,5 +33,26 @@ class Centros_Medicos_Medico extends Model
 
     public function medico(){
         return $this->belongsTo(Medico::class, 'medico_id');
+    }
+
+    protected static function booted()
+    {
+        parent::booted();
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+        static::deleting(function ($model) {
+            if (auth()->check()) {
+                $model->deleted_by = auth()->id();
+                $model->save();
+            }
+        });
     }
 }

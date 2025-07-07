@@ -17,6 +17,7 @@ protected $table = 'medicos';
     protected $fillable = [
         'persona_id',
         'numero_colegiacion',
+        'centro_id',
     ];
 
     public function persona() {
@@ -35,5 +36,24 @@ protected $table = 'medicos';
     {
     return $this->belongsToMany(Especialidad::class, 'especialidad_medicos', 'medico_id', 'especialidad_id');
     }
-   
+    protected static function booted()
+    {
+        parent::booted();
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+        static::deleting(function ($model) {
+            if (auth()->check()) {
+                $model->deleted_by = auth()->id();
+                $model->save();
+            }
+        });
+    }
 }

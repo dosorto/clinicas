@@ -34,5 +34,35 @@ class Centros_Medico extends Model
         );
     }
 
+    protected static function booted()
+    {
+        parent::booted();
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+        static::deleting(function ($model) {
+            if (auth()->check()) {
+                $model->deleted_by = auth()->id();
+                $model->save();
+            }
+        });
+        static::created(function ($centro) {
+            \App\Models\Tenant::create([
+                'centro_id' => $centro->id,
+                'name' => $centro->nombre_centro,
+                'domain' => 'centro' . $centro->id . '.localhost',
+                'database' => 'shared', // o puedes dejarlo null si no lo usas
+                ]);
+            });
+    }
+
+
 
 }

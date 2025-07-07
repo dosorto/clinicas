@@ -19,6 +19,7 @@ class Pacientes extends Model
         'persona_id',
         'grupo_sanguineo',
         'contacto_emergencia',
+        'centro_id',
     ];
 
     public function persona(){
@@ -51,5 +52,31 @@ class Pacientes extends Model
         return $this->belongsToMany(Enfermedade::class, 'enfermedades_pacientes', 'paciente_id', 'enfermedad_id')
                     ->withPivot('fecha_diagnostico', 'tratamiento', 'created_by', 'updated_by', 'deleted_by')
                     ->withTimestamps();
+    }
+
+    protected static function booted()
+    {
+        parent::booted();
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+        static::deleting(function ($model) {
+            if (auth()->check()) {
+                $model->deleted_by = auth()->id();
+                $model->save();
+            }
+        });
+        static::addGlobalScope('centro', function ($query) {
+            if (auth()->check() && !auth()->user()->hasRole('root')) {
+                $query->where('centro_id', auth()->user()->centro_id);
+                }   
+            });
     }
 }

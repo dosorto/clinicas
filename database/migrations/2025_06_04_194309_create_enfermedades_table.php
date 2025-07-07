@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('enfermedades', function (Blueprint $table) {
             $table->id();
             $table->string("enfermedades");
+            $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
             
              //  campos de logs
 

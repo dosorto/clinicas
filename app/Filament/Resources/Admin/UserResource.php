@@ -60,6 +60,11 @@ class UserResource extends Resource
                 ->relationship('roles', 'name')
                 ->preload()
                 ->required(),
+            Select::make('centro_id')
+                ->label('Centro Médico')
+                ->options(\App\Models\Centros_Medico::pluck('nombre_centro', 'id'))
+                ->required()
+                ->visible(fn () => auth()->user()?->hasRole('root')) // Solo visible para root, por ejemplo
             
         ]);
 }

@@ -23,6 +23,8 @@ return new class extends Migration
             $table->time('hora');
             $table->text('motivo', 255)->nullable();
             $table->enum('estado', ['Pendiente', 'Confirmado', 'Cancelado', 'Realizado']);
+            $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
 
             $table->timestamps();
             $table->softDeletes();

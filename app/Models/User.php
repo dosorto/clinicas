@@ -10,12 +10,17 @@ use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+
 class User extends Authenticatable
 {
     
     public function persona()
     {
         return $this->belongsTo(Persona::class, 'persona_id');
+    }
+    public function centro()
+    {
+    return $this->belongsTo(CentroMedico::class, 'centro_id');
     }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
@@ -31,6 +36,7 @@ class User extends Authenticatable
         'password',
         'persona_id', // <-- agrégalo si lo necesitas
         'created_by', // ID del usuario que creó el registro
+        'centro_id', // ID del centro médico, puede ser nulo
         
     ];
 

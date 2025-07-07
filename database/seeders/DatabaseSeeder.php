@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
         $user->assignRole('root');
 
         $this->call([
+          //TenantSeeder::class,
           EspecialidadSeeder::class,
           NacionalidadSeeder::class,
           PersonaSeeder::class,

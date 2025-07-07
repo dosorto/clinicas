@@ -19,6 +19,8 @@ return new class extends Migration
             $table->foreign('centro_medico_id')->references('id')->on('centros_medicos');
             $table->string('horario_entrada');
             $table->string('horario_salida');
+            $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
 
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
