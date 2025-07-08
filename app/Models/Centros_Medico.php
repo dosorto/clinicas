@@ -53,14 +53,7 @@ class Centros_Medico extends Model
                 $model->save();
             }
         });
-        static::created(function ($centro) {
-            \App\Models\Tenant::create([
-                'centro_id' => $centro->id,
-                'name' => $centro->nombre_centro,
-                'domain' => 'centro' . $centro->id . '.localhost',
-                'database' => 'shared', // o puedes dejarlo null si no lo usas
-                ]);
-            });
+        
     }
 
 

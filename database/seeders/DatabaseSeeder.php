@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
           //TenantSeeder::class,
+          CentrosMedicoSeeder::class,
           EspecialidadSeeder::class,
           NacionalidadSeeder::class,
           PersonaSeeder::class,

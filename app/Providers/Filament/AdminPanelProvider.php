@@ -28,7 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->plugin(FilamentSpatieRolesPermissionsPlugin::make())
+            //->plugin(FilamentSpatieRolesPermissionsPlugin::make())
             ->colors([
                 'primary' => Color::Amber,
             ])
