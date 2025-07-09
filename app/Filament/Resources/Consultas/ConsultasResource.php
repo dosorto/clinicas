@@ -102,6 +102,7 @@ class ConsultasResource extends Resource
 
                         Forms\Components\Textarea::make('observaciones')
                             ->label('Observaciones')
+                            ->required()
                             ->rows(3)
                             ->columnSpanFull(),
                     ]),
@@ -153,24 +154,6 @@ class ConsultasResource extends Resource
                         }
                         return $state;
                     }),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Fecha Consulta')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Actualizada')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('deleted_at')
-                    ->label('Eliminada')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('paciente_id')
@@ -184,25 +167,6 @@ class ConsultasResource extends Resource
                     ->options(Medico::with('persona')->get()->filter(fn($m) => $m->persona !== null)->mapWithKeys(fn($m) => [$m->id => $m->persona->nombre_completo]))
                     ->searchable()
                     ->preload(),
-
-                Tables\Filters\Filter::make('created_at')
-                    ->form([
-                        Forms\Components\DatePicker::make('created_from')
-                            ->label('Fecha desde'),
-                        Forms\Components\DatePicker::make('created_until')
-                            ->label('Fecha hasta'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['created_from'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
-                            )
-                            ->when(
-                                $data['created_until'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
-                            );
-                    }),
 
                 Tables\Filters\TrashedFilter::make(),
             ])
@@ -219,8 +183,7 @@ class ConsultasResource extends Resource
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
-            ])
-            ->defaultSort('created_at', 'desc');
+            ]);
     }
 
     public static function infolist(Infolist $infolist): Infolist
@@ -233,10 +196,6 @@ class ConsultasResource extends Resource
                             ->schema([
                                 Infolists\Components\TextEntry::make('id')
                                     ->label('ID'),
-
-                                Infolists\Components\TextEntry::make('created_at')
-                                    ->label('Fecha de Consulta')
-                                    ->dateTime(),
                             ]),
                     ]),
 
@@ -271,22 +230,6 @@ class ConsultasResource extends Resource
                             ->columnSpanFull()
                             ->placeholder('Sin observaciones'),
                     ]),
-
-                Infolists\Components\Section::make('Información de Sistema')
-                    ->schema([
-                        Infolists\Components\Grid::make(2)
-                            ->schema([
-                                Infolists\Components\TextEntry::make('updated_at')
-                                    ->label('Última Actualización')
-                                    ->dateTime(),
-
-                                Infolists\Components\TextEntry::make('deleted_at')
-                                    ->label('Fecha de Eliminación')
-                                    ->dateTime()
-                                    ->placeholder('No eliminado'),
-                            ]),
-                    ])
-                    ->collapsible(),
             ]);
     }
 

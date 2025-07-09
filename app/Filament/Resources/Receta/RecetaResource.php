@@ -134,17 +134,18 @@ class RecetaResource extends Resource
                         return strlen($state) > 50 ? $state : null;
                     }),
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Fecha de Creación')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(),
+                // Eliminar o comentar las columnas de fechas en la tabla
+                // Tables\Columns\TextColumn::make('created_at')
+                //     ->label('Fecha de Creación')
+                //     ->dateTime('d/m/Y H:i')
+                //     ->sortable()
+                //     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Última Actualización')
-                    ->dateTime('d/m/Y H:i')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // Tables\Columns\TextColumn::make('updated_at')
+                //     ->label('Última Actualización')
+                //     ->dateTime('d/m/Y H:i')
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('medico')
@@ -221,16 +222,17 @@ class RecetaResource extends Resource
                             ->columnSpanFull(),
                     ]),
 
-                Infolists\Components\Section::make('Información del Sistema')
-                    ->schema([
-                        Infolists\Components\TextEntry::make('created_at')
-                            ->label('Fecha de Creación')
-                            ->dateTime('d/m/Y H:i:s'),
-                        Infolists\Components\TextEntry::make('updated_at')
-                            ->label('Última Actualización')
-                            ->dateTime('d/m/Y H:i:s'),
-                    ])
-                    ->columns(2),
+                // Eliminar o comentar las entradas de fechas en los infolists
+                // Infolists\Components\Section::make('Información del Sistema')
+                //     ->schema([
+                //         Infolists\Components\TextEntry::make('created_at')
+                //             ->label('Fecha de Creación')
+                //             ->dateTime('d/m/Y H:i:s'),
+                //         Infolists\Components\TextEntry::make('updated_at')
+                //             ->label('Última Actualización')
+                //             ->dateTime('d/m/Y H:i:s'),
+                //     ])
+                //     ->columns(2),
             ]);
     }
 

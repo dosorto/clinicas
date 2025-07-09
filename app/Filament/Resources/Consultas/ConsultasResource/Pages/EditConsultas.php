@@ -7,6 +7,9 @@ use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
+
+
 
 class EditConsultas extends EditRecord
 {
@@ -61,7 +64,7 @@ class EditConsultas extends EditRecord
         // Lógica adicional después de guardar
         Log::info('Consulta actualizada', [
             'consulta_id' => $this->record->id,
-            'updated_by' => $this->record->id(),
+            'updated_by' => $this->record->id,
             'changes' => $this->record->getChanges(),
         ]);
     }
