@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Enfermedades_Paciente;
-use App\Models\Traits\TenantScoped;
 
 
 
@@ -16,11 +15,9 @@ class Enfermedade extends Model
     /** @use HasFactory<\Database\Factories\EnfermedadeFactory> */
     use HasFactory;
     use SoftDeletes;
-    use TenantScoped;
 
     protected $fillable = [
         'enfermedades',
-        'centro_id',
         'created_by',
         'updated_by',
         'deleted_by',

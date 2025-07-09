@@ -5,12 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Traits\TenantScoped; 
 
 class Examenes extends Model
 {
     /** @use HasFactory<\Database\Factories\ExamenesFactory> */
     use HasFactory;
     use SoftDeletes;
+    use TenantScoped; // Assuming you have a trait for tenant scoping
 
     protected $table = 'examenes';
     protected $fillable = [

@@ -16,7 +16,6 @@ class Nacionalidad extends Model
     protected $table = 'nacionalidades';
     protected $fillable = [
         'nacionalidad',
-        'centro_id',
     ];
 
     public function personas(): HasMany{

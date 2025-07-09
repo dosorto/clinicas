@@ -13,17 +13,23 @@ class CentrosMedicoSeeder extends Seeder
      */
     public function run(): void
     {
-        $centro = Centros_Medico::create([
-            'nombre_centro' => 'Hospital SL',
-            'direccion' => 'Choluteca',
-            'telefono' => '123',
-        ]);
+        // Usar firstOrCreate para el centro médico también
+        $centro = Centros_Medico::firstOrCreate(
+            ['nombre_centro' => 'Hospital SL'], // criterio de búsqueda
+            [
+                'direccion' => 'Choluteca',
+                'telefono' => '123',
+            ]
+        );
 
-        \App\Models\Tenant::firstOrCreate([
-            'centro_id' => $centro->id,
-            'name' => $centro->nombre_centro,
-            'domain' => 'centro' . $centro->id . '.localhost',
-            'database' => 'shared', // o puedes dejarlo null si no lo usas
-        ]);
+        // El observer debería crear el tenant automáticamente, pero por si acaso
+        if (!\App\Models\Tenant::where('centro_id', $centro->id)->exists()) {
+            \App\Models\Tenant::create([
+                'centro_id' => $centro->id,
+                'name' => $centro->nombre_centro,
+                'domain' => 'centro' . $centro->id . '.localhost',
+                'database' => 'clinica_' . $centro->id,
+            ]);
+        }
     }
 }

@@ -5,14 +5,7 @@ namespace App\Models\Traits;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\Scope;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
-use App\Models\User;
+use Spatie\Multitenancy\Models\Tenant;
 
 trait TenantScoped
 {
@@ -22,25 +15,47 @@ trait TenantScoped
      */
     protected static function bootTenantScoped()
     {
-        // Nos aseguramos de que haya un usuario con sesión iniciada.
-        if (Auth::check()) {
-            
-            // --- INICIO DE LA CORRECCIÓN ---
-
-            /** @var \App\Models\User $user */ // Pista para el editor
-            $user = Auth::user();
-
-            // Ahora usamos la variable $user que ya tiene la "pista"
-            if (!$user->hasRole('root')) {
-
-            // --- FIN DE LA CORRECCIÓN ---
-
-                // Si se cumplen las condiciones, añadimos un "Global Scope".
-                static::addGlobalScope('centros_medicos', function (Builder $builder) use ($user) {
-                    // Forzamos la consulta a incluir siempre el empresa_id del usuario.
-                    $builder->where('centro_id', $user->centro_id);
-                });
+        // Asignar centro_id automáticamente al crear
+        static::creating(function ($model) {
+            if (!$model->centro_id) {
+                $model->centro_id = static::getCurrentTenantId();
             }
+        });
+
+        // Solo aplicar scope global si no es usuario root
+        static::addGlobalScope('centros_medicos', function (Builder $builder) {
+            if (!static::shouldBypassTenantScope()) {
+                $builder->where('centro_id', static::getCurrentTenantId());
+            }
+        });
+    }
+
+    /**
+     * Determina si se debe omitir el scope del tenant
+     */
+    protected static function shouldBypassTenantScope(): bool
+    {
+        if (Auth::check() && Auth::user()->hasRole('root')) {
+            return true;
         }
+        return false;
+    }
+
+    /**
+     * Obtiene el ID del tenant actual
+     */
+    protected static function getCurrentTenantId(): ?int
+    {
+        // Primero intentar obtener del tenant actual de Spatie
+        if ($tenant = Tenant::current()) {
+            return $tenant->id;
+        }
+
+        // Si hay usuario autenticado, usar su centro_id
+        if (Auth::check() && !Auth::user()->hasRole('root')) {
+            return Auth::user()->centro_id;
+        }
+
+        return null;
     }
 }

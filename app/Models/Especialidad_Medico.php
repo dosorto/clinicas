@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Traits\TenantScoped; 
 
 class Especialidad_Medico extends Model
 {
     /** @use HasFactory<\Database\Factories\EspecialidadMedicoFactory> */
     use HasFactory;
     use SoftDeletes;
+    use TenantScoped; // Assuming you have a trait for tenant scoping
 
     protected $table = 'especialidad_medicos';
     protected $fillable = [

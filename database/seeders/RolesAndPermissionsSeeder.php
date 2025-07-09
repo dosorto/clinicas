@@ -87,6 +87,9 @@ class RolesAndPermissionsSeeder extends Seeder
         $roleAdminPersonas->givePermissionTo(['crear personas', 'ver personas']);
         
         $roleAdminPacientes = Role::create(['name' => 'admin pacientes']);
-        $roleAdminPacientes->givePermissionTo(['crear pacientes']);
+        $roleAdminPacientes->givePermissionTo(['crear pacientes', 'ver pacientes', 'actualizar pacientes', 'borrar pacientes']);
+
+        $roleAdminPacientes = Role::create(['name' => 'admin enfermedades']);
+        $roleAdminPacientes->givePermissionTo(['crear enfermedades', 'ver enfermedades', 'actualizar enfermedades', 'borrar enfermedades']);
     }
 }

@@ -219,6 +219,7 @@ class PacientesResource extends Resource
                                 ->label('Enfermedad *')
                                 ->options(Enfermedade::all()->pluck('enfermedades', 'id'))
                                 ->searchable()
+                                ->preload()
                                 ->required(),
                             
                             Forms\Components\DatePicker::make('fecha_diagnostico')

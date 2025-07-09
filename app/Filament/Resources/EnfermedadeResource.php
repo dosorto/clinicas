@@ -42,6 +42,7 @@ class EnfermedadeResource extends Resource
                 Tables\Columns\TextColumn::make('enfermedades')
                     ->label('Enfermedad')
                     ->searchable()
+                    
                     ->sortable(),
                 
                 Tables\Columns\TextColumn::make('createdBy.name')

@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Traits\TenantScoped; 
 
 class Receta extends Model
 {
     /** @use HasFactory<\Database\Factories\RecetaFactory> */
     use HasFactory;
     use SoftDeletes;
+    use TenantScoped; // Assuming you have a trait for tenant scoping
 
     protected $table = 'recetas';
 
