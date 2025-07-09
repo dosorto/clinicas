@@ -27,6 +27,9 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'ver medicocentromedico']);
         Permission::create(['name' => 'ver centromedico']);
         Permission::create(['name' => 'ver enfermedades']);
+        Permission::create(['name' => 'ver especialidad']);
+        Permission::create(['name' => 'ver especialidadmedicos']);
+        Permission::create(['name' => 'ver medicos']);
 
         // CREAR
         Permission::create(['name' => 'crear personas']);
@@ -36,6 +39,9 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'crear medicocentromedico']);
         Permission::create(['name' => 'crear centromedico']);
         Permission::create(['name' => 'crear enfermedades']);
+        Permission::create(['name' => 'crear especialidad']);
+        Permission::create(['name' => 'crear especialidadmedicos']);
+        Permission::create(['name' => 'crear medicos']);
 
         // ACTUALIZAR
         Permission::create(['name' => 'actualizar personas']);
@@ -45,6 +51,9 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'actualizar medicocentromedico']);
         Permission::create(['name' => 'actualizar centromedico']);
         Permission::create(['name' => 'actualizar enfermedades']);
+        Permission::create(['name' => 'actualizar especialidad']);
+        Permission::create(['name' => 'actualizar especialidadmedicos']);
+        Permission::create(['name' => 'actualizar medicos']);
 
         // BORRAR
         Permission::create(['name' => 'borrar personas']);
@@ -54,18 +63,21 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'borrar centromedico']);
         Permission::create(['name' => 'borrar medicocentromedico']);
         Permission::create(['name' => 'borrar enfermedades']);
+        Permission::create(['name' => 'borrar especialidad']);
+        Permission::create(['name' => 'borrar especialidadmedicos']);
+        Permission::create(['name' => 'borrar medicos']);
 
         // Crear roles y asignar permisos
         $roleAdmin = Role::create(['name' => 'root']);
         $roleAdmin->givePermissionTo([
             // VER
-            'ver personas', 'ver nacionalidad', 'ver usuario', 'ver pacientes', 'ver medicocentromedico', 'ver enfermedades', 'ver centromedico',
+            'ver personas', 'ver nacionalidad', 'ver usuario', 'ver pacientes', 'ver medicocentromedico', 'ver enfermedades', 'ver centromedico', 'ver especialidad', 'ver especialidadmedicos', 'ver medicos',
             // CREAR
-            'crear personas', 'crear nacionalidad', 'crear usuario', 'crear pacientes', 'crear medicocentromedico', 'crear centromedico', 'crear enfermedades',
+            'crear personas', 'crear nacionalidad', 'crear usuario', 'crear pacientes', 'crear medicocentromedico', 'crear centromedico', 'crear enfermedades', 'crear especialidad', 'crear especialidadmedicos', 'crear medicos',
             // ACTUALIZAR
-            'actualizar personas', 'actualizar nacionalidad', 'actualizar usuario', 'actualizar pacientes', 'actualizar medicocentromedico', 'actualizar enfermedades', 'actualizar centromedico',
+            'actualizar personas', 'actualizar nacionalidad', 'actualizar usuario', 'actualizar pacientes', 'actualizar medicocentromedico', 'actualizar enfermedades', 'actualizar centromedico', 'actualizar especialidad', 'actualizar especialidadmedicos', 'actualizar medicos',
             // BORRAR
-            'borrar personas', 'borrar nacionalidad', 'borrar usuario', 'borrar pacientes', 'borrar centromedico', 'borrar medicocentromedico', 'borrar enfermedades',
+            'borrar personas', 'borrar nacionalidad', 'borrar usuario', 'borrar pacientes', 'borrar centromedico', 'borrar medicocentromedico', 'borrar enfermedades', 'borrar especialidad', 'borrar especialidadmedicos', 'borrar medicos',
         ]);
 
         $roleAdminNacionalidades = Role::create(['name' => 'admin nacionalidades']);
