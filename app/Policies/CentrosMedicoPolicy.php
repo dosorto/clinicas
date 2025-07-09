@@ -2,27 +2,26 @@
 
 namespace App\Policies;
 
-use App\Models\Persona;
+use App\Models\Centros_Medico;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
-class PersonaPolicy
+class CentrosMedicoPolicy
 {
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('ver personas');
+        return $user->can('ver centromedico');
     }
 
     /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Persona $persona): bool
+    public function view(User $user, Centros_medico $centrosMedico): bool
     {
-        return $user->can('ver personas');
-        //return false;
+        return $user->can('ver centromedico');
     }
 
     /**
@@ -30,29 +29,29 @@ class PersonaPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('crear personas');
+        return $user->can('crear centromedico');
     }
 
     /**
      * Determine whether the user can update the model.
      */
-    public function update(User $user, Persona $persona): bool
+    public function update(User $user, Centros_medico $centrosMedico): bool
     {
-        return $user->can('actualizar personas');
+        return $user->can('actualizar centromedico');
     }
 
     /**
      * Determine whether the user can delete the model.
      */
-    public function delete(User $user, Persona $persona): bool
+    public function delete(User $user, Centros_medico $centrosMedico): bool
     {
-        return $user->can('borrar personas');
+        return $user->can('borrar centromedico');
     }
 
     /**
      * Determine whether the user can restore the model.
      */
-    public function restore(User $user, Persona $persona): bool
+    public function restore(User $user, Centros_medico $centrosMedico): bool
     {
         return false;
     }
@@ -60,7 +59,7 @@ class PersonaPolicy
     /**
      * Determine whether the user can permanently delete the model.
      */
-    public function forceDelete(User $user, Persona $persona): bool
+    public function forceDelete(User $user, Centros_medico $centrosMedico): bool
     {
         return false;
     }

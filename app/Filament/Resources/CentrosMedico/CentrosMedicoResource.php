@@ -19,10 +19,10 @@ class CentrosMedicoResource extends Resource
 
     protected static ?string $modelLabel = 'Centro Médico';
 
-    public static function shouldRegisterNavigation(): bool
+    /*public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->can('Crear CentroMedico');
-    }
+    }*/
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form

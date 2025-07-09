@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Traits\TenantScoped; // Assuming you have a TenantScope trait for tenant scopi
 
 class Persona extends Model
 {
     /** @use HasFactory<\Database\Factories\PersonaFactory> */
     use HasFactory;
     use SoftDeletes;
+    use TenantScoped; // Assuming you have a TenanScope trait for tenant scoping
 
     protected $fillable = [
         'primer_nombre',
@@ -55,27 +57,8 @@ class Persona extends Model
         return $this->hasOne(User::class, 'persona_id');
     }
    
-    protected static function booted()
+    Public function centro(): BelongsTo
     {
-        parent::booted();
-        static::creating(function ($model) {
-            if (auth()->check()) {
-                $model->created_by = auth()->id();
-            }
-            if (empty($model->centro_id)) {
-            $model->centro_id = \Spatie\Multitenancy\Models\Tenant::current()?->centro_id;
-            }
-        });
-        static::updating(function ($model) {
-            if (auth()->check()) {
-                $model->updated_by = auth()->id();
-            }
-        });
-        static::deleting(function ($model) {
-            if (auth()->check()) {
-                $model->deleted_by = auth()->id();
-                $model->save();
-            }
-        });
+        return $this->belongsTo(Centros_Medico::class, 'centro_id');
     }
 }

@@ -13,6 +13,15 @@ class PersonaSeeder extends Seeder
      */
     public function run(): void
     {
-        Persona::factory()->count(20)->create();
+        // Obtener el primer centro médico creado
+        $centro = \App\Models\Centros_Medico::first();
+        if ($centro) {
+            Persona::factory()->count(20)->create([
+                'centro_id' => $centro->id,
+            ]);
+        } else {
+            // Si no hay centro, crea sin centro_id (no recomendado)
+            Persona::factory()->count(20)->create();
+        }
     }
 }

@@ -17,7 +17,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
-use App\Models\Tenant;
 use Illuminate\Support\Facades\Storage;
 
 class PersonaResource extends Resource
@@ -63,11 +62,7 @@ class PersonaResource extends Resource
                     ->maxSize(2048)
                     ->deleteUploadedFileUsing(fn ($file) => Storage::disk('public')->delete($file))
                     ->nullable(),
-                Forms\Components\Hidden::make('centro_id')
-                    ->default(function () {
-                        $tenant = Tenant::current();
-                        return $tenant?->centro_id;
-                    })
+                // El campo centro_id se asigna automáticamente en el modelo, no es necesario en el formulario
             ]);
     }
 
@@ -114,14 +109,9 @@ class PersonaResource extends Resource
     }
 
     // Controlar quién puede eliminar según permiso
-    public static function canDelete(
-        \Illuminate\Database\Eloquent\Model $record
-    ): bool {
-        return auth()->user()?->can('borrar personas');
-    }
+    
 
-    public static function canDeleteAny(): bool
-    {
-        return auth()->user()?->can('borrar personas');
-    }
+    // app/Filament/Resources/PersonaResource.php
+
+    // El filtrado por centro_id se realiza automáticamente por el scope global en el modelo
 }

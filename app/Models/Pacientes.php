@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Traits\TenantScoped; 
 
 class Pacientes extends Model
 {
     /** @use HasFactory<\Database\Factories\PacientesFactory> */
     use HasFactory;
     use SoftDeletes;
+    use TenantScoped;
 
     protected $fillable = [
         'persona_id',
@@ -46,6 +48,11 @@ class Pacientes extends Model
         return $this->hasMany(Receta::class, 'paciente_id');
     }
 
+    public function centro(): BelongsTo
+    {
+        return $this->belongsTo(Centros_Medico::class, 'centro_id');
+    }
+
     // CORRECCIÓN: Nombre correcto de la tabla y campos pivot
     public function enfermedades(): BelongsToMany
     {
@@ -54,29 +61,5 @@ class Pacientes extends Model
                     ->withTimestamps();
     }
 
-    protected static function booted()
-    {
-        parent::booted();
-        static::creating(function ($model) {
-            if (auth()->check()) {
-                $model->created_by = auth()->id();
-            }
-        });
-        static::updating(function ($model) {
-            if (auth()->check()) {
-                $model->updated_by = auth()->id();
-            }
-        });
-        static::deleting(function ($model) {
-            if (auth()->check()) {
-                $model->deleted_by = auth()->id();
-                $model->save();
-            }
-        });
-        static::addGlobalScope('centro', function ($query) {
-            if (auth()->check() && !auth()->user()->hasRole('root')) {
-                $query->where('centro_id', auth()->user()->centro_id);
-                }   
-            });
-    }
+    
 }

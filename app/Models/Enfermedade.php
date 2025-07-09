@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Enfermedades_Paciente;
+use App\Models\Traits\TenantScoped;
+
 
 
 class Enfermedade extends Model
@@ -14,6 +16,7 @@ class Enfermedade extends Model
     /** @use HasFactory<\Database\Factories\EnfermedadeFactory> */
     use HasFactory;
     use SoftDeletes;
+    use TenantScoped;
 
     protected $fillable = [
         'enfermedades',
@@ -44,27 +47,6 @@ class Enfermedade extends Model
     public function enfermedades_paciente()
     {
         return $this->hasMany(Enfermedades_Paciente::class, 'enfermedad_id');
-    }
-
-    protected static function boot()
-    {
-       parent::booted();
-        static::creating(function ($model) {
-            if (auth()->check()) {
-                $model->created_by = auth()->id();
-                }
-            });
-        static::updating(function ($model) {
-            if (auth()->check()) {
-                $model->updated_by = auth()->id();
-                }
-            });
-        static::deleting(function ($model) {
-            if (auth()->check()) {
-                $model->deleted_by = auth()->id();
-                $model->save();
-             }
-            });
     }
     
 }
