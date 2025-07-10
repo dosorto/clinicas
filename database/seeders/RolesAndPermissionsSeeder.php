@@ -115,5 +115,10 @@ class RolesAndPermissionsSeeder extends Seeder
         $roleAdminConsultas = Role::create(['name' => 'admin consultas']);
         $roleAdminConsultas->givePermissionTo(['crear consultas', 'ver consultas', 'actualizar consultas', 'borrar consultas']);
 
+        $roleAdminConsultas = Role::create(['name' => 'admin medicocentromedico']);
+        $roleAdminConsultas->givePermissionTo(['crear medicocentromedico', 'ver medicocentromedico', 'actualizar medicocentromedico', 'borrar medicocentromedico']);
+
+        $roleAdminCentrosMedicos = Role::create(['name' => 'admin centromedico']);
+        $roleAdminCentrosMedicos->givePermissionTo(['crear centromedico', 'ver centromedico', 'actualizar centromedico', 'borrar centromedico']);
     }
 }
