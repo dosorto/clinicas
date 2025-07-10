@@ -41,10 +41,12 @@ class Pacientes extends Model
         });
 
         static::addGlobalScope('centro', function ($query) {
-            if (\Illuminate\Support\Facades\Auth::check() && !in_array('root', \Illuminate\Support\Facades\Auth::user()->roles ?? [])) {
-                $query->where('centro_id', \Illuminate\Support\Facades\Auth::user()->centro_id);
-            }
-        });
+     $user = \Illuminate\Support\Facades\Auth::user();
+    
+        if ($user && !$user->roles->contains('name', 'root')) {
+        $query->where('centro_id', $user->centro_id);
+         }
+     });
     }
 
     protected $fillable = [
