@@ -231,7 +231,9 @@ class PacientesResource extends Resource
                             Forms\Components\Textarea::make('tratamiento')
                                 ->label('Tratamiento')
                                 ->rows(3)
-                                ->columnSpanFull(),
+                                ->columnSpanFull()
+                                ->required() 
+                                ->dehydrated(true)
                         ])
                         ->columns(2)
                         ->afterValidation(function (callable $get) {
@@ -239,6 +241,7 @@ class PacientesResource extends Resource
                             $requiredFields = [
                                 'enfermedad_id' => 'Enfermedad',
                                 'fecha_diagnostico' => 'Fecha de Diagnóstico',
+                                'tratamiento' => 'Tratamiento',
                             ];
                             
                             $missingFields = [];
