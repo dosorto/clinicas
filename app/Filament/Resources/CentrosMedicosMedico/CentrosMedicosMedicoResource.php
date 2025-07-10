@@ -26,7 +26,7 @@ class CentrosMedicosMedicoResource extends Resource
         return auth()->user()?->can('crear MedicoCentroMedico');
     }*/
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-plus-circle';
 
     public static function form(Form $form): Form
     {
