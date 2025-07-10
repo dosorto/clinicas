@@ -17,6 +17,7 @@ class CentrosMedicoSeeder extends Seeder
             'nombre_centro' => 'Hospital SL',
             'direccion' => 'Choluteca',
             'telefono' => '123',
+            'rtn' => '123456789',
         ]);
 
         \App\Models\Tenant::firstOrCreate([

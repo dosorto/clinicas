@@ -22,6 +22,7 @@ class Centros_Medico extends Model
         'nombre_centro',
         'direccion',
         'telefono',
+        'rtn',
         'fotografia',
     ];
 
