@@ -95,10 +95,10 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         $roleAdminNacionalidades = Role::create(['name' => 'admin nacionalidades']);
-        $roleAdminNacionalidades->givePermissionTo(['crear nacionalidad']);
+        $roleAdminNacionalidades->givePermissionTo(['crear nacionalidad', 'ver nacionalidad', 'actualizar nacionalidad', 'borrar nacionalidad']);
 
         $roleAdminPersonas = Role::create(['name' => 'admin personas']);
-        $roleAdminPersonas->givePermissionTo(['crear personas', 'ver personas']);
+        $roleAdminPersonas->givePermissionTo(['crear personas', 'ver personas', 'actualizar personas', 'borrar personas']);
         
         $roleAdminPacientes = Role::create(['name' => 'admin pacientes']);
         $roleAdminPacientes->givePermissionTo(['crear pacientes', 'ver pacientes', 'actualizar pacientes', 'borrar pacientes']);
