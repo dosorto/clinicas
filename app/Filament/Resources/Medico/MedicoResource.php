@@ -268,26 +268,27 @@ Tables\Actions\DeleteAction::make()
     }
 
     public static function handleMedicoCreation(array $data): Medico
-    {
-        DB::beginTransaction();
+    { DB::beginTransaction();
+    
+    try {
+        // Verificar si la persona ya existe primero
+        $persona = Persona::where('dni', $data['dni'])->first();
         
-        try {
-            // Crear o actualizar persona
-            $persona = Persona::updateOrCreate(
-                ['dni' => $data['dni']],
-                [
-                    'primer_nombre' => $data['primer_nombre'],
-                    'segundo_nombre' => $data['segundo_nombre'] ?? null,
-                    'primer_apellido' => $data['primer_apellido'],
-                    'segundo_apellido' => $data['segundo_apellido'] ?? null,
-                    'telefono' => $data['telefono'] ?? null,
-                    'direccion' => $data['direccion'] ?? null,
-                    'sexo' => $data['sexo'],
-                    'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-                    'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
-                ]
-            );
-
+        if (!$persona) {
+            // Crear nueva persona solo si no existe
+            $persona = Persona::create([
+                'dni' => $data['dni'],
+                'primer_nombre' => $data['primer_nombre'],
+                'segundo_nombre' => $data['segundo_nombre'] ?? null,
+                'primer_apellido' => $data['primer_apellido'],
+                'segundo_apellido' => $data['segundo_apellido'] ?? null,
+                'telefono' => $data['telefono'] ?? null,
+                'direccion' => $data['direccion'] ?? null,
+                'sexo' => $data['sexo'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+                'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
+            ]);
+        }
             // Crear o actualizar médico
             $medico = Medico::updateOrCreate(
                 ['persona_id' => $persona->id],

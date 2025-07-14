@@ -22,6 +22,7 @@ use App\Models\Medico;
 use App\Models\Pacientes;
 use App\Models\Consulta;
 
+
 class ExamenesResource extends Resource
 {
     protected static ?string $model            = Examenes::class;
@@ -47,18 +48,26 @@ class ExamenesResource extends Resource
                 ->searchable()
                 ->required(),
 
-              Select::make('consulta_id')
-                ->label('Consulta')
-                ->options(function () {
-                    return Consulta::with(['cita', 'paciente.persona'])
-                        ->get()
-                        ->mapWithKeys(fn ($c) => [
-                            $c->id => "Consulta #{$c->id} – {$c->cita->fecha->format('d/m/Y')} ({$c->paciente->persona->primer_nombre})",
-                        ])
-                        ->toArray();
-                })
-                ->searchable()
-                ->required(),
+             Select::make('consulta_id')
+    ->label('Consulta')
+    ->options(function () {
+        return Consulta::with(['cita', 'paciente.persona'])
+            ->get()
+            ->mapWithKeys(function ($c) {
+                // Verificar si existe la relación cita y si fecha es un objeto Carbon
+                $fecha = optional($c->cita)->fecha;
+                $fechaFormateada = $fecha instanceof \Carbon\Carbon 
+                    ? $fecha->format('d/m/Y') 
+                    : 'Sin fecha';
+                
+                return [
+                    $c->id => "Consulta #{$c->id} – {$fechaFormateada} ({$c->paciente->persona->primer_nombre})",
+                ];
+            })
+            ->toArray();
+    })
+    ->searchable()
+    ->required(),
 
                 Select::make('medico_id')
                     ->label('Médico')
