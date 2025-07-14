@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Traits\TenantScoped; 
 
 class Medico extends Model
 {
     use HasFactory;
     use SoftDeletes;
+    use TenantScoped; // Trait para el multi-tenant
 
 protected $table = 'medicos';
 

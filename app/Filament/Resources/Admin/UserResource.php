@@ -36,7 +36,12 @@ class UserResource extends Resource
     return $form
         ->schema([
             TextInput::make('name')->required(),
-            TextInput::make('email')->email()->required(),
+            TextInput::make('email')
+                ->email()
+                ->required()
+                ->unique(ignoreRecord: true),
+
+
             TextInput::make('password')
                 ->password()
                 ->required(fn($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)

@@ -11,7 +11,7 @@ class CentrosMedicosMedico
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('ver enfermedades');
+        return $user->can('ver medicocentromedico');
     }
 
     /**

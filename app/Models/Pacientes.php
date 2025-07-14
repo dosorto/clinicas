@@ -13,6 +13,7 @@ use App\Models\Traits\TenantScoped;
 class Pacientes extends Model
 {
     use HasFactory, SoftDeletes;
+    use TenantScoped; // Trait para el multi-tenant
 
     protected static function booted()
     {
