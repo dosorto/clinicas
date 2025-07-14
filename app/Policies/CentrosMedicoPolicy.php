@@ -13,7 +13,7 @@ class CentrosMedicoPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('ver centromedico');
+        return $user->hasRole('root');
     }
 
     /**
@@ -21,7 +21,7 @@ class CentrosMedicoPolicy
      */
     public function view(User $user, Centros_medico $centrosMedico): bool
     {
-        return $user->can('ver centromedico');
+        return $user->hasRole('root');
     }
 
     /**
@@ -29,7 +29,7 @@ class CentrosMedicoPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('crear centromedico');
+        return $user->hasRole('root');
     }
 
     /**
@@ -37,7 +37,7 @@ class CentrosMedicoPolicy
      */
     public function update(User $user, Centros_medico $centrosMedico): bool
     {
-        return $user->can('actualizar centromedico');
+        return $user->hasRole('root');
     }
 
     /**
@@ -45,7 +45,7 @@ class CentrosMedicoPolicy
      */
     public function delete(User $user, Centros_medico $centrosMedico): bool
     {
-        return $user->can('borrar centromedico');
+        return $user->hasRole('root');
     }
 
     /**

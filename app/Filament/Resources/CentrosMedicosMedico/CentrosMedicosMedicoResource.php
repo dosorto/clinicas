@@ -35,11 +35,11 @@ class CentrosMedicosMedicoResource extends Resource
             ->label('Médico')
             ->options(
                 Medico::with('persona')->get()->mapWithKeys(function ($medico) {
-                    $persona = $medico->persona;
+                    if (!$medico->persona) return [];
                     return [
-                        $medico->id => "{$persona->primer_nombre} {$persona->primer_apellido}"
+                        $medico->id => optional($medico->persona)->primer_nombre . ' ' . optional($medico->persona)->primer_apellido
                     ];
-                })
+                })->filter()
             )
             ->searchable()
             ->required(),
@@ -67,12 +67,17 @@ class CentrosMedicosMedicoResource extends Resource
     {
         return $table
         ->columns([
-            Tables\Columns\TextColumn::make('medico_id')
+            Tables\Columns\TextColumn::make('medico.persona.primer_nombre')
                 ->label('Médico')
-                ->formatStateUsing(function ($state) {
-                    $medico = \App\Models\Medico::with('persona')->find($state);
-                    if (!$medico || !$medico->persona) return 'No definido';
-                    return $medico->persona->primer_nombre . ' ' . $medico->persona->primer_apellido;
+                ->formatStateUsing(function ($state, $record) {
+                    if (!$record->medico?->persona) return 'No definido';
+                    return $record->medico->persona->primer_nombre . ' ' . $record->medico->persona->primer_apellido;
+                })
+                ->searchable(query: function (Builder $query, string $search) {
+                    return $query->whereHas('medico.persona', function ($query) use ($search) {
+                        $query->where('primer_nombre', 'like', "%{$search}%")
+                              ->orWhere('primer_apellido', 'like', "%{$search}%");
+                    });
                 }),
 
             Tables\Columns\TextColumn::make('centro_medico_id')
@@ -116,5 +121,13 @@ class CentrosMedicosMedicoResource extends Resource
             'edit' => Pages\EditCentrosMedicosMedico::route('/{record}/edit'),
         ];
         
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['medico.persona', 'centro_medico'])
+            ->whereHas('medico.persona')
+            ->whereHas('centro_medico');
     }
 }

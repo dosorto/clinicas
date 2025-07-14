@@ -85,11 +85,11 @@ class RolesAndPermissionsSeeder extends Seeder
         $roleAdmin = Role::create(['name' => 'root']);
         $roleAdmin->givePermissionTo([
             // VER
-            'ver personas', 'ver nacionalidad', 'ver usuario', 'ver pacientes', 'ver medicocentromedico', 'ver enfermedades', 'ver centromedico', 'ver especialidad', 'ver especialidadmedicos', 'ver medicos', 'ver enfermedades_pacientes', 'ver recetas', 'ver consultas', 'ver medicocentromedico', 'ver centromedico',
+            'ver personas', 'ver nacionalidad', 'ver usuario', 'ver pacientes', 'ver medicocentromedico', 'ver enfermedades', 'ver centromedico', 'ver especialidad', 'ver especialidadmedicos', 'ver medicos', 'ver enfermedades_pacientes', 'ver recetas', 'ver consultas',
             // CREAR
             'crear personas', 'crear nacionalidad', 'crear usuario', 'crear pacientes', 'crear medicocentromedico', 'crear centromedico', 'crear enfermedades', 'crear especialidad', 'crear especialidadmedicos', 'crear medicos', 'crear enfermedades_pacientes', 'crear recetas', 'crear consultas',
             // ACTUALIZAR
-            'actualizar personas', 'actualizar nacionalidad', 'actualizar usuario', 'actualizar pacientes', 'actualizar medicocentromedico', 'actualizar enfermedades', 'actualizar centromedico', 'actualizar especialidad', 'actualizar especialidadmedicos', 'actualizar medicos','actualizar enfermedades_pacientes', 'actualizar recetas', 'actualizar consultas', 'actualizar medicocentromedico', 'actualizar centromedico', 'actualizar medicocentromedico',
+            'actualizar personas', 'actualizar nacionalidad', 'actualizar usuario', 'actualizar pacientes', 'actualizar medicocentromedico', 'actualizar centromedico', 'actualizar enfermedades', 'actualizar especialidad', 'actualizar especialidadmedicos', 'actualizar medicos', 'actualizar enfermedades_pacientes', 'actualizar recetas', 'actualizar consultas',
             // BORRAR
             'borrar personas', 'borrar nacionalidad', 'borrar usuario', 'borrar pacientes', 'borrar centromedico', 'borrar medicocentromedico', 'borrar enfermedades', 'borrar especialidad', 'borrar especialidadmedicos', 'borrar medicos', 'borrar enfermedades_pacientes', 'borrar recetas', 'borrar consultas', 'borrar medicocentromedico', 'borrar centromedico',
         ]);
@@ -118,7 +118,6 @@ class RolesAndPermissionsSeeder extends Seeder
         $roleAdminConsultas = Role::create(['name' => 'admin medicocentromedico']);
         $roleAdminConsultas->givePermissionTo(['crear medicocentromedico', 'ver medicocentromedico', 'actualizar medicocentromedico', 'borrar medicocentromedico']);
 
-        $roleAdminCentrosMedicos = Role::create(['name' => 'admin centromedico']);
-        $roleAdminCentrosMedicos->givePermissionTo(['crear centromedico', 'ver centromedico', 'actualizar centromedico', 'borrar centromedico']);
+
     }
 }

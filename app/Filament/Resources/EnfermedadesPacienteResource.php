@@ -21,12 +21,14 @@ class EnfermedadesPacienteResource extends Resource
     protected static ?string $model = Enfermedades__Paciente::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-    
     protected static ?string $navigationLabel = 'Enfermedades de Pacientes';
-    
     protected static ?string $modelLabel = 'Enfermedad de Paciente';
-    
     protected static ?string $pluralModelLabel = 'Enfermedades de Pacientes';
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return auth()->user()->can('ver enfermedades_pacientes');
+    }
 
     public static function form(Form $form): Form
     {
@@ -34,7 +36,11 @@ class EnfermedadesPacienteResource extends Resource
             ->schema([
                 Forms\Components\Select::make('paciente_id')
                     ->label('Paciente')
-                    ->relationship('paciente')
+                    ->relationship('paciente', 'id', function ($query) {
+                        return $query->whereHas('persona', function ($q) {
+                            $q->where('centro_id', auth()->user()->centro_id);
+                        });
+                    })
                     ->getOptionLabelFromRecordUsing(fn ($record) => $record->persona->nombre_completo)
                     ->searchable()
                     ->preload()
@@ -159,6 +165,7 @@ class EnfermedadesPacienteResource extends Resource
     {
         return parent::getEloquentQuery()
             ->with(['paciente.persona', 'enfermedad', 'createdBy', 'updatedBy'])
+            ->where('centro_id', auth()->user()->centro_id)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

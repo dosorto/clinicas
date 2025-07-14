@@ -18,11 +18,13 @@ class CentrosMedicoResource extends Resource
     protected static ?string $model = Centros_Medico::class;
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
     protected static ?string $modelLabel = 'Centro Médico';
-
-    /*public static function shouldRegisterNavigation(): bool
+    
+    public static function canViewAny(): bool
     {
-        return auth()->user()?->can('Crear CentroMedico');
-    }*/
+        return auth()->user()->hasRole('root');
+    }
+
+    
 
     public static function form(Form $form): Form
     {
