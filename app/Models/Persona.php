@@ -7,14 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Traits\TenantScoped; // Assuming you have a TenantScope trait for tenant scopi
 
 class Persona extends Model
 {
     /** @use HasFactory<\Database\Factories\PersonaFactory> */
     use HasFactory;
     use SoftDeletes;
-    use TenantScoped; // Assuming you have a TenanScope trait for tenant scoping
+    
 
     protected $fillable = [
         'primer_nombre',
@@ -28,7 +27,7 @@ class Persona extends Model
         'fecha_nacimiento',
         'nacionalidad_id',
         'fotografia',
-        'centro_id',
+        
         
     ];
 

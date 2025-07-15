@@ -2,9 +2,11 @@
 
 namespace App\Policies;
 
+use App\Models\Centros_Medicos_Medico;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
-class CentrosMedicosMedico
+class CentrosMedicosMedicoPolicy
 {
     /**
      * Create a new policy instance.
