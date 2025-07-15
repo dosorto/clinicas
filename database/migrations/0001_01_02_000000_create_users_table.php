@@ -22,9 +22,9 @@ return new class extends Migration
             $table->foreign("centro_id")->references("id")->on("centros_medicos");
 
             //Campos de log
-            $table->integer('created_by')->nullable()->change();
-            $table->integer('updated_by')->nullable()->change();
-            $table->integer('deleted_by')->nullable()->change();
+            $table->integer('created_by')->nullable();
+            $table->integer('updated_by')->nullable();
+            $table->integer('deleted_by')->nullable();
             $table->softDeletes();
 
         

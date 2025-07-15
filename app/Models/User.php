@@ -20,7 +20,7 @@ class User extends Authenticatable
     }
     public function centro()
     {
-    return $this->belongsTo(CentroMedico::class, 'centro_id');
+        return $this->belongsTo(Centros_Medico::class, 'centro_id');
     }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
@@ -34,8 +34,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'persona_id', // <-- agrégalo si lo necesitas
+        'persona_id',
         'created_by', // ID del usuario que creó el registro
+        'updated_by', // ID del usuario que actualizó el registro
         'centro_id', // ID del centro médico, puede ser nulo
         
     ];
@@ -61,5 +62,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    protected static function booted()
+    {
+        parent::booted();
+        
+        static::creating(function ($model) {
+            if (auth()->check()) {
+                $model->created_by = auth()->id();
+            }
+        });
+        
+        static::updating(function ($model) {
+            if (auth()->check()) {
+                $model->updated_by = auth()->id();
+            }
+        });
+        
+        static::deleting(function ($model) {
+            if (auth()->check()) {
+                $model->deleted_by = auth()->id();
+                $model->save();
+            }
+        });
     }
 }
