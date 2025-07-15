@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string("nombre_centro");
             $table->string("direccion");
             $table->string("telefono");
-            $table->string("rtn");
+            $table->string("rtn")->unique();
             $table->string("fotografia")->nullable();
             
             //  campos de logs

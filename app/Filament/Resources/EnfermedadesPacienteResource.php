@@ -21,6 +21,9 @@ class EnfermedadesPacienteResource extends Resource
     protected static ?string $model = Enfermedades__Paciente::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    protected static ?string $navigationGroup = 'Gestión de Enfermedades';
+    
     protected static ?string $navigationLabel = 'Enfermedades de Pacientes';
     protected static ?string $modelLabel = 'Enfermedad de Paciente';
     protected static ?string $pluralModelLabel = 'Enfermedades de Pacientes';

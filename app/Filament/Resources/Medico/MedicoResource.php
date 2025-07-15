@@ -23,6 +23,7 @@ class MedicoResource extends Resource
 {
     protected static ?string $model = Medico::class;
     protected static ?string $navigationIcon = 'heroicon-o-user-plus';
+    protected static ?string $navigationGroup = 'Gestión de Personas';
     protected static ?string $navigationLabel = 'Médicos';
     protected static ?string $modelLabel = 'Médico';
     protected static ?string $pluralModelLabel = 'Médicos';
