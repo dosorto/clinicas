@@ -22,6 +22,7 @@ class EspecialidadResource extends Resource
     // protected static ?string $navigationGroup = 'Configuraciones'; // Opcional: agrupa en el sidebar
     protected static ?string $createButtonLabel = 'Crear Especialidad';
     protected static ?string $pluralModelLabel = 'Especialidades';
+    protected static ?string $navigationGroup = 'Gestión de Catálogos';
 
     protected static ?string $model = Especialidad::class;
 

@@ -26,6 +26,7 @@ class PacientesResource extends Resource
     
     protected static ?string $model = Pacientes::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static ?string $navigationGroup = 'Gestión de Personas';
     protected static ?string $navigationLabel = 'Pacientes';
     protected static ?string $modelLabel = 'Paciente';
     protected static ?string $pluralModelLabel = 'Pacientes';

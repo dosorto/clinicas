@@ -28,6 +28,8 @@ class PersonaResource extends Resource
 
     protected static ?string $model = Persona::class;
 
+    protected static ?string $navigationGroup = 'Gestión de Personas';
+
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
