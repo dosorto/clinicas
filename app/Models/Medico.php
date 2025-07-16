@@ -20,6 +20,8 @@ protected $table = 'medicos';
     protected $fillable = [
         'persona_id',
         'numero_colegiacion',
+        'horario_entrada',
+        'horario_salida',
         'centro_id', // multi-tenant
     ];
 
