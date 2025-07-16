@@ -15,31 +15,32 @@ class CreateMedico extends CreateRecord
     protected static string $resource = MedicoResource::class;
     protected static ?string $title = 'Crear Médico';
 
-    protected function handleRecordCreation(array $data): Medico
-    {
-        // Primero creamos o actualizamos la persona
-        $persona = Persona::updateOrCreate(
-            ['dni' => $data['dni']],
-            [
-                'primer_nombre' => $data['primer_nombre'],
-                'segundo_nombre' => $data['segundo_nombre'] ?? null,
-                'primer_apellido' => $data['primer_apellido'],
-                'segundo_apellido' => $data['segundo_apellido'] ?? null,
-                'telefono' => $data['telefono'] ?? null,
-                'direccion' => $data['direccion'] ?? null,
-                'sexo' => $data['sexo'],
-                'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-                'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
-            ]
-        );
+protected function handleRecordCreation(array $data): Medico
+{
+    // Primero creamos o actualizamos la persona
+    $persona = Persona::updateOrCreate(
+        ['dni' => $data['dni']],
+        [
+            'primer_nombre' => $data['primer_nombre'],
+            'segundo_nombre' => $data['segundo_nombre'] ?? null,
+            'primer_apellido' => $data['primer_apellido'],
+            'segundo_apellido' => $data['segundo_apellido'] ?? null,
+            'telefono' => $data['telefono'] ?? null,
+            'direccion' => $data['direccion'] ?? null,
+            'sexo' => $data['sexo'],
+            'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+            'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
+        ]
+    );
 
-        // Luego creamos el médico asociado
-        return Medico::create([
-            'persona_id' => $persona->id,
-            'numero_colegiacion' => $data['numero_colegiacion']
-        ]);
-    }
-
+    // Luego creamos el médico asociado (incluyendo los horarios)
+    return Medico::create([
+        'persona_id' => $persona->id,
+        'numero_colegiacion' => $data['numero_colegiacion'],
+        'horario_entrada' => $data['horario_entrada'],  // Añade esta línea
+        'horario_salida' => $data['horario_salida']     // Añade esta línea
+    ]);
+}
     protected function getFormActions(): array
     {
         return [
