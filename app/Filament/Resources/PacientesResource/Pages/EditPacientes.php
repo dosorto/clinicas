@@ -28,18 +28,34 @@ class EditPacientes extends EditRecord
             $data['sexo'] = $persona->sexo;
             $data['fecha_nacimiento'] = $persona->fecha_nacimiento;
             $data['nacionalidad_id'] = $persona->nacionalidad_id;
-            $data['foto'] = $persona->foto;
+            
+            // Manejo mejorado de la fotografía
+            if ($persona->fotografia) {
+                // Asegurar que la ruta es correcta
+                $data['fotografia'] = $persona->fotografia;
+            }
         }
 
-        // Obtener la primera enfermedad del paciente (si existe)
+        // Obtener TODAS las enfermedades del paciente
+        $enfermedadesData = [];
         if ($this->record->enfermedades->isNotEmpty()) {
-            $enfermedad = $this->record->enfermedades->first();
-            $pivot = $enfermedad->pivot;
-            
-            $data['enfermedad_id'] = $enfermedad->id;
-            $data['fecha_diagnostico'] = $pivot->fecha_diagnostico;
-            $data['tratamiento'] = $pivot->tratamiento;
+            foreach ($this->record->enfermedades as $enfermedad) {
+                $pivot = $enfermedad->pivot;
+                
+                // Extraer el año de la fecha de diagnóstico
+                $anoDiagnostico = $pivot->fecha_diagnostico ? 
+                    date('Y', strtotime($pivot->fecha_diagnostico)) : 
+                    date('Y');
+                
+                $enfermedadesData[] = [
+                    'enfermedad_id' => $enfermedad->id,
+                    'ano_diagnostico' => $anoDiagnostico,
+                    'tratamiento' => $pivot->tratamiento,
+                ];
+            }
         }
+        
+        $data['enfermedades_data'] = $enfermedadesData;
 
         return $data;
     }
@@ -49,8 +65,8 @@ class EditPacientes extends EditRecord
         DB::beginTransaction();
 
         try {
-            // 1. Actualizar datos de la persona
-            $record->persona->update([
+            // Preparar datos de la persona
+            $personaData = [
                 'primer_nombre' => $data['primer_nombre'],
                 'segundo_nombre' => $data['segundo_nombre'],
                 'primer_apellido' => $data['primer_apellido'],
@@ -60,9 +76,16 @@ class EditPacientes extends EditRecord
                 'sexo' => $data['sexo'],
                 'fecha_nacimiento' => $data['fecha_nacimiento'],
                 'nacionalidad_id' => $data['nacionalidad_id'],
-                'foto' => $data['foto'] ?? null,
                 'updated_by' => Auth::id(),
-            ]);
+            ];
+
+            // Solo actualizar la fotografía si se proporcionó una nueva
+            if (isset($data['fotografia']) && $data['fotografia']) {
+                $personaData['fotografia'] = $data['fotografia'];
+            }
+
+            // 1. Actualizar datos de la persona
+            $record->persona->update($personaData);
 
             // 2. Actualizar el paciente
             $record->update([
@@ -70,18 +93,34 @@ class EditPacientes extends EditRecord
                 'contacto_emergencia' => $data['contacto_emergencia'],
             ]);
 
-            // 3. Sincronizar enfermedades - CORRECCIÓN AQUÍ
+            // 3. Sincronizar enfermedades - SISTEMA DE MÚLTIPLES ENFERMEDADES SIN DUPLICADOS
             $record->enfermedades()->detach();
             
-            if (isset($data['enfermedad_id'])) {
-                $record->enfermedades()->attach($data['enfermedad_id'], [
-                    'fecha_diagnostico' => $data['fecha_diagnostico'],
-                    'tratamiento' => $data['tratamiento'] ?? null,
-                    'created_by' => Auth::id(),
-                    'updated_by' => Auth::id(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            if (isset($data['enfermedades_data']) && is_array($data['enfermedades_data'])) {
+                $enfermedadesSeleccionadas = [];
+                
+                foreach ($data['enfermedades_data'] as $enfermedadData) {
+                    if (isset($enfermedadData['enfermedad_id'])) {
+                        // Verificar duplicados
+                        if (in_array($enfermedadData['enfermedad_id'], $enfermedadesSeleccionadas)) {
+                            continue; // Saltar enfermedad duplicada
+                        }
+                        
+                        $enfermedadesSeleccionadas[] = $enfermedadData['enfermedad_id'];
+                        
+                        // Convertir año a fecha completa (1 de enero del año)
+                        $fechaDiagnostico = $enfermedadData['ano_diagnostico'] . '-01-01';
+                        
+                        $record->enfermedades()->attach($enfermedadData['enfermedad_id'], [
+                            'fecha_diagnostico' => $fechaDiagnostico,
+                            'tratamiento' => $enfermedadData['tratamiento'] ?? null,
+                            'created_by' => Auth::id(),
+                            'updated_by' => Auth::id(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
