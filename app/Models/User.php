@@ -87,4 +87,67 @@ class User extends Authenticatable
             }
         });
     }
+
+    /**
+     * Verifica si el usuario puede acceder a un centro específico
+     */
+    public function canAccessCentro($centroId): bool
+    {
+        // Root puede acceder a cualquier centro
+        if ($this->hasRole('root')) {
+            return true;
+        }
+        
+        // Usuarios normales solo pueden acceder a su centro asignado
+        return $this->centro_id == $centroId;
+    }
+
+    /**
+     * Establece el tenant actual para el usuario
+     */
+    public function switchToTenant($centroId): bool
+    {
+        if (!$this->canAccessCentro($centroId)) {
+            return false;
+        }
+
+        $tenant = \App\Models\Tenant::where('centro_id', $centroId)->first();
+        if ($tenant) {
+            $tenant->makeCurrent();
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Obtiene todos los centros a los que el usuario puede acceder
+     */
+    public function getAccessibleCentros()
+    {
+        if ($this->hasRole('root')) {
+            return \App\Models\Centros_Medico::all();
+        }
+        
+        return \App\Models\Centros_Medico::where('id', $this->centro_id)->get();
+    }
+
+    /**
+     * Obtiene los roles del usuario para un centro específico
+     */
+    public function getRolesForCentro($centroId)
+    {
+        // Si es root, tiene todos los permisos
+        if ($this->hasRole('root')) {
+            return $this->roles;
+        }
+
+        // Si no puede acceder al centro, no tiene roles
+        if (!$this->canAccessCentro($centroId)) {
+            return collect();
+        }
+
+        // Retorna los roles del usuario (podrías extender esto para roles específicos por centro)
+        return $this->roles;
+    }
 }

@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        $middleware->alias([
+            'tenant.switcher' => \App\Http\Middleware\TenantSwitcher::class,
+            'centro.switch' => \App\Http\Middleware\HandleCentroSwitch::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
