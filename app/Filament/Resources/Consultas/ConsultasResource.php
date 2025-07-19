@@ -39,7 +39,7 @@ class ConsultasResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form    
+        return $form
             ->schema([
                 // El campo centro_id se asigna automáticamente y se oculta
              Forms\Components\Hidden::make('centro_id')
@@ -275,21 +275,22 @@ class ConsultasResource extends Resource
                             ->placeholder('Sin observaciones'),
                     ]),
 
-                Infolists\Components\Section::make('Información de Sistema')
-                    ->schema([
-                        Infolists\Components\Grid::make(2)
-                            ->schema([
-                                Infolists\Components\TextEntry::make('updated_at')
-                                    ->label('Última Actualización')
-                                    ->dateTime(),
+                // Sección de información del sistema ocultada por solicitud del usuario
+                // Infolists\Components\Section::make('Información de Sistema')
+                //     ->schema([
+                //         Infolists\Components\Grid::make(2)
+                //             ->schema([
+                //                 Infolists\Components\TextEntry::make('updated_at')
+                //                     ->label('Última Actualización')
+                //                     ->dateTime(),
 
-                                Infolists\Components\TextEntry::make('deleted_at')
-                                    ->label('Fecha de Eliminación')
-                                    ->dateTime()
-                                    ->placeholder('No eliminado'),
-                            ]),
-                    ])
-                    ->collapsible(),
+                //                 Infolists\Components\TextEntry::make('deleted_at')
+                //                     ->label('Fecha de Eliminación')
+                //                     ->dateTime()
+                //                     ->placeholder('No eliminado'),
+                //             ]),
+                //     ])
+                //     ->collapsible(),
             ]);
     }
 
@@ -304,7 +305,8 @@ class ConsultasResource extends Resource
     {
         return [
             'index' => Pages\ListConsultas::route('/'),
-            'create' => Pages\CreateConsultas::route('/create'),
+            'create' => Pages\CreateConsultaWithPatientSearch::route('/create'),
+            'create-simple' => Pages\CreateConsultas::route('/create-simple'),
             'edit' => Pages\EditConsultas::route('/{record}/edit'),
         ];
     }
