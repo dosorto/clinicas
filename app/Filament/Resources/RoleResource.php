@@ -81,7 +81,16 @@ class RoleResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery();
+        $query = parent::getEloquentQuery();
+        
+        // Si el usuario no es root, excluimos el rol root
+        if (!auth()->user()?->hasRole('root')) {
+            return $query->where(function ($query) {
+                $query->where('name', '!=', 'root');
+            });
+        }
+        
+        return $query;
     }
 
     public static function canViewAny(): bool
@@ -89,6 +98,8 @@ class RoleResource extends Resource
         $user = auth()->user();
         return $user && ($user->hasRole('root') || $user->hasRole('superadmin'));
     }
+
+   
 
     
 }

@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 
 
 class User extends Authenticatable
@@ -67,7 +68,9 @@ class User extends Authenticatable
     protected static function booted()
     {
         parent::booted();
-        
+
+         
+
         static::creating(function ($model) {
             if (auth()->check()) {
                 $model->created_by = auth()->id();
@@ -150,4 +153,16 @@ class User extends Authenticatable
         // Retorna los roles del usuario (podrías extender esto para roles específicos por centro)
         return $this->roles;
     }
+
+    public function scopeHideRoot($query)
+    {
+        if (!auth()->user()?->hasRole('root')) {
+            return $query->whereDoesntHave('roles', function ($query) {
+                $query->where('name', 'root');
+            });
+        }
+        return $query;
+    }
+
+   
 }

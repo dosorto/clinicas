@@ -27,9 +27,27 @@ class Persona extends Model
         'fecha_nacimiento',
         'nacionalidad_id',
         'fotografia',
-        
-        
     ];
+
+    public static function boot()
+    {
+        parent::boot();
+        
+        static::saving(function ($model) {
+            $query = static::where('dni', $model->dni);
+            
+            if ($model->exists) {
+                $query->where('id', '!=', $model->id);
+            }
+            
+            if ($query->exists()) {
+                throw new \Illuminate\Validation\ValidationException(
+                    validator([], []), 
+                    ['dni' => 'El DNI ya está en uso.']
+                );
+            }
+        });
+    }
 
     public function getNombreCompletoAttribute()
     {
