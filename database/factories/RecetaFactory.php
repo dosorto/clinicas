@@ -23,7 +23,7 @@ class RecetaFactory extends Factory
             'consulta_id' => $this->faker->numberBetween(1, 10),
             'medicamentos' => $this->faker->word(),
             'indicaciones' => $this->faker->word(),
-            'created_by' => 1,
+            
         ];
     }
 }

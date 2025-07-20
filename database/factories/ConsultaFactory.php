@@ -24,7 +24,7 @@ class ConsultaFactory extends Factory
             'diagnostico' => $this->faker->word(),
             'tratamiento' => $this->faker->word(),
             'observaciones' => $this->faker->word(),
-            'created_by' => 1,
+            
             
         ];
     }

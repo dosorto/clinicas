@@ -19,8 +19,7 @@ class MedicoFactory extends Factory
         return [
         'persona_id'         => $this->faker->numberBetween(1, 20),
         'numero_colegiacion' => $this->faker->unique()->numerify('COL-#####'),
-        'created_at'         => now(),
-        'updated_at'         => now(),
+        
         ];
     }
 }

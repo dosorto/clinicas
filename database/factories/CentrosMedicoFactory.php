@@ -21,7 +21,7 @@ class CentrosMedicoFactory extends Factory
             'direccion' => $this->faker->name(),
             'telefono' => $this->faker->name(),
             'fotografia' => $this->faker->name(),
-            'created_by' =>1,
+            
         ];
     }
 }

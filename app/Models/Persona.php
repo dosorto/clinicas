@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Persona extends Model
+class Persona extends ModeloBase
 {
     /** @use HasFactory<\Database\Factories\PersonaFactory> */
     use HasFactory;
@@ -27,12 +27,16 @@ class Persona extends Model
         'fecha_nacimiento',
         'nacionalidad_id',
         'fotografia',
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
-    public static function boot()
+    protected static function booted()
     {
-        parent::boot();
+        parent::booted();
         
+        // Validación de DNI único (funcionalidad específica del modelo Persona)
         static::saving(function ($model) {
             $query = static::where('dni', $model->dni);
             
@@ -74,7 +78,7 @@ class Persona extends Model
         return $this->hasOne(User::class, 'persona_id');
     }
    
-    Public function centro(): BelongsTo
+    public function centro(): BelongsTo
     {
         return $this->belongsTo(Centros_Medico::class, 'centro_id');
     }

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Traits\TenantScoped; 
 
-class Pacientes extends Model
+class Pacientes extends ModeloBase
 {
     use HasFactory, SoftDeletes;
     use TenantScoped; // Trait para el multi-tenant
@@ -19,35 +19,13 @@ class Pacientes extends Model
     {
         parent::booted();
 
-        static::creating(function ($paciente) {
-            if (empty($paciente->centro_id) && \Illuminate\Support\Facades\Auth::check()) {
-                $paciente->centro_id = \Illuminate\Support\Facades\Auth::user()->centro_id;
-            }
-            if (\Illuminate\Support\Facades\Auth::check()) {
-                $paciente->created_by = \Illuminate\Support\Facades\Auth::id();
-            }
-        });
-
-        static::updating(function ($paciente) {
-            if (\Illuminate\Support\Facades\Auth::check()) {
-                $paciente->updated_by = \Illuminate\Support\Facades\Auth::id();
-            }
-        });
-
-        static::deleting(function ($paciente) {
-            if (\Illuminate\Support\Facades\Auth::check()) {
-                $paciente->deleted_by = \Illuminate\Support\Facades\Auth::id();
-                $paciente->save();
-            }
-        });
-
-        static::addGlobalScope('centro', function ($query) {
-     $user = \Illuminate\Support\Facades\Auth::user();
-    
-        if ($user && !$user->roles->contains('name', 'root')) {
-        $query->where('centro_id', $user->centro_id);
-         }
-     });
+        // El trait TenantScoped ya maneja:
+        // - Asignación automática de centro_id al crear
+        // - Global scope para filtrar por centro
+        // - Bypass para usuario root
+        
+        // No necesitamos lógica adicional específica para este modelo
+        // La auditoría (created_by, updated_by, deleted_by) se maneja en ModeloBase
     }
 
     protected $fillable = [
@@ -55,6 +33,9 @@ class Pacientes extends Model
         'grupo_sanguineo',
         'contacto_emergencia',
         'centro_id', // multi-tenant
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
     /**
