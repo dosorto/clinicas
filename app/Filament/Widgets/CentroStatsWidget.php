@@ -23,8 +23,8 @@ class CentroStatsWidget extends BaseWidget
             'sm' => 2,
             'md' => 3,
             'lg' => 4,
-            'xl' => 5,
-            '2xl' => 6,
+            'xl' => 6,
+            '2xl' => 7,
         ];
     }
 
@@ -66,8 +66,13 @@ class CentroStatsWidget extends BaseWidget
             // Contar registros del centro actual (usando scopes para filtrar correctamente)
             $pacientesCount = \App\Models\Pacientes::forCentro($centro->id)->count();
             $medicosCount = \App\Models\Medico::forCentro($centro->id)->count();
-            $citasCount = \App\Models\Citas::forCentro($centro->id)
-                ->whereDate('fecha', today())->count();
+            
+            // Estadísticas detalladas de citas
+            $citasHoy = \App\Models\Citas::forCentro($centro->id)->whereDate('fecha', today());
+            $citasPendientes = (clone $citasHoy)->where('estado', 'Pendiente')->count();
+            $citasConfirmadas = (clone $citasHoy)->where('estado', 'Confirmado')->count();
+            $citasCanceladas = (clone $citasHoy)->where('estado', 'Cancelado')->count();
+            $citasRealizadas = (clone $citasHoy)->where('estado', 'Realizada')->count();
 
             $stats[] = Stat::make('Pacientes', $pacientesCount)
                 ->description('Total de pacientes')
@@ -89,21 +94,57 @@ class CentroStatsWidget extends BaseWidget
                     'class' => 'cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors',
                 ]);
 
-            $stats[] = Stat::make('Citas Hoy', $citasCount)
-                ->description('Citas programadas para hoy')
-                ->descriptionIcon('heroicon-m-calendar')
-                ->color(Color::Indigo)
-                ->chart([0, $citasCount])
+            $stats[] = Stat::make('Citas Pendientes', $citasPendientes)
+                ->description('Esperando confirmación')
+                ->descriptionIcon('heroicon-m-clock')
+                ->color(Color::Yellow)
+                ->chart([0, $citasPendientes])
                 ->url('/admin/citas/citas')
                 ->extraAttributes([
-                    'class' => 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors',
+                    'class' => 'cursor-pointer hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors',
+                ]);
+
+            $stats[] = Stat::make('Citas Confirmadas', $citasConfirmadas)
+                ->description('Listas para hoy')
+                ->descriptionIcon('heroicon-m-check-circle')
+                ->color(Color::Blue)
+                ->chart([0, $citasConfirmadas])
+                ->url('/admin/citas/citas')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors',
+                ]);
+
+            $stats[] = Stat::make('Citas Realizadas', $citasRealizadas)
+                ->description('Completadas hoy')
+                ->descriptionIcon('heroicon-m-check-badge')
+                ->color(Color::Green)
+                ->chart([0, $citasRealizadas])
+                ->url('/admin/citas/citas')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors',
+                ]);
+
+            $stats[] = Stat::make('Citas Canceladas', $citasCanceladas)
+                ->description('Canceladas hoy')
+                ->descriptionIcon('heroicon-m-x-circle')
+                ->color(Color::Red)
+                ->chart([0, $citasCanceladas])
+                ->url('/admin/citas/citas')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors',
                 ]);
         } else if ($user->hasRole('root')) {
             // Estadísticas globales para root
             $totalCentros = Centros_Medico::count();
             $totalPacientes = \App\Models\Pacientes::allCentros()->count();
             $totalMedicos = \App\Models\Medico::allCentros()->count();
-            $totalCitas = \App\Models\Citas::allCentros()->whereDate('fecha', today())->count();
+            
+            // Estadísticas detalladas de citas globales
+            $citasHoyGlobal = \App\Models\Citas::allCentros()->whereDate('fecha', today());
+            $citasPendientesGlobal = (clone $citasHoyGlobal)->where('estado', 'Pendiente')->count();
+            $citasConfirmadasGlobal = (clone $citasHoyGlobal)->where('estado', 'Confirmado')->count();
+            $citasCanceladasGlobal = (clone $citasHoyGlobal)->where('estado', 'Cancelado')->count();
+            $citasRealizadasGlobal = (clone $citasHoyGlobal)->where('estado', 'Realizada')->count();
             
             $stats[] = Stat::make('Vista Global', 'Administrador')
                 ->description('Acceso a todos los centros')
@@ -143,14 +184,44 @@ class CentroStatsWidget extends BaseWidget
                     'class' => 'cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors',
                 ]);
 
-            $stats[] = Stat::make('Citas Hoy', $totalCitas)
-                ->description('Total de citas hoy')
-                ->descriptionIcon('heroicon-m-calendar-days')
-                ->color(Color::Purple)
-                ->chart([0, $totalCitas])
+            $stats[] = Stat::make('Citas Pendientes', $citasPendientesGlobal)
+                ->description('Esperando confirmación')
+                ->descriptionIcon('heroicon-m-clock')
+                ->color(Color::Yellow)
+                ->chart([0, $citasPendientesGlobal])
                 ->url('/admin/citas/citas')
                 ->extraAttributes([
-                    'class' => 'cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors',
+                    'class' => 'cursor-pointer hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors',
+                ]);
+
+            $stats[] = Stat::make('Citas Confirmadas', $citasConfirmadasGlobal)
+                ->description('Listas para hoy')
+                ->descriptionIcon('heroicon-m-check-circle')
+                ->color(Color::Blue)
+                ->chart([0, $citasConfirmadasGlobal])
+                ->url('/admin/citas/citas')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors',
+                ]);
+
+            $stats[] = Stat::make('Citas Realizadas', $citasRealizadasGlobal)
+                ->description('Completadas hoy')
+                ->descriptionIcon('heroicon-m-check-badge')
+                ->color(Color::Green)
+                ->chart([0, $citasRealizadasGlobal])
+                ->url('/admin/citas/citas')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors',
+                ]);
+
+            $stats[] = Stat::make('Citas Canceladas', $citasCanceladasGlobal)
+                ->description('Canceladas hoy')
+                ->descriptionIcon('heroicon-m-x-circle')
+                ->color(Color::Red)
+                ->chart([0, $citasCanceladasGlobal])
+                ->url('/admin/citas/citas')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors',
                 ]);
         }
 

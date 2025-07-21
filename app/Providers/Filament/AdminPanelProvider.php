@@ -39,6 +39,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
+                \App\Filament\Widgets\CitasPieChart::class,
                 \App\Filament\Widgets\CentroSelectorWidget::class,
                 \App\Filament\Widgets\CentroStatsWidget::class,
                 Widgets\AccountWidget::class,
