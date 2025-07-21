@@ -237,53 +237,56 @@ class ConsultasResource extends Resource
                             ]),
                     ]),
 
-                Infolists\Components\Section::make('Diagnóstico')
+                Infolists\Components\Section::make('Detalles de Consulta')
                     ->schema([
-                        Infolists\Components\TextEntry::make('diagnostico')
-                            ->hiddenLabel()
-                            ->placeholder('Sin diagnóstico registrado')
-                            ->columnSpanFull()
-                            ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin diagnóstico registrado')
-                            ->copyable()
-                            ->extraAttributes([
-                                'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
-                                'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
-                            ]),
-                    ])
-                    ->collapsible()
-                    ->collapsed(true),
+                        Infolists\Components\Section::make('Diagnóstico')
+                            ->schema([
+                                Infolists\Components\TextEntry::make('diagnostico')
+                                    ->hiddenLabel()
+                                    ->placeholder('Sin diagnóstico registrado')
+                                    ->columnSpanFull()
+                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin diagnóstico registrado')
+                                    ->copyable()
+                                    ->extraAttributes([
+                                        'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
+                                        'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
+                                    ]),
+                            ])
+                            ->collapsible()
+                            ->collapsed(false),
 
-                Infolists\Components\Section::make('Tratamiento')
-                    ->schema([
-                        Infolists\Components\TextEntry::make('tratamiento')
-                            ->hiddenLabel()
-                            ->placeholder('Sin tratamiento registrado')
-                            ->columnSpanFull()
-                            ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin tratamiento registrado')
-                            ->copyable()
-                            ->extraAttributes([
-                                'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
-                                'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
-                            ]),
-                    ])
-                    ->collapsible()
-                    ->collapsed(true),
+                        Infolists\Components\Section::make('Tratamiento')
+                            ->schema([
+                                Infolists\Components\TextEntry::make('tratamiento')
+                                    ->hiddenLabel()
+                                    ->placeholder('Sin tratamiento registrado')
+                                    ->columnSpanFull()
+                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin tratamiento registrado')
+                                    ->copyable()
+                                    ->extraAttributes([
+                                        'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
+                                        'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
+                                    ]),
+                            ])
+                            ->collapsible()
+                            ->collapsed(false),
 
-                Infolists\Components\Section::make('Observaciones')
-                    ->schema([
-                        Infolists\Components\TextEntry::make('observaciones')
-                            ->hiddenLabel()
-                            ->placeholder('Sin observaciones registradas')
-                            ->columnSpanFull()
-                            ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin observaciones registradas')
-                            ->copyable()
-                            ->extraAttributes([
-                                'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
-                                'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
-                            ]),
-                    ])
-                    ->collapsible()
-                    ->collapsed(true),                // Sección de información del sistema ocultada por solicitud del usuario
+                        Infolists\Components\Section::make('Observaciones')
+                            ->schema([
+                                Infolists\Components\TextEntry::make('observaciones')
+                                    ->hiddenLabel()
+                                    ->placeholder('Sin observaciones registradas')
+                                    ->columnSpanFull()
+                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin observaciones registradas')
+                                    ->copyable()
+                                    ->extraAttributes([
+                                        'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
+                                        'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
+                                    ]),
+                            ])
+                            ->collapsible()
+                            ->collapsed(false),
+                    ]),                // Sección de información del sistema ocultada por solicitud del usuario
                 // Infolists\Components\Section::make('Información de Sistema')
                 //     ->schema([
                 //         Infolists\Components\Grid::make(2)
