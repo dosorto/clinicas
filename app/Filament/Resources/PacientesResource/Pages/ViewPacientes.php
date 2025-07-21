@@ -9,6 +9,7 @@ use Filament\Infolists\Infolist;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\IconPosition;
 use Filament\Actions;
+use Carbon\Carbon; // Make sure to import Carbon for date calculations
 
 class ViewPacientes extends ViewRecord
 {
@@ -39,7 +40,7 @@ class ViewPacientes extends ViewRecord
                                         }),
                                 ])
                                 ->columnSpan(1),
-                            
+
                             Infolists\Components\Grid::make(1)
                                 ->schema([
                                     Infolists\Components\TextEntry::make('nombre_completo')
@@ -48,8 +49,9 @@ class ViewPacientes extends ViewRecord
                                             return trim("{$record->persona->primer_nombre} {$record->persona->segundo_nombre} {$record->persona->primer_apellido} {$record->persona->segundo_apellido}");
                                         })
                                         ->weight(FontWeight::Bold)
-                                        ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
-                                    
+                                        ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
+                                        ->color('primary'), // Keep primary for the main name
+
                                     Infolists\Components\TextEntry::make('persona.dni')
                                         ->label('DNI/Cédula')
                                         ->icon('heroicon-m-identification')
@@ -57,42 +59,41 @@ class ViewPacientes extends ViewRecord
                                         ->copyable()
                                         ->copyMessage('DNI copiado')
                                         ->weight(FontWeight::Medium),
-                                    
+
                                     Infolists\Components\TextEntry::make('grupo_sanguineo')
                                         ->label('Grupo Sanguíneo')
                                         ->icon('heroicon-m-heart')
                                         ->iconPosition(IconPosition::Before)
                                         ->badge()
-                                        ->color('danger')
+                                        ->color('danger') // Revert to 'danger' for blood group
                                         ->size(Infolists\Components\TextEntry\TextEntrySize::Medium),
-                                    
+
                                     Infolists\Components\TextEntry::make('edad')
                                         ->label('Edad')
                                         ->icon('heroicon-m-calendar-days')
                                         ->iconPosition(IconPosition::Before)
                                         ->getStateUsing(function ($record) {
                                             if ($record->persona->fecha_nacimiento) {
-                                                $edad = \Carbon\Carbon::parse($record->persona->fecha_nacimiento)->age;
+                                                $edad = Carbon::parse($record->persona->fecha_nacimiento)->age;
                                                 return $edad . ' años';
                                             }
                                             return 'No especificada';
                                         })
                                         ->weight(FontWeight::Medium),
-                                    
+
                                     Infolists\Components\TextEntry::make('persona.sexo')
                                         ->label('Sexo')
                                         ->icon('heroicon-m-user')
                                         ->iconPosition(IconPosition::Before)
                                         ->formatStateUsing(fn ($state) => $state === 'M' ? 'Masculino' : 'Femenino')
                                         ->badge()
-                                        ->color(fn ($state) => $state === 'M' ? 'info' : 'success'),
+                                        ->color(fn ($state) => $state === 'M' ? 'info' : 'success'), // Revert to 'info'/'success' for sex
                                 ])
                                 ->columnSpan(2),
                         ])
                         ->from('md'),
                     ])
                     ->headerActions([
-                        // ✅ CAMBIO: Usar Action de Infolists en lugar de EditAction
                         Infolists\Components\Actions\Action::make('edit')
                             ->label('Editar Paciente')
                             ->icon('heroicon-m-pencil')
@@ -111,14 +112,14 @@ class ViewPacientes extends ViewRecord
                                     ->iconPosition(IconPosition::Before)
                                     ->date('d/m/Y')
                                     ->weight(FontWeight::Medium),
-                                
+
                                 Infolists\Components\TextEntry::make('persona.nacionalidad.nacionalidad')
                                     ->label('Nacionalidad')
                                     ->icon('heroicon-m-flag')
                                     ->iconPosition(IconPosition::Before)
                                     ->badge()
-                                    ->color('primary'),
-                                
+                                    ->color('primary'), // Revert to 'primary' for nationality
+
                                 Infolists\Components\TextEntry::make('persona.telefono')
                                     ->label('Teléfono')
                                     ->icon('heroicon-m-phone')
@@ -127,7 +128,7 @@ class ViewPacientes extends ViewRecord
                                     ->copyMessage('Teléfono copiado')
                                     ->weight(FontWeight::Medium),
                             ]),
-                        
+
                         Infolists\Components\TextEntry::make('persona.direccion')
                             ->label('Dirección')
                             ->icon('heroicon-m-map-pin')
@@ -147,9 +148,9 @@ class ViewPacientes extends ViewRecord
                                     ->icon('heroicon-m-heart')
                                     ->iconPosition(IconPosition::Before)
                                     ->badge()
-                                    ->color('danger')
+                                    ->color('danger') // Revert to 'danger'
                                     ->size(Infolists\Components\TextEntry\TextEntrySize::Medium),
-                                
+
                                 Infolists\Components\TextEntry::make('contacto_emergencia')
                                     ->label('Contacto de Emergencia')
                                     ->icon('heroicon-m-phone-arrow-up-right')
@@ -158,7 +159,7 @@ class ViewPacientes extends ViewRecord
                                     ->copyMessage('Contacto de emergencia copiado')
                                     ->weight(FontWeight::Medium),
                             ]),
-                        
+
                         Infolists\Components\TextEntry::make('total_enfermedades')
                             ->label('Total de Enfermedades')
                             ->icon('heroicon-m-clipboard-document-list')
@@ -170,9 +171,9 @@ class ViewPacientes extends ViewRecord
                             ->badge()
                             ->color(function ($record) {
                                 $total = $record->enfermedades->count();
-                                if ($total === 0) return 'success';
-                                if ($total <= 2) return 'warning';
-                                return 'danger';
+                                if ($total === 0) return 'success'; // Revert to 'success'
+                                if ($total <= 2) return 'warning';    // Revert to 'warning'
+                                return 'danger';                      // Revert to 'danger'
                             }),
                     ])
                     ->icon('heroicon-m-heart')
@@ -192,8 +193,8 @@ class ViewPacientes extends ViewRecord
                                                 ->size(Infolists\Components\TextEntry\TextEntrySize::Medium)
                                                 ->icon('heroicon-m-exclamation-triangle')
                                                 ->iconPosition(IconPosition::Before)
-                                                ->color('danger'),
-                                            
+                                                ->color('danger'), // Revert to 'danger'
+
                                             Infolists\Components\TextEntry::make('pivot.fecha_diagnostico')
                                                 ->label('')
                                                 ->formatStateUsing(function ($state) {
@@ -204,11 +205,11 @@ class ViewPacientes extends ViewRecord
                                                     return 'Fecha no especificada';
                                                 })
                                                 ->badge()
-                                                ->color('info')
+                                                ->color('info') // Revert to 'info'
                                                 ->icon('heroicon-m-calendar')
                                                 ->iconPosition(IconPosition::Before),
                                         ]),
-                                        
+
                                         Infolists\Components\TextEntry::make('pivot.tratamiento')
                                             ->label('Tratamiento')
                                             ->icon('heroicon-m-clipboard-document')
@@ -232,7 +233,7 @@ class ViewPacientes extends ViewRecord
                             ->getStateUsing(fn () => 'Este paciente no tiene enfermedades registradas.')
                             ->icon('heroicon-m-check-circle')
                             ->iconPosition(IconPosition::Before)
-                            ->color('success')
+                            ->color('success') // Revert to 'success'
                             ->weight(FontWeight::Medium),
                     ])
                     ->icon('heroicon-m-heart')
@@ -250,7 +251,7 @@ class ViewPacientes extends ViewRecord
                                     ->iconPosition(IconPosition::Before)
                                     ->dateTime('d/m/Y H:i')
                                     ->weight(FontWeight::Medium),
-                                
+
                                 Infolists\Components\TextEntry::make('updated_at')
                                     ->label('Última Actualización')
                                     ->icon('heroicon-m-pencil-square')
@@ -277,7 +278,7 @@ class ViewPacientes extends ViewRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $persona = $this->record->persona;
-        
+
         if ($persona) {
             $data['primer_nombre'] = $persona->primer_nombre;
             $data['segundo_nombre'] = $persona->segundo_nombre;
@@ -297,12 +298,12 @@ class ViewPacientes extends ViewRecord
         if ($this->record->enfermedades->isNotEmpty()) {
             foreach ($this->record->enfermedades as $enfermedad) {
                 $pivot = $enfermedad->pivot;
-                
+
                 // Extraer el año de la fecha de diagnóstico
-                $anoDiagnostico = $pivot->fecha_diagnostico ? 
-                    date('Y', strtotime($pivot->fecha_diagnostico)) : 
+                $anoDiagnostico = $pivot->fecha_diagnostico ?
+                    date('Y', strtotime($pivot->fecha_diagnostico)) :
                     date('Y');
-                
+
                 $enfermedadesData[] = [
                     'enfermedad_id' => $enfermedad->id,
                     'ano_diagnostico' => $anoDiagnostico,
@@ -310,7 +311,7 @@ class ViewPacientes extends ViewRecord
                 ];
             }
         }
-        
+
         $data['enfermedades_data'] = $enfermedadesData;
 
         return $data;

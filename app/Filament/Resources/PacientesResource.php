@@ -22,6 +22,7 @@ use Filament\Infolists\Infolist;
 use Filament\Support\Enums\FontWeight;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Unique; // Importación añadida
 
 class PacientesResource extends Resource
 {
@@ -44,17 +45,54 @@ class PacientesResource extends Resource
                 Wizard::make([
                     Wizard\Step::make('Datos Personales')
                         ->schema([
-                            // DNI COMO PRIMER CAMPO
+                            // DNI COMO PRIMER CAMPO CON VALIDACIÓN MEJORADA
                             Forms\Components\TextInput::make('dni')
-                                ->label('DNI/Cédula')
-                                ->required()
-                                ->maxLength(255)
-                                ->reactive()
-                                ->disabled(fn ($operation) => $operation === 'edit')
+    ->label('DNI/Cédula')
+    ->required()
+    ->maxLength(255)
+    ->reactive()
+    ->disabled(fn ($operation) => $operation === 'edit')
+    ->unique(
+        table: Persona::class,
+        column: 'dni',
+        modifyRuleUsing: function (Unique $rule, callable $get, $context) {
+            $personaId = $get('persona_id');
+            
+            // Solo ignorar si existe una persona asociada
+            if ($personaId) {
+                $rule->ignore($personaId);
+            }
+            
+            return $rule->where('dni', $get('dni'));
+        }
+    )
                                 ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                     if ($state) {
                                         $existingPersona = Persona::where('dni', $state)->first();
                                         if ($existingPersona) {
+                                            // Verificar si ya es paciente
+                                            $existingPaciente = Pacientes::where('persona_id', $existingPersona->id)->first();
+                                            if ($existingPaciente) {
+                                                Notification::make()
+                                                    ->title('Paciente ya existe')
+                                                    ->body("El DNI {$state} ya está registrado como paciente. Será redirigido para editarlo.")
+                                                    ->warning()
+                                                    ->persistent()
+                                                    ->actions([
+                                                        \Filament\Notifications\Actions\Action::make('edit')
+                                                            ->label('Ir a editar')
+                                                            ->url(route('filament.admin.resources.pacientes.edit', $existingPaciente))
+                                                            ->button(),
+                                                        \Filament\Notifications\Actions\Action::make('view')
+                                                            ->label('Ver paciente')
+                                                            ->url(route('filament.admin.resources.pacientes.view', $existingPaciente))
+                                                            ->button(),
+                                                    ])
+                                                    ->send();
+                                                return;
+                                            }
+                                            
+                                            // Si la persona existe pero no es paciente, llenar los datos
                                             $set('primer_nombre', $existingPersona->primer_nombre);
                                             $set('segundo_nombre', $existingPersona->segundo_nombre);
                                             $set('primer_apellido', $existingPersona->primer_apellido);
@@ -81,7 +119,7 @@ class PacientesResource extends Resource
                                             
                                             Notification::make()
                                                 ->title('Persona encontrada')
-                                                ->body("Se encontró: {$existingPersona->primer_nombre} {$existingPersona->primer_apellido}")
+                                                ->body("Se encontró: {$existingPersona->primer_nombre} {$existingPersona->primer_apellido}. Complete los datos médicos para registrarlo como paciente.")
                                                 ->success()
                                                 ->send();
                                         } else {
@@ -207,9 +245,8 @@ class PacientesResource extends Resource
                                 ->imageEditor()
                                 ->maxSize(2048)
                                 ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'])
-                                ->preserveFilenames(false) // ✅ CAMBIO: No preservar nombres originales
+                                ->preserveFilenames(false)
                                 ->getUploadedFileNameForStorageUsing(function ($file) {
-                                    // ✅ GENERAR NOMBRE ÚNICO Y LIMPIO
                                     $extension = $file->getClientOriginalExtension();
                                     $timestamp = now()->format('YmdHis');
                                     $random = Str::random(8);
@@ -409,6 +446,7 @@ class PacientesResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['persona', 'enfermedades'])) // EAGER LOADING AÑADIDO
             ->columns([
                 Tables\Columns\ImageColumn::make('persona.fotografia')
                     ->label('Foto')
@@ -447,21 +485,31 @@ class PacientesResource extends Resource
                     ->limit(30)
                     ->tooltip(fn ($record) => $record->contacto_emergencia),
                 
-                Tables\Columns\TextColumn::make('enfermedades')
+                // ✅ MEJORADA: Columna de enfermedades más visual
+                Tables\Columns\TextColumn::make('enfermedades_count')
                     ->label('Enfermedades')
-                    ->formatStateUsing(function ($record) {
-                        $enfermedades = $record->enfermedades->pluck('enfermedades')->toArray();
-                        if (empty($enfermedades)) {
+                    ->getStateUsing(function ($record) {
+                        $count = $record->enfermedades->count();
+                        if ($count == 0) {
                             return 'Sin enfermedades';
                         }
-                        return implode(', ', array_slice($enfermedades, 0, 2)) . 
-                               (count($enfermedades) > 2 ? '...' : '');
+                        return $count . ' enfermedad' . ($count > 1 ? 'es' : '');
+                    })
+                    ->badge()
+                    ->color(function ($record) {
+                        $count = $record->enfermedades->count();
+                        if ($count == 0) return 'gray';
+                        if ($count <= 2) return 'success';
+                        if ($count <= 4) return 'warning';
+                        return 'danger';
                     })
                     ->tooltip(function ($record) {
                         $enfermedades = $record->enfermedades->pluck('enfermedades')->toArray();
+                        if (empty($enfermedades)) {
+                            return 'Sin enfermedades registradas';
+                        }
                         return implode(', ', $enfermedades);
-                    })
-                    ->wrap(),
+                    }),
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Registrado')
@@ -498,9 +546,23 @@ class PacientesResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                // ✅ NUEVO: Dropdown con todas las acciones agrupadas
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                        ->icon('heroicon-m-eye')
+                        ->label('Ver'),
+                    Tables\Actions\EditAction::make()
+                        ->icon('heroicon-m-pencil-square')
+                        ->label('Editar'),
+                    Tables\Actions\DeleteAction::make()
+                        ->icon('heroicon-m-trash')
+                        ->label('Eliminar'),
+                ])
+                ->label('Opciones')
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->size('sm')
+                ->color('gray')
+                ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
