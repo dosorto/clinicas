@@ -71,7 +71,8 @@ class CitasResource extends Resource
 
                 TimePicker::make('hora')
                     ->label('Hora de la cita')
-                    ->required(),
+                    ->required()
+                     ->seconds(false),
 
                 Textarea::make('motivo')
                     ->label('Motivo de la cita')

@@ -10,7 +10,7 @@ use App\Models\Enfermedades_Paciente;
 
 
 
-class Enfermedade extends Model
+class Enfermedade extends ModeloBase
 {
     /** @use HasFactory<\Database\Factories\EnfermedadeFactory> */
     use HasFactory;

@@ -41,8 +41,13 @@ class UserResource extends Resource
                             TextInput::make('persona.dni')
                                 ->label('DNI')
                                 ->required()
-                                ->unique('personas', 'dni', ignoreRecord: true)
-                                ->maxLength(20),
+                                ->maxLength(20)
+                                ->live()
+                                ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
+                                    if ($operation !== 'create' && !$state) {
+                                        return;
+                                    }
+                                }),
 
                             TextInput::make('persona.primer_nombre')
                                 ->label('Primer Nombre')
@@ -135,7 +140,16 @@ class UserResource extends Resource
                             Select::make('roles')
                                 ->label('Roles')
                                 ->multiple()
-                                ->relationship('roles', 'name')
+                                ->relationship('roles', 'name', function ($query) {
+                                    if (!auth()->user()?->hasRole('root')) {
+                                       $query->where(function($q) {
+                                            $q->where('centro_id', session('current_centro_id'))
+                                                ->orWhereNull('centro_id'); // Para incluir roles base/default
+                                            $q->where('name', '!=', 'root'); // Excluir rol root
+                                    });
+                                    }
+                                    return $query;
+                                })
                                 ->preload()
                                 ->required(),
                             
@@ -234,7 +248,19 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->with(['persona', 'roles', 'centro']);
+
+        // Si no es usuario root, ocultar usuarios root y filtrar por centro
+        if (!auth()->user()?->hasRole('root')) {
+            $query->where('centro_id', session('current_centro_id'))
+                ->whereDoesntHave('roles', function ($query) {
+                    $query->where('name', 'root');
+                });
+        }
+
+        return $query;
     }
+
+    
 }

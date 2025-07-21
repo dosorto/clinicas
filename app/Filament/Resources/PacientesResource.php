@@ -498,7 +498,9 @@ class PacientesResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label('Ver Información')
+                    ->icon('heroicon-o-eye'),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -509,114 +511,11 @@ class PacientesResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function getRelations(): array
     {
-        return $infolist
-            ->schema([
-                Infolists\Components\Section::make('Información Personal')
-                    ->schema([
-                        Infolists\Components\Split::make([
-                            Infolists\Components\Grid::make(2)
-                                ->schema([
-                                    Infolists\Components\ImageEntry::make('persona.fotografia')
-                                        ->label('Fotografía')
-                                        ->circular()
-                                        ->size(150)
-                                        ->getStateUsing(function ($record) {
-                                            if ($record->persona->fotografia) {
-                                                return asset('storage/' . $record->persona->fotografia);
-                                            }
-                                            return self::generateAvatar(
-                                                $record->persona->primer_nombre,
-                                                $record->persona->primer_apellido
-                                            );
-                                        }),
-                                ]),
-                            Infolists\Components\Grid::make(2)
-                                ->schema([
-                                    Infolists\Components\TextEntry::make('persona.primer_nombre')
-                                        ->label('Primer Nombre')
-                                        ->weight(FontWeight::Bold),
-                                    Infolists\Components\TextEntry::make('persona.segundo_nombre')
-                                        ->label('Segundo Nombre'),
-                                    Infolists\Components\TextEntry::make('persona.primer_apellido')
-                                        ->label('Primer Apellido')
-                                        ->weight(FontWeight::Bold),
-                                    Infolists\Components\TextEntry::make('persona.segundo_apellido')
-                                        ->label('Segundo Apellido'),
-                                    Infolists\Components\TextEntry::make('persona.dni')
-                                        ->label('DNI/Cédula')
-                                        ->copyable(),
-                                    Infolists\Components\TextEntry::make('persona.sexo')
-                                        ->label('Sexo')
-                                        ->formatStateUsing(fn ($state) => $state === 'M' ? 'Masculino' : 'Femenino'),
-                                    Infolists\Components\TextEntry::make('persona.fecha_nacimiento')
-                                        ->label('Fecha de Nacimiento')
-                                        ->date('d/m/Y'),
-                                    Infolists\Components\TextEntry::make('persona.telefono')
-                                        ->label('Teléfono')
-                                        ->copyable(),
-                                    Infolists\Components\TextEntry::make('persona.direccion')
-                                        ->label('Dirección')
-                                        ->columnSpanFull(),
-                                    Infolists\Components\TextEntry::make('persona.nacionalidad.nacionalidad')
-                                        ->label('Nacionalidad'),
-                                ]),
-                        ]),
-                    ])
-                    ->collapsible(),
-
-                Infolists\Components\Section::make('Información Médica')
-                    ->schema([
-                        Infolists\Components\Grid::make(2)
-                            ->schema([
-                                Infolists\Components\TextEntry::make('grupo_sanguineo')
-                                    ->label('Grupo Sanguíneo')
-                                    ->badge()
-                                    ->color('danger'),
-                                Infolists\Components\TextEntry::make('contacto_emergencia')
-                                    ->label('Contacto de Emergencia')
-                                    ->copyable(),
-                            ]),
-                    ])
-                    ->collapsible(),
-
-                Infolists\Components\Section::make('Enfermedades')
-                    ->schema([
-                        Infolists\Components\RepeatableEntry::make('enfermedades')
-                            ->schema([
-                                Infolists\Components\Grid::make(3)
-                                    ->schema([
-                                        Infolists\Components\TextEntry::make('enfermedades')
-                                            ->label('Enfermedad')
-                                            ->weight(FontWeight::Bold),
-                                        Infolists\Components\TextEntry::make('pivot.fecha_diagnostico')
-                                            ->label('Año de Diagnóstico')
-                                            ->formatStateUsing(fn ($state) => $state ? date('Y', strtotime($state)) : 'N/A'),
-                                        Infolists\Components\TextEntry::make('pivot.tratamiento')
-                                            ->label('Tratamiento')
-                                            ->columnSpanFull(),
-                                    ]),
-                            ])
-                            ->contained(false),
-                    ])
-                    ->collapsible(),
-
-                Infolists\Components\Section::make('Información del Sistema')
-                    ->schema([
-                        Infolists\Components\Grid::make(2)
-                            ->schema([
-                                Infolists\Components\TextEntry::make('created_at')
-                                    ->label('Registrado')
-                                    ->dateTime('d/m/Y H:i'),
-                                Infolists\Components\TextEntry::make('updated_at')
-                                    ->label('Última Actualización')
-                                    ->dateTime('d/m/Y H:i'),
-                            ]),
-                    ])
-                    ->collapsible()
-                    ->collapsed(),
-            ]);
+        return [
+            \App\Filament\Resources\Pacientes\PacientesResource\RelationManagers\ConsultasRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

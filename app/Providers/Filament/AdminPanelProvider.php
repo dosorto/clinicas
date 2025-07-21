@@ -39,6 +39,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
+                \App\Filament\Widgets\CentroSelectorWidget::class,
+                \App\Filament\Widgets\CentroStatsWidget::class,
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
@@ -52,6 +54,8 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                'tenant.switcher', // Nuestro middleware personalizado
+                'centro.switch', // Middleware para manejar cambio de centro
             ])
             ->authMiddleware([
                 Authenticate::class,

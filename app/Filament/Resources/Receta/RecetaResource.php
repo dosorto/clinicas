@@ -18,6 +18,7 @@ use Filament\Infolists\Infolist;
 use Filament\Infolists\InfolistsServiceProvider;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Carbon\Carbon;
 
 
 class RecetaResource extends Resource
@@ -68,11 +69,26 @@ class RecetaResource extends Resource
 
                         Forms\Components\Select::make('consulta_id')
                             ->label('Consulta')
-                            ->relationship('consulta', 'id')
+                            ->options(function () {
+                                return \App\Models\Consulta::with(['paciente.persona'])
+                                    ->orderBy('created_at', 'desc')
+                                    ->get()
+                                    ->mapWithKeys(function ($consulta) {
+                                        $pacienteNombre = $consulta->paciente && $consulta->paciente->persona
+                                            ? $consulta->paciente->persona->nombre_completo
+                                            : 'Sin paciente';
+
+                                        $fechaFormateada = Carbon::parse($consulta->created_at)->format('d/m/Y');
+
+                                        return [$consulta->id => "Consulta #{$consulta->id} - {$fechaFormateada} ({$pacienteNombre})"];
+                                    })
+                                    ->toArray();
+                            })
                             ->searchable()
                             ->preload()
                             ->nullable()
-                            ->getOptionLabelFromRecordUsing(fn ($record) => "Consulta #{$record->id} - {$record->fecha}"),
+                            ->placeholder('Seleccionar consulta relacionada (opcional)')
+                            ->helperText('Seleccione una consulta para asociar esta receta con una consulta específica.'),
                     ])
                     ->columns(2),
 
@@ -247,7 +263,8 @@ class RecetaResource extends Resource
     {
         return [
             'index' => Pages\ListRecetas::route('/'),
-            'create' => Pages\CreateReceta::route('/create'),
+            'create' => Pages\CreateRecetaWithPatientSearch::route('/create'),
+            'create-simple' => Pages\CreateReceta::route('/create-simple'),
             'edit' => Pages\EditReceta::route('/{record}/edit'),
         ];
     }

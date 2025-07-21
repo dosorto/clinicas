@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Traits\TenantScoped; 
 
-class Enfermedades__Paciente extends Model
+class Enfermedades__Paciente extends ModeloBase
 {
     /** @use HasFactory<\Database\Factories\EnfermedadesPacienteFactory> */
     use HasFactory;
@@ -59,24 +59,5 @@ class Enfermedades__Paciente extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
-    protected static function booted()
-    {
-        parent::booted();
-        static::creating(function ($model) {
-            if (auth()->check()) {
-                $model->created_by = auth()->id();
-            }
-        });
-        static::updating(function ($model) {
-            if (auth()->check()) {
-                $model->updated_by = auth()->id();
-            }
-        });
-        static::deleting(function ($model) {
-            if (auth()->check()) {
-                $model->deleted_by = auth()->id();
-                $model->save();
-            }
-        });
-    }
+   
 }

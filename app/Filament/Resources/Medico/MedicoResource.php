@@ -19,6 +19,7 @@ use Filament\Forms\Get;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
+use Filament\Notifications\Notification;
 
 class MedicoResource extends Resource
 {
@@ -31,7 +32,7 @@ class MedicoResource extends Resource
 
     public static function form(Form $form): Form
     {
-return $form
+    return $form
     ->schema([
         Wizard::make([
             Wizard\Step::make('Datos Personales')
@@ -44,7 +45,32 @@ return $form
                         ->placeholder('Ingrese su DNI')
                         ->disabled(fn ($operation) => $operation === 'edit') // Deshabilitar en edición
                         ->dehydrated() // Mantener el valor al enviar el formulario
-                        ->rules([
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    if ($state) {
+                                        $existingPersona = Persona::where('dni', $state)->first();
+                                        if ($existingPersona) {
+                                            $set('primer_nombre', $existingPersona->primer_nombre);
+                                            $set('segundo_nombre', $existingPersona->segundo_nombre);
+                                            $set('primer_apellido', $existingPersona->primer_apellido);
+                                            $set('segundo_apellido', $existingPersona->segundo_apellido);
+                                            $set('telefono', $existingPersona->telefono);
+                                            $set('direccion', $existingPersona->direccion);
+                                            $set('sexo', $existingPersona->sexo);
+                                            $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
+                                            $set('nacionalidad_id', $existingPersona->nacionalidad_id);
+                                            $set('persona_id', $existingPersona->id);
+                                            
+                                            Notification::make()
+                                                ->title('Persona encontrada')
+                                                ->body("Se encontró: {$existingPersona->nombre_completo}")
+                                                ->success()
+                                                ->send();
+                                        } else {
+                                            $set('persona_id', null);
+                                        }
+                                    }
+                                }),
+                       /* ->rules([
                             function (Get $get) {
                                 return function (string $attribute, $value, Closure $fail) use ($get) {
                                     // Solo validar durante creación
@@ -58,7 +84,7 @@ return $form
                                     session(['dni' => $value]);
                                 };
                             },
-                        ]),
+                        ]),*/
 
 
 
@@ -110,59 +136,7 @@ return $form
                         ])
                         ->required(),
 
-Forms\Components\Grid::make(2)
-    ->schema([
-        Forms\Components\TimePicker::make('horario_entrada')
-            ->label('Horario de Entrada')
-            ->seconds(false)
-            ->required()
-            ->format('H:i')
-            ->displayFormat('g:i A')
-            ->placeholder('Ej: 8:00 AM')
-            ->suffixIcon('heroicon-o-clock')
-            ->native(false)
-            ->helperText('Horario de inicio de consultas')
-            ->extraAttributes(['class' => 'text-center']),
-
-        Forms\Components\TimePicker::make('horario_salida')
-            ->label('Horario de Salida')
-            ->seconds(false)
-            ->required()
-            ->format('H:i')
-            ->displayFormat('g:i A')
-            ->placeholder('Ej: 5:00 PM')
-            ->suffixIcon('heroicon-o-clock')
-            ->native(false)
-            ->helperText('Horario de fin de consultas')
-            ->extraAttributes(['class' => 'text-center'])
-            ->rules([
-                function (Get $get) {
-                    return function (string $attribute, $value, \Closure $fail) use ($get) {
-                        $entrada = $get('horario_entrada');
-                        if ($entrada && $value) {
-                            if (strtotime($value) <= strtotime($entrada)) {
-                                $fail('El horario de salida debe ser posterior al horario de entrada');
-                            }
-                            
-                            // Validar que no sea muy temprano o muy tarde
-                            $horaEntrada = (int) date('H', strtotime($entrada));
-                            $horaSalida = (int) date('H', strtotime($value));
-                            
-                            if ($horaEntrada < 6 || $horaSalida > 22) {
-                                $fail('Los horarios deben estar entre las 6:00 AM y 10:00 PM');
-                            }
-                            
-                            // Validar duración mínima de 2 horas
-                            $diferencia = strtotime($value) - strtotime($entrada);
-                            if ($diferencia < 7200) { // 2 horas en segundos
-                                $fail('La jornada debe tener al menos 2 horas de duración');
-                            }
-                        }
-                    };
-                },
-            ]),
-    ]),
-
+    
                         
                     Forms\Components\DatePicker::make('fecha_nacimiento')
                         ->label('Fecha de Nacimiento')
@@ -202,8 +176,61 @@ Forms\Components\Grid::make(2)
                         ->label('Número de Colegiación')
                         ->required()
                         ->maxLength(20)
-                        ->placeholder('Ingrese su número de colegiación')
-                        ->unique('medicos', 'numero_colegiacion', ignoreRecord: true),
+                        ->placeholder('Ingrese su número de colegiación'),
+                      // ->unique('medicos', 'numero_colegiacion', ignoreRecord: true),
+
+                       Forms\Components\Grid::make(2)
+            ->schema([
+                Forms\Components\TimePicker::make('horario_entrada')
+                    ->label('Horario de Entrada')
+                    ->seconds(false)
+                    ->required()
+                    ->format('H:i')
+                    ->displayFormat('g:i A')
+                    ->placeholder('Ej: 8:00 AM')
+                    ->suffixIcon('heroicon-o-clock')
+                    ->native(false)
+                    ->helperText('Horario de inicio de consultas')
+                    ->extraAttributes(['class' => 'text-center']),
+
+                Forms\Components\TimePicker::make('horario_salida')
+                    ->label('Horario de Salida')
+                    ->seconds(false)
+                    ->required()
+                    ->format('H:i')
+                    ->displayFormat('g:i A')
+                    ->placeholder('Ej: 5:00 PM')
+                    ->suffixIcon('heroicon-o-clock')
+                    ->native(false)
+                    ->helperText('Horario de fin de consultas')
+                    ->extraAttributes(['class' => 'text-center'])
+                    ->rules([
+                        function (Get $get) {
+                            return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                $entrada = $get('horario_entrada');
+                                if ($entrada && $value) {
+                                    if (strtotime($value) <= strtotime($entrada)) {
+                                        $fail('El horario de salida debe ser posterior al horario de entrada');
+                                    }
+                                    
+                                    // Validar que no sea muy temprano o muy tarde
+                                    $horaEntrada = (int) date('H', strtotime($entrada));
+                                    $horaSalida = (int) date('H', strtotime($value));
+                                    
+                                    if ($horaEntrada < 6 || $horaSalida > 22) {
+                                        $fail('Los horarios deben estar entre las 6:00 AM y 10:00 PM');
+                                    }
+                                    
+                                    // Validar duración mínima de 2 horas
+                                    $diferencia = strtotime($value) - strtotime($entrada);
+                                    if ($diferencia < 7200) { // 2 horas en segundos
+                                        $fail('La jornada debe tener al menos 2 horas de duración');
+                                    }
+                                }
+                            };
+                        },
+                    ]),
+            ]),
                 ]) ->columns(2),
                 
             Wizard\Step::make('Especialidades')
@@ -225,85 +252,85 @@ Forms\Components\Grid::make(2)
     ]);
     }
 
-public static function table(Table $table): Table
-{
-    return $table
-        ->columns([
-            Tables\Columns\TextColumn::make('persona.primer_nombre')
-                ->label('Nombre')
-                ->formatStateUsing(fn ($record) => 
-                    "{$record->persona->primer_nombre} {$record->persona->primer_apellido}")
-                ->searchable(['primer_nombre', 'primer_apellido']),
-                
-            Tables\Columns\TextColumn::make('persona.dni')
-                ->label('DNI')
-                ->searchable(),
-                
-            Tables\Columns\TextColumn::make('numero_colegiacion')
-                ->label('N° Colegiación')
-                ->searchable(),
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('persona.primer_nombre')
+                    ->label('Nombre')
+                    ->formatStateUsing(fn ($record) => 
+                        "{$record->persona->primer_nombre} {$record->persona->primer_apellido}")
+                    ->searchable(['primer_nombre', 'primer_apellido']),
+                    
+                Tables\Columns\TextColumn::make('persona.dni')
+                    ->label('DNI')
+                    ->searchable(),
+                    
+                Tables\Columns\TextColumn::make('numero_colegiacion')
+                    ->label('N° Colegiación')
+                    ->searchable(),
 
-            Tables\Columns\TextColumn::make('persona.telefono')
-                ->label('Teléfono')
-                ->searchable(),
+                Tables\Columns\TextColumn::make('persona.telefono')
+                    ->label('Teléfono')
+                    ->searchable(),
 
-            Tables\Columns\TextColumn::make('especialidades.especialidad')
-                ->label('Especialidades')
-                ->badge()
-                ->separator(',')
-                ->color('primary'),
+                Tables\Columns\TextColumn::make('especialidades.especialidad')
+                    ->label('Especialidades')
+                    ->badge()
+                    ->separator(',')
+                    ->color('primary'),
 
-            Tables\Columns\TextColumn::make('horario_entrada')
-                ->label('Hora de Entrada')
-                ->time('g:i A'),
+                Tables\Columns\TextColumn::make('horario_entrada')
+                    ->label('Hora de Entrada')
+                    ->time('g:i A'),
 
-            Tables\Columns\TextColumn::make('horario_salida')
-                ->label('Hora de Salida')
-                ->time('g:i A'),
-        ])
-        ->filters([
-            // Filtros opcionales
-        ])
-        ->actions([
-            Tables\Actions\ActionGroup::make([
-                Tables\Actions\ViewAction::make()
-                    ->label('Ver')
-                    ->icon('heroicon-o-eye'),
-
-                Tables\Actions\EditAction::make()
-                    ->label('Editar')
-                    ->icon('heroicon-o-pencil'),
-
-                Tables\Actions\DeleteAction::make()
-                    ->label('Eliminar')
-                    ->icon('heroicon-o-trash')
-                    ->modalHeading('Eliminar Médico')
-                    ->modalDescription('¿Estás seguro de que deseas eliminar este médico y sus datos personales? Esta acción no se puede deshacer.')
-                    ->modalSubmitActionLabel('Sí, eliminar')
-                    ->modalCancelActionLabel('Cancelar')
-                    ->action(function (Medico $record) {
-                        DB::transaction(function () use ($record) {
-                            $record->delete();
-                            $record->persona()->delete();
-                        });
-                    })
-                    ->successNotificationTitle('Médico y datos personales eliminados correctamente'),
+                Tables\Columns\TextColumn::make('horario_salida')
+                    ->label('Hora de Salida')
+                    ->time('g:i A'),
             ])
-            ->label('Opciones')
-            ->icon('heroicon-m-ellipsis-vertical')
-            ->size('sm')
-            ->color('success')
-            ->button()
-        ])
-        ->bulkActions([
-            Tables\Actions\BulkActionGroup::make([
-                Tables\Actions\DeleteBulkAction::make(),
-            ]),
-        ])
-        ->searchPlaceholder('Buscar');
-}
+            ->filters([
+                // Filtros opcionales
+            ])
+            ->actions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\ViewAction::make()
+                        ->label('Ver')
+                        ->icon('heroicon-o-eye'),
 
-        protected function getCreateFormAction(): Action
+                    Tables\Actions\EditAction::make()
+                        ->label('Editar')
+                        ->icon('heroicon-o-pencil'),
+
+                    Tables\Actions\DeleteAction::make()
+                        ->label('Eliminar')
+                        ->icon('heroicon-o-trash')
+                        ->modalHeading('Eliminar Médico')
+                        ->modalDescription('¿Estás seguro de que deseas eliminar este médico y sus datos personales? Esta acción no se puede deshacer.')
+                        ->modalSubmitActionLabel('Sí, eliminar')
+                        ->modalCancelActionLabel('Cancelar')
+                        ->action(function (Medico $record) {
+                            DB::transaction(function () use ($record) {
+                                $record->delete();
+                                $record->persona()->delete();
+                            });
+                        })
+                        ->successNotificationTitle('Médico y datos personales eliminados correctamente'),
+                ])
+                ->label('Opciones')
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->size('sm')
+                ->color('success')
+                ->button()
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
+            ->searchPlaceholder('Buscar');
+    }
+
+    protected function getCreateFormAction(): Action
     {
         return Action::make('create')
             ->label('Crear Médico') // Texto personalizado del botón
@@ -321,49 +348,49 @@ public static function table(Table $table): Table
         ];
     }
 
-public static function handleMedicoCreation(array $data): Medico
-{
-    DB::beginTransaction();
-    
-    try {
-        $persona = Persona::where('dni', $data['dni'])->first();
+    public static function handleMedicoCreation(array $data): Medico
+    {
+        DB::beginTransaction();
         
-        if (!$persona) {
-            $persona = Persona::create([
-                'dni' => $data['dni'],
-                'primer_nombre' => $data['primer_nombre'],
-                'segundo_nombre' => $data['segundo_nombre'] ?? null,
-                'primer_apellido' => $data['primer_apellido'],
-                'segundo_apellido' => $data['segundo_apellido'] ?? null,
-                'telefono' => $data['telefono'] ?? null,
-                'direccion' => $data['direccion'] ?? null,
-                'sexo' => $data['sexo'],
-                'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-                'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
-            ]);
+        try {
+            $persona = Persona::where('dni', $data['dni'])->first();
+            
+            if (!$persona) {
+                $persona = Persona::create([
+                    'dni' => $data['dni'],
+                    'primer_nombre' => $data['primer_nombre'],
+                    'segundo_nombre' => $data['segundo_nombre'] ?? null,
+                    'primer_apellido' => $data['primer_apellido'],
+                    'segundo_apellido' => $data['segundo_apellido'] ?? null,
+                    'telefono' => $data['telefono'] ?? null,
+                    'direccion' => $data['direccion'] ?? null,
+                    'sexo' => $data['sexo'],
+                    'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+                    'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
+                ]);
+            }
+
+            $medico = Medico::updateOrCreate(
+                ['persona_id' => $persona->id],
+                [
+                    'numero_colegiacion' => $data['numero_colegiacion'],
+                    'horario_entrada' => $data['horario_entrada'],
+                    'horario_salida' => $data['horario_salida']
+                ]
+            );
+
+            if (isset($data['especialidades'])) {
+                $medico->especialidades()->sync($data['especialidades']);
+            }
+
+            DB::commit();
+            
+            return $medico;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
-
-        $medico = Medico::updateOrCreate(
-            ['persona_id' => $persona->id],
-            [
-                'numero_colegiacion' => $data['numero_colegiacion'],
-                'horario_entrada' => $data['horario_entrada'],
-                'horario_salida' => $data['horario_salida']
-            ]
-        );
-
-        if (isset($data['especialidades'])) {
-            $medico->especialidades()->sync($data['especialidades']);
-        }
-
-        DB::commit();
-        
-        return $medico;
-    } catch (\Exception $e) {
-        DB::rollBack();
-        throw $e;
     }
-}
 }
 
 

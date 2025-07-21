@@ -7,6 +7,7 @@ use Filament\Forms\Form;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Components\Hidden;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
@@ -29,6 +30,8 @@ class RoleResource extends Resource
     {
         return $form
             ->schema([
+                Hidden::make('centro_id')
+                ->default(fn() => session('current_centro_id')),
                 TextInput::make('name')
                     ->label('Nombre')
                     ->required()
@@ -41,11 +44,28 @@ class RoleResource extends Resource
                     ])
                     ->default('web')
                     ->required(),
-                CheckboxList::make('permissions')
-                    ->label('Permisos')
-                    ->relationship('permissions', 'name')
-                    ->columns(2)
-                    ->helperText('Selecciona los permisos para este rol'),
+                Forms\Components\Section::make('Permisos del Rol')
+                    ->description('Selecciona los permisos que tendrá este rol')
+                    ->schema([
+                        CheckboxList::make('permissions')
+                            ->label('')
+                            ->relationship('permissions', 'name')
+                            ->columns(3)
+                            ->gridDirection('row')
+                            ->searchable()
+                            ->bulkToggleable()
+                            ->options(function() {
+                                $permissions = Permission::all();
+                                $options = [];
+
+                                foreach ($permissions as $permission) {
+                                $options[$permission->id] = $permission->name;
+                            }
+
+                            return $options;
+                        })
+                    ])
+                    ->collapsible()
             ]);
     }
 
@@ -54,6 +74,7 @@ class RoleResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('id')->sortable(),
+                TextColumn::make('centro.nombre')->label('Centro Médico')->searchable()->sortable(),
                 TextColumn::make('name')->label('Nombre')->searchable(),
                 TextColumn::make('guard_name')->label('Guard'),
                 TextColumn::make('created_at')->label('Creado')->dateTime('d/m/Y H:i'),
@@ -81,14 +102,23 @@ class RoleResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery();
+        $query = parent::getEloquentQuery();
+        
+        // Si el usuario no es root, excluimos el rol root
+        if (!auth()->user()?->hasRole('root')) {
+            return $query->where(function ($query) {
+                $query->where('name', '!=', 'root')
+                      ->where('centro_id', session('current_centro_id'));
+            });
+        }
+        
+        return $query;
     }
 
     public static function canViewAny(): bool
     {
         $user = auth()->user();
-        return $user && ($user->hasRole('root') || $user->hasRole('superadmin'));
+        return $user->hasRole('root') || $user->hasRole('administrador centro');
     }
-
-    
+  
 }
