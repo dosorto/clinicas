@@ -64,6 +64,11 @@ class Pacientes extends ModeloBase
         return $this->hasMany(Citas::class, 'paciente_id');
     }
 
+    public function consultas(): HasMany
+    {
+        return $this->hasMany(Consulta::class, 'paciente_id');
+    }
+
     // Relación muchos a muchos con Enfermedade
     public function enfermedades()
     {
