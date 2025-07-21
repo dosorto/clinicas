@@ -62,6 +62,7 @@ class EditMedico extends EditRecord
             'sexo' => $data['sexo'],
             'fecha_nacimiento' => $data['fecha_nacimiento'],
             'nacionalidad_id' => $data['nacionalidad_id'],
+
         ]);
 
         // 2. Actualizar número de colegiación
@@ -69,7 +70,13 @@ class EditMedico extends EditRecord
             'numero_colegiacion' => $data['numero_colegiacion']
         ]);
 
-       
+        // actualizar horario Medico
+        $record->update([
+            'horario_entrada' => $data['horario_entrada'],
+            'horario_salida' => $data['horario_salida'],
+        ]);
+
+        
 
         // 3. Sincronizar especialidades (con verificación explícita)
         if (array_key_exists('especialidades', $data)) {
