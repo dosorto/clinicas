@@ -9,9 +9,6 @@
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {{ $patient->persona->nombre_completo }}
             </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                ID del Paciente: {{ $patient->id }}
-            </p>
         </div>
     </div>
 

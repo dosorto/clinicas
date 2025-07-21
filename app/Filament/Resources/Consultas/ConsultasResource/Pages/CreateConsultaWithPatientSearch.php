@@ -63,12 +63,13 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                             ->label('Buscar Paciente')
                             ->options(function () {
                                 return Pacientes::with('persona')
+                                    ->whereHas('citas') // Solo pacientes que tienen citas
                                     ->get()
                                     ->filter(function ($p) {
                                         return $p->persona !== null;
                                     })
                                     ->mapWithKeys(function ($p) {
-                                        return [$p->id => $p->persona->nombre_completo . ' - ID: ' . $p->id];
+                                        return [$p->id => $p->persona->nombre_completo];
                                     })
                                     ->toArray();
                             })
@@ -76,7 +77,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                             ->preload()
                             ->required()
                             ->placeholder('Escriba el nombre del paciente...')
-                            ->helperText('Busque y seleccione el paciente para quien desea crear la consulta.')
+                            ->helperText('Busque y seleccione el paciente que tiene citas programadas.')
                             ->columnSpanFull(),
                     ])
                     ->columnSpan('full'),
@@ -224,8 +225,9 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
 
                         Forms\Components\Textarea::make('observaciones')
                             ->label('Observaciones')
+                            ->required()
                             ->rows(3)
-                            ->placeholder('Observaciones adicionales (opcional)...')
+                            ->placeholder('Describa las observaciones de la consulta...')
                             ->columnSpanFull(),
                     ]),
             ])
