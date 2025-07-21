@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Builder;
 use app\Models\Centros_Medicos\Centro;
 
-class Persona extends Model
+class Persona extends ModeloBase
 {
     /** @use HasFactory<\Database\Factories\PersonaFactory> */
     use HasFactory, SoftDeletes;
@@ -28,17 +28,32 @@ class Persona extends Model
         'fecha_nacimiento',
         'nacionalidad_id',
         'fotografia',
-        'centro_id'
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
-    protected $casts = [
-        'fotografia' => 'string',
-        'fecha_nacimiento' => 'date',
-    ];
+    protected static function booted()
+    {
+        parent::booted();
+        
+        // Validación de DNI único (funcionalidad específica del modelo Persona)
+        static::saving(function ($model) {
+            $query = static::where('dni', $model->dni);
+            
+            if ($model->exists) {
+                $query->where('id', '!=', $model->id);
+            }
+            
+            if ($query->exists()) {
+                throw new \Illuminate\Validation\ValidationException(
+                    validator([], []), 
+                    ['dni' => 'El DNI ya está en uso.']
+                );
+            }
+        });
+    }
 
-    /**
-     * Accesor para el nombre completo (versión completa)
-     */
     public function getNombreCompletoAttribute()
     {
         return trim("{$this->primer_nombre} {$this->segundo_nombre} {$this->primer_apellido} {$this->segundo_apellido}");
@@ -188,10 +203,7 @@ class Persona extends Model
     {
         return $this->hasOne(User::class, 'persona_id');
     }
-
-    /**
-     * Relación con centro médico
-     */
+   
     public function centro(): BelongsTo
     {
         return $this->belongsTo(Centros_Medico::class, 'centro_id');
@@ -230,7 +242,7 @@ class Persona extends Model
     /**
      * Limpiar archivo de fotografía anterior cuando se actualiza
      */
-    protected static function booted()
+    protected static function bootedd()
     {
         static::updating(function ($persona) {
             if ($persona->isDirty('fotografia')) {

@@ -94,6 +94,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'borrar personas', 'borrar nacionalidad', 'borrar usuario', 'borrar pacientes', 'borrar centromedico', 'borrar medicocentromedico', 'borrar enfermedades', 'borrar especialidad', 'borrar especialidadmedicos', 'borrar medicos', 'borrar enfermedades_pacientes', 'borrar recetas', 'borrar consultas', 'borrar medicocentromedico', 'borrar centromedico',
         ]);
 
+        $roleAdminCentro = Role::create(['name' => 'administrador centro']);
+        $roleAdminCentro->givePermissionTo([
+            // VER
+            'ver medicos', 'ver pacientes', 'ver usuario', 'ver enfermedades', 'ver especialidad', 'ver recetas', 'ver consultas',
+            // CREAR
+            'crear medicos', 'crear pacientes', 'crear usuario', 'crear recetas', 'crear consultas',
+            // ACTUALIZAR
+            'actualizar medicos', 'actualizar pacientes', 'actualizar usuario', 'actualizar recetas', 'actualizar consultas',
+            // BORRAR
+            'borrar medicos', 'borrar pacientes', 'borrar usuario', 'borrar recetas', 'borrar consultas'
+        ]);
+
         $roleAdminNacionalidades = Role::create(['name' => 'admin nacionalidades']);
         $roleAdminNacionalidades->givePermissionTo(['crear nacionalidad', 'ver nacionalidad', 'actualizar nacionalidad', 'borrar nacionalidad']);
 

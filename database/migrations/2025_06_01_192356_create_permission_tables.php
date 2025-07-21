@@ -45,6 +45,8 @@ return new class extends Migration
             } else {
                 $table->unique(['name', 'guard_name']);
             }
+            $table->unsignedBigInteger("centro_id")->nullable();
+            $table->foreign("centro_id")->references("id")->on("centros_medicos");
         });
 
         Schema::create($tableNames['model_has_permissions'], static function (Blueprint $table) use ($tableNames, $columnNames, $pivotPermission, $teams) {

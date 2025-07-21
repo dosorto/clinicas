@@ -25,7 +25,10 @@ trait TenantScoped
         // Solo aplicar scope global si no es usuario root
         static::addGlobalScope('centros_medicos', function (Builder $builder) {
             if (!static::shouldBypassTenantScope()) {
-                $builder->where('centro_id', static::getCurrentTenantId());
+                $tenantId = static::getCurrentTenantId();
+                if ($tenantId) {
+                    $builder->where('centro_id', $tenantId);
+                }
             }
         });
     }
@@ -36,7 +39,8 @@ trait TenantScoped
     protected static function shouldBypassTenantScope(): bool
     {
         if (Auth::check() && Auth::user()->hasRole('root')) {
-            return true;
+            // Root puede ver todos los datos si no hay un centro específico seleccionado
+            return !session('current_centro_id');
         }
         return false;
     }
@@ -46,16 +50,40 @@ trait TenantScoped
      */
     protected static function getCurrentTenantId(): ?int
     {
-        // Primero intentar obtener del tenant actual de Spatie
-        if ($tenant = Tenant::current()) {
-            return $tenant->id;
+        // Primero verificar si hay un centro seleccionado en la sesión
+        if ($centroId = session('current_centro_id')) {
+            return $centroId;
         }
 
-        // Si hay usuario autenticado, usar su centro_id
+        // Luego intentar obtener del tenant actual de Spatie
+        if ($tenant = Tenant::current()) {
+            return $tenant->centro_id;
+        }
+
+        // Si hay usuario autenticado y no es root, usar su centro_id
         if (Auth::check() && !Auth::user()->hasRole('root')) {
             return Auth::user()->centro_id;
         }
 
         return null;
+    }
+
+    /**
+     * Scope para filtrar por un centro específico (útil para root)
+     */
+    public function scopeForCentro($query, $centroId)
+    {
+        return $query->where('centro_id', $centroId);
+    }
+
+    /**
+     * Scope para obtener datos de todos los centros (solo root)
+     */
+    public function scopeAllCentros($query)
+    {
+        if (Auth::check() && Auth::user()->hasRole('root')) {
+            return $query->withoutGlobalScope('centros_medicos');
+        }
+        return $query;
     }
 }

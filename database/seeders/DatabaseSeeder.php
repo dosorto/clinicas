@@ -16,19 +16,30 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
+        // Crear roles y permisos primero
+        $this->call([
+            RolesAndPermissionsSeeder::class,
+            CentrosMedicoSeeder::class, // Crear centros antes de asignar usuarios
+        ]);
+
+        // Crear usuario root después de tener los centros
         User::factory()->create([
             'name' => 'root',
             'email' => 'root@example.com',
         ]);
-        $this->call([
-            RolesAndPermissionsSeeder::class
-        ]);
+        
         $user = User::find(1);
         $user->assignRole('root');
+        
+        // Asignar el primer centro médico (Hospital San Lucas) al usuario root
+        $primerCentro = \App\Models\Centros_Medico::where('nombre_centro', 'Hospital San Lucas')->first();
+        if ($primerCentro) {
+            $user->centro_id = $primerCentro->id;
+            $user->save();
+        }
 
+        // Continuar con el resto de seeders
         $this->call([
-          //TenantSeeder::class,
-          CentrosMedicoSeeder::class,
           EspecialidadSeeder::class,
           NacionalidadSeeder::class,
           PersonaSeeder::class,
@@ -40,8 +51,6 @@ class DatabaseSeeder extends Seeder
           EspecialidadMedicoSeeder::class,
           PacientesSeeder::class,
           CitasSeeder::class,
-
-
         ]);
 
 

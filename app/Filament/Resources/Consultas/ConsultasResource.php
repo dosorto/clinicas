@@ -21,6 +21,7 @@ use App\Filament\Resources\Consultas\ConsultasResource\Pages\ListConsultas;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\CreateConsultas;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\EditConsultas;
 
+
 class ConsultasResource extends Resource
 {
     protected static ?string $model = Consulta::class;
@@ -39,7 +40,7 @@ class ConsultasResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form    
+        return $form
             ->schema([
                 // El campo centro_id se asigna automáticamente y se oculta
              Forms\Components\Hidden::make('centro_id')
@@ -95,18 +96,24 @@ class ConsultasResource extends Resource
                             ->label('Diagnóstico')
                             ->required()
                             ->rows(4)
-                            ->columnSpanFull(),
+                            ->maxLength(65535)
+                            ->columnSpanFull()
+                            ->autosize(),
 
                         Forms\Components\Textarea::make('tratamiento')
                             ->label('Tratamiento')
                             ->required()
                             ->rows(4)
-                            ->columnSpanFull(),
+                            ->maxLength(65535)
+                            ->columnSpanFull()
+                            ->autosize(),
 
                         Forms\Components\Textarea::make('observaciones')
                             ->label('Observaciones')
                             ->rows(3)
-                            ->columnSpanFull(),
+                            ->maxLength(65535)
+                            ->columnSpanFull()
+                            ->autosize(),
                     ]),
             ]);
     }
@@ -115,11 +122,6 @@ class ConsultasResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
-                    ->sortable()
-                    ->searchable(),
-
                 Tables\Columns\TextColumn::make('paciente.persona.nombre_completo')
                     ->label('Paciente')
                     ->sortable()
@@ -134,28 +136,6 @@ class ConsultasResource extends Resource
                     ->label('Fecha Cita')
                     ->date()
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('diagnostico')
-                    ->label('Diagnóstico')
-                    ->limit(50)
-                    ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
-                        $state = $column->getState();
-                        if (strlen($state) <= 50) {
-                            return null;
-                        }
-                        return $state;
-                    }),
-
-                Tables\Columns\TextColumn::make('tratamiento')
-                    ->label('Tratamiento')
-                    ->limit(50)
-                    ->tooltip(function (Tables\Columns\TextColumn $column): ?string {
-                        $state = $column->getState();
-                        if (strlen($state) <= 50) {
-                            return null;
-                        }
-                        return $state;
-                    }),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha Consulta')
@@ -234,14 +214,12 @@ class ConsultasResource extends Resource
                     ->schema([
                         Infolists\Components\Grid::make(2)
                             ->schema([
-                                Infolists\Components\TextEntry::make('id')
-                                    ->label('ID'),
-
                                 Infolists\Components\TextEntry::make('created_at')
                                     ->label('Fecha de Consulta')
                                     ->dateTime(),
                             ]),
-                    ]),
+                        ]),
+                    
 
                 Infolists\Components\Section::make('Participantes')
                     ->schema([
@@ -259,37 +237,71 @@ class ConsultasResource extends Resource
                             ]),
                     ]),
 
-                Infolists\Components\Section::make('Detalles Médicos')
+                Infolists\Components\Section::make('Detalles de Consulta')
                     ->schema([
-                        Infolists\Components\TextEntry::make('diagnostico')
-                            ->label('Diagnóstico')
-                            ->columnSpanFull(),
-
-                        Infolists\Components\TextEntry::make('tratamiento')
-                            ->label('Tratamiento')
-                            ->columnSpanFull(),
-
-                        Infolists\Components\TextEntry::make('observaciones')
-                            ->label('Observaciones')
-                            ->columnSpanFull()
-                            ->placeholder('Sin observaciones'),
-                    ]),
-
-                Infolists\Components\Section::make('Información de Sistema')
-                    ->schema([
-                        Infolists\Components\Grid::make(2)
+                        Infolists\Components\Section::make('Diagnóstico')
                             ->schema([
-                                Infolists\Components\TextEntry::make('updated_at')
-                                    ->label('Última Actualización')
-                                    ->dateTime(),
+                                Infolists\Components\TextEntry::make('diagnostico')
+                                    ->hiddenLabel()
+                                    ->placeholder('Sin diagnóstico registrado')
+                                    ->columnSpanFull()
+                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin diagnóstico registrado')
+                                    ->copyable()
+                                    ->extraAttributes([
+                                        'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
+                                        'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
+                                    ]),
+                            ])
+                            ->collapsible()
+                            ->collapsed(false),
 
-                                Infolists\Components\TextEntry::make('deleted_at')
-                                    ->label('Fecha de Eliminación')
-                                    ->dateTime()
-                                    ->placeholder('No eliminado'),
-                            ]),
-                    ])
-                    ->collapsible(),
+                        Infolists\Components\Section::make('Tratamiento')
+                            ->schema([
+                                Infolists\Components\TextEntry::make('tratamiento')
+                                    ->hiddenLabel()
+                                    ->placeholder('Sin tratamiento registrado')
+                                    ->columnSpanFull()
+                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin tratamiento registrado')
+                                    ->copyable()
+                                    ->extraAttributes([
+                                        'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
+                                        'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
+                                    ]),
+                            ])
+                            ->collapsible()
+                            ->collapsed(false),
+
+                        Infolists\Components\Section::make('Observaciones')
+                            ->schema([
+                                Infolists\Components\TextEntry::make('observaciones')
+                                    ->hiddenLabel()
+                                    ->placeholder('Sin observaciones registradas')
+                                    ->columnSpanFull()
+                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin observaciones registradas')
+                                    ->copyable()
+                                    ->extraAttributes([
+                                        'style' => 'white-space: pre-line; text-align: left; word-wrap: break-word; max-height: 200px; overflow-y: auto; padding: 12px; border-radius: 6px; border: 1px solid; line-height: 1.6;',
+                                        'class' => 'bg-gray-50 border-gray-200 text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100'
+                                    ]),
+                            ])
+                            ->collapsible()
+                            ->collapsed(false),
+                    ]),                // Sección de información del sistema ocultada por solicitud del usuario
+                // Infolists\Components\Section::make('Información de Sistema')
+                //     ->schema([
+                //         Infolists\Components\Grid::make(2)
+                //             ->schema([
+                //                 Infolists\Components\TextEntry::make('updated_at')
+                //                     ->label('Última Actualización')
+                //                     ->dateTime(),
+
+                //                 Infolists\Components\TextEntry::make('deleted_at')
+                //                     ->label('Fecha de Eliminación')
+                //                     ->dateTime()
+                //                     ->placeholder('No eliminado'),
+                //             ]),
+                //     ])
+                //     ->collapsible(),
             ]);
     }
 
@@ -304,7 +316,8 @@ class ConsultasResource extends Resource
     {
         return [
             'index' => Pages\ListConsultas::route('/'),
-            'create' => Pages\CreateConsultas::route('/create'),
+            'create' => Pages\CreateConsultaWithPatientSearch::route('/create'),
+            'create-simple' => Pages\CreateConsultas::route('/create-simple'),
             'edit' => Pages\EditConsultas::route('/{record}/edit'),
         ];
     }

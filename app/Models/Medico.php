@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Traits\TenantScoped; 
 
-class Medico extends Model
+class Medico extends ModeloBase
 {
     use HasFactory;
     use SoftDeletes;
@@ -46,27 +46,5 @@ protected $table = 'medicos';
     {
     return $this->belongsToMany(Especialidad::class, 'especialidad_medicos', 'medico_id', 'especialidad_id');
     }
-    protected static function booted()
-    {
-        parent::booted();
-
-        static::creating(function ($model) {
-            if (Auth::check()) {
-                $model->created_by = Auth::id();
-            }
-        });
-
-        static::updating(function ($model) {
-            if (Auth::check()) {
-                $model->updated_by = Auth::id();
-            }
-        });
-
-        static::deleting(function ($model) {
-            if (Auth::check()) {
-                $model->deleted_by = Auth::id();
-                $model->save();
-            }
-        });
-    }
+    
 }

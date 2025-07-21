@@ -17,13 +17,7 @@ class EspecialidadFactory extends Factory
     public function definition(): array
     {
         return [
-        'especialidad' => $this->faker->jobTitle(),
-        'created_at'   => now(),
-        'updated_at'   => now(),
-        'deleted_at'   => null,
-        'created_by'   => 1,
-        'updated_by'   => null,
-        'deleted_by'   => null,
+        
             
         ];
     }

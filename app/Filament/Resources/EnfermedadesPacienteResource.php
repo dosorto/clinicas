@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class EnfermedadesPacienteResource extends Resource
 {
+     protected static bool $shouldRegisterNavigation = false;
     protected static ?string $model = Enfermedades__Paciente::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
@@ -28,10 +29,10 @@ class EnfermedadesPacienteResource extends Resource
     protected static ?string $modelLabel = 'Enfermedad de Paciente';
     protected static ?string $pluralModelLabel = 'Enfermedades de Pacientes';
 
-    public static function shouldRegisterNavigation(): bool
-    {
-        return auth()->user()->can('ver enfermedades_pacientes');
-    }
+   public static function shouldRegisterNavigation(): bool
+{
+    return false && auth()->user()->can('ver enfermedades_pacientes'); // Siempre será false
+}
 
     public static function form(Form $form): Form
     {
