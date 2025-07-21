@@ -62,7 +62,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('persona_id'); // referencia a persona
             $table->foreign('persona_id')->references('id')->on('personas');
-            $table->string('numero_colegiacion')->unique(); // número de colegiación
+            $table->string('numero_colegiacion');//->unique(); // número de colegiación
             $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
             $table->foreign("centro_id")->references("id")->on("centros_medicos");
           
