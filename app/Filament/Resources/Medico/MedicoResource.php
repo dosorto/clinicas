@@ -348,6 +348,18 @@ class MedicoResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        // Si no es usuario root, filtrar por centro actual
+        if (!auth()->user()?->hasRole('root')) {
+            $query->where('centro_id', session('current_centro_id'));
+        }
+
+        return $query;
+    }
+
     public static function handleMedicoCreation(array $data): Medico
     {
         DB::beginTransaction();

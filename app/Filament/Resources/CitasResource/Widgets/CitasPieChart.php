@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\Widgets;
+namespace App\Filament\Resources\CitasResource\Widgets;
 
 use Filament\Widgets\ChartWidget;
 use App\Models\Citas;
@@ -8,25 +8,15 @@ use App\Models\Citas;
 class CitasPieChart extends ChartWidget
 {
     protected static ?string $heading = 'Estado de las Citas';
-    protected static ?int $sort = 1;
-    protected int | string | array $columnSpan = 'full';
+    protected static ?int $sort = 2;
     
     protected function getData(): array
     {
-        // Obtener las citas agrupadas por estado, filtradas por centro actual
-        $currentCentroId = session('current_centro_id');
-        
-        $query = Citas::query();
-        
-        // Si no es usuario root, filtrar por centro actual
-        if (!auth()->user()?->hasRole('root')) {
-            $query->where('centro_id', $currentCentroId);
-        }
-        
-        $pendientes = $query->clone()->where('estado', 'Pendiente')->count();
-        $confirmadas = $query->clone()->where('estado', 'Confirmado')->count();
-        $canceladas = $query->clone()->where('estado', 'Cancelado')->count();
-        $realizadas = $query->clone()->where('estado', 'Realizada')->count();
+        // Obtener las citas agrupadas por estado
+        $pendientes = Citas::where('estado', 'Pendiente')->count();
+        $confirmadas = Citas::where('estado', 'Confirmado')->count();
+        $canceladas = Citas::where('estado', 'Cancelado')->count();
+        $realizadas = Citas::where('estado', 'Realizada')->count();
         
         return [
             'datasets' => [
@@ -72,10 +62,5 @@ class CitasPieChart extends ChartWidget
                 ],
             ],
         ];
-    }
-
-    public static function canView(): bool
-    {
-        return true; // Simplificado para debugging
     }
 }

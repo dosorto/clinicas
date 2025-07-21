@@ -44,8 +44,14 @@ class CitasResource extends Resource
                 Select::make('medico_id')
                     ->label('Médico')
                     ->options(function () {
-                        return Medico::with('persona')
-                            ->get()
+                        $query = Medico::with('persona');
+                        
+                        // Si no es usuario root, filtrar por centro actual
+                        if (!auth()->user()?->hasRole('root')) {
+                            $query->where('centro_id', session('current_centro_id'));
+                        }
+                        
+                        return $query->get()
                             ->mapWithKeys(fn($m) => [
                                 $m->id => "{$m->persona->primer_nombre} {$m->persona->primer_apellido}",
                             ]);
@@ -56,8 +62,14 @@ class CitasResource extends Resource
                 Select::make('paciente_id')
                     ->label('Paciente')
                     ->options(function () {
-                        return Pacientes::with('persona')
-                            ->get()
+                        $query = Pacientes::with('persona');
+                        
+                        // Si no es usuario root, filtrar por centro actual
+                        if (!auth()->user()?->hasRole('root')) {
+                            $query->where('centro_id', session('current_centro_id'));
+                        }
+                        
+                        return $query->get()
                             ->mapWithKeys(fn($p) => [
                                 $p->id => "{$p->persona->primer_nombre} {$p->persona->primer_apellido}",
                             ]);
@@ -182,6 +194,18 @@ class CitasResource extends Resource
     public static function getRelations(): array
     {
         return [];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        // Si no es usuario root, filtrar por centro actual
+        if (!auth()->user()?->hasRole('root')) {
+            $query->where('centro_id', session('current_centro_id'));
+        }
+
+        return $query;
     }
 
     public static function getPages(): array
