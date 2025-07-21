@@ -150,20 +150,15 @@ class CentrosMedicoSeeder extends Seeder
             }
         }
 
-        // Keep the original seeder entry
-        $originalCentro = Centros_Medico::create([
-            'nombre_centro' => 'Hospital SL',
-            'direccion' => 'Choluteca',
-            'telefono' => '123',
-            'rtn' => '123456789',
-        ]);
-
-        if (!\App\Models\Tenant::where('centro_id', $originalCentro->id)->exists()) {
+        // Asignar el primer centro (Hospital San Lucas) como el centro principal para root
+        $principalCentro = Centros_Medico::where('nombre_centro', 'Hospital San Lucas')->first();
+        
+        if ($principalCentro && !\App\Models\Tenant::where('centro_id', $principalCentro->id)->exists()) {
             \App\Models\Tenant::create([
-                'centro_id' => $originalCentro->id,
-                'name' => $originalCentro->nombre_centro,
-                'domain' => 'centro' . $originalCentro->id . '.localhost',
-                'database' => 'clinica_' . $originalCentro->id,
+                'centro_id' => $principalCentro->id,
+                'name' => $principalCentro->nombre_centro,
+                'domain' => 'centro' . $principalCentro->id . '.localhost',
+                'database' => 'clinica_' . $principalCentro->id,
             ]);
         }
     }
