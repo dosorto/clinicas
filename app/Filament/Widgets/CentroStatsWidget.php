@@ -203,7 +203,7 @@ class CentroStatsWidget extends BaseWidget
                 ->extraAttributes([
                     'class' => 'cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors',
                 ]);
-
+                
             $stats[] = Stat::make('Citas Realizadas', $citasRealizadasGlobal)
                 ->description('Completadas hoy')
                 ->descriptionIcon('heroicon-m-check-badge')
