@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class CaiCorrelativo extends Model
+class CAI_Correlativos extends Model
 {
-    /** @use HasFactory<\Database\Factories\CaiCorrelativoFactory> */
+    /** @use HasFactory<\Database\Factories\CAI_CorrelativosFactory> */
     use HasFactory;
 }

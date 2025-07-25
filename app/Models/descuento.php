@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class descuento extends Model
+class Descuento extends Model
 {
     /** @use HasFactory<\Database\Factories\DescuentoFactory> */
     use HasFactory;

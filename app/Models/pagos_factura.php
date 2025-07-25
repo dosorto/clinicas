@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class pagos_factura extends Model
+class Pagos_Factura extends Model
 {
-    /** @use HasFactory<\Database\Factories\PagosFacturaFactory> */
+    /** @use HasFactory<\Database\Factories\Pagos_FacturaFactory> */
     use HasFactory;
 }

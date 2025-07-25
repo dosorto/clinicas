@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class cuentras_por_cobrar extends Model
+class Cuentas_Por_Cobrar extends Model
 {
-    /** @use HasFactory<\Database\Factories\CuentrasPorCobrarFactory> */
+    /** @use HasFactory<\Database\Factories\Cuentas_Por_CobrarFactory> */
     use HasFactory;
 }
