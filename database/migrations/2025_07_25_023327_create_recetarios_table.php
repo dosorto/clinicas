@@ -13,29 +13,19 @@ return new class extends Migration
     {
         Schema::create('recetarios', function (Blueprint $table) {
             $table->id();
-            
-            // Relaciones principales
             $table->unsignedBigInteger('medico_id');
             $table->foreign('medico_id')->references('id')->on('medicos');
-            $table->unsignedBigInteger('consulta_id')->nullable();
+            $table->unsignedBigInteger('consulta_id');
             $table->foreign('consulta_id')->references('id')->on('consultas');
             $table->unsignedBigInteger('centro_id')->nullable();
             $table->foreign('centro_id')->references('id')->on('centros_medicos');
-            
-            // Campos básicos del recetario
-            $table->string('numero_recetario', 50)->unique()->nullable();
-            $table->text('observaciones_generales')->nullable();
-            $table->enum('estado', ['borrador', 'activo', 'suspendido', 'cancelado'])->default('borrador');
-            $table->date('fecha_emision')->nullable();
-            $table->date('fecha_vencimiento')->nullable();
-            
-            // Auditoría
+            $table->string('logo')->nullable();
+        
+            $table->timestamps();
+            $table->softDeletes();
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
             $table->integer('deleted_by')->nullable();
-            
-            $table->timestamps();
-            $table->softDeletes();
         });
     }
 
