@@ -38,35 +38,48 @@ class MedicoResource extends Resource
             Wizard\Step::make('Datos Personales')
                 ->schema([
 
-                     Forms\Components\TextInput::make('dni')
-                        ->label('DNI')
-                        ->required()
-                        ->maxLength(255)
-                        ->placeholder('Ingrese su DNI')
-                        ->disabled(fn ($operation) => $operation === 'edit') // Deshabilitar en edición
-                        ->dehydrated() // Mantener el valor al enviar el formulario
-                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                    if ($state) {
-                                        $existingPersona = Persona::where('dni', $state)->first();
-                                        if ($existingPersona) {
-                                            $set('primer_nombre', $existingPersona->primer_nombre);
-                                            $set('segundo_nombre', $existingPersona->segundo_nombre);
-                                            $set('primer_apellido', $existingPersona->primer_apellido);
-                                            $set('segundo_apellido', $existingPersona->segundo_apellido);
-                                            $set('telefono', $existingPersona->telefono);
-                                            $set('direccion', $existingPersona->direccion);
-                                            $set('sexo', $existingPersona->sexo);
-                                            $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
-                                            $set('nacionalidad_id', $existingPersona->nacionalidad_id);
-                                            $set('persona_id', $existingPersona->id);
-                                            
-                                            Notification::make()
-                                                ->title('Persona encontrada')
-                                                ->body("Se encontró: {$existingPersona->nombre_completo}")
-                                                ->success()
-                                                ->send();
+                        Forms\Components\TextInput::make('dni')
+                            ->label('DNI')
+                            ->required()
+                            ->maxLength(255)
+                            ->placeholder('Ingrese su DNI')
+                            ->disabled(fn ($operation) => $operation === 'edit')
+                            ->dehydrated()
+                            ->live(debounce: 500) // Esto hace que se actualice cada 500ms después de dejar de escribir
+                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                if (strlen($state) >= 8) { // Asumiendo que el DNI tiene al menos 8 caracteres
+                                    $existingPersona = Persona::where('dni', $state)->first();
+                                    if ($existingPersona) {
+                                        $set('primer_nombre', $existingPersona->primer_nombre);
+                                        $set('segundo_nombre', $existingPersona->segundo_nombre);
+                                        $set('primer_apellido', $existingPersona->primer_apellido);
+                                        $set('segundo_apellido', $existingPersona->segundo_apellido);
+                                        $set('telefono', $existingPersona->telefono);
+                                        $set('direccion', $existingPersona->direccion);
+                                        $set('sexo', $existingPersona->sexo);
+                                        $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
+                                        $set('nacionalidad_id', $existingPersona->nacionalidad_id);
+                                        $set('persona_id', $existingPersona->id);
+                                        
+                                        Notification::make()
+                                            ->title('Persona encontrada')
+                                            ->body("Se encontró: {$existingPersona->nombre_completo}")
+                                            ->success()
+                                            ->send();
                                         } else {
                                             $set('persona_id', null);
+                                                            // Opcional: limpiar campos si no se encuentra la persona
+                                        if ($get('id') === null) { // Solo en creación
+                                            $set('primer_nombre', '');
+                                            $set('segundo_nombre', '');
+                                            $set('primer_apellido', '');
+                                            $set('segundo_apellido', '');
+                                            $set('telefono', '');
+                                            $set('direccion', '');
+                                            $set('sexo', '');
+                                            $set('fecha_nacimiento', null);
+                                            $set('nacionalidad_id', null);
+                                            }
                                         }
                                     }
                                 }),
