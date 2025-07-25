@@ -19,9 +19,15 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Persona::class, 'persona_id');
     }
+    
     public function centro()
     {
         return $this->belongsTo(Centros_Medico::class, 'centro_id');
+    }
+
+    public function medico()
+    {
+        return $this->hasOne(Medico::class, 'persona_id', 'persona_id');
     }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, SoftDeletes;

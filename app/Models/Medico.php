@@ -42,6 +42,10 @@ protected $table = 'medicos';
     return $this->hasMany(Receta::class, 'medico_id');
     }
 
+    public function recetarios() {
+        return $this->hasMany(Recetario::class, 'medico_id');
+    }
+
     public function especialidades()
     {
     return $this->belongsToMany(Especialidad::class, 'especialidad_medicos', 'medico_id', 'especialidad_id');
