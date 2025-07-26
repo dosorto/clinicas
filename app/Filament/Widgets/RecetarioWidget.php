@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use Filament\Widgets\Widget;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Form;
@@ -59,7 +60,7 @@ class RecetarioWidget extends Widget implements HasForms
                             }),
                     ])
                     ->headerActions([
-                        \Filament\Actions\Action::make('ver_perfil')
+                        Action::make('ver_perfil')
                             ->label('Ver Perfil Completo')
                             ->icon('heroicon-o-user-circle')
                             ->url(fn () => route('filament.admin.pages.perfil-medico'))
@@ -93,6 +94,15 @@ class RecetarioWidget extends Widget implements HasForms
 
         $medico = $user->medico;
 
+        if (!$medico) {
+            Notification::make()
+                ->title('Error')
+                ->body('No se encontró registro de médico asociado.')
+                ->danger()
+                ->send();
+            return;
+        }
+
         if (!$estado) {
             $medico->recetarios()->delete();
             
@@ -107,7 +117,7 @@ class RecetarioWidget extends Widget implements HasForms
                 Recetario::create([
                     'medico_id' => $medico->id,
                     'consulta_id' => null,
-                    'centro_id' => session('current_centro_id') ?? $user->centro_id,
+                    'centro_id' => session('current_centro_id') ?? $user->centro_id ?? null,
                 ]);
                 
                 Notification::make()

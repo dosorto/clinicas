@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -25,6 +26,7 @@ return new class extends Migration
 
             $table->text('medicamentos');
             $table->text('indicaciones');
+            $table->date('fecha_receta')->default(DB::raw('CURRENT_DATE'));
 
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();

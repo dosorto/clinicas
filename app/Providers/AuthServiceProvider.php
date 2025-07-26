@@ -17,6 +17,7 @@ class AuthServiceProvider extends ServiceProvider
         \Spatie\Permission\Models\Role::class => \App\Policies\RolePolicy::class,
         \App\Models\Centros_Medico::class => \App\Policies\CentrosMedicoPolicy::class,
         \App\Models\Enfermedades__Paciente::class => \App\Policies\EnfermedadesPacientePolicy::class,
+        \App\Filament\Pages\PerfilMedico::class => \App\Policies\PerfilMedicoPolicy::class,
     ];
 
     /**

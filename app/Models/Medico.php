@@ -30,6 +30,11 @@ protected $table = 'medicos';
         return $this->belongsTo(Centros_Medico::class, 'centro_id');
     }
 
+    public function centrosMedicos()
+    {
+        return $this->belongsToMany(Centros_Medico::class, 'centros_medicos_medicos', 'medico_id', 'centro_medico_id');
+    }
+
     public function persona() {
         return $this->belongsTo(Persona::class, 'persona_id');
     }
@@ -44,6 +49,10 @@ protected $table = 'medicos';
 
     public function recetarios() {
         return $this->hasMany(Recetario::class, 'medico_id');
+    }
+
+    public function recetario() {
+        return $this->hasOne(Recetario::class, 'medico_id')->latest();
     }
 
     public function especialidades()

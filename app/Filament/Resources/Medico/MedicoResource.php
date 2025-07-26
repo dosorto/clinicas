@@ -17,7 +17,8 @@ use Filament\Forms\Components\Wizard;
 use Illuminate\Support\Facades\DB;
 use Filament\Forms\Get;
 use Closure;
-use Filament\Actions\Action;
+use Filament\Actions\Action as PageAction;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 
@@ -251,8 +252,153 @@ class MedicoResource extends Resource
                     Forms\Components\CheckboxList::make('especialidades')
                         ->relationship('especialidades', 'especialidad')
                         ->required()
-                        
                         ->columns(2),
+                ]),
+                
+            Wizard\Step::make('Usuario de Acceso')
+                ->description('Configure los datos de acceso del médico al sistema')
+                ->schema([
+                    Forms\Components\Section::make('¿Crear usuario de acceso?')
+                        ->description('Determine si este médico necesita acceso al sistema')
+                        ->schema([
+                            Forms\Components\Toggle::make('crear_usuario')
+                                ->label('Crear usuario de acceso para este médico')
+                                ->helperText('Active esta opción si el médico necesita acceder al sistema')
+                                ->default(true)
+                                ->live()
+                                ->inline(false)
+                                ->dehydrated(),
+                        ]),
+                        
+                    Forms\Components\Section::make('Datos del Usuario')
+                        ->description('Complete la información de acceso del médico')
+                        ->schema([
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\TextInput::make('username')
+                                        ->label('Nombre de usuario')
+                                        ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                        ->maxLength(255)
+                                        ->placeholder('Ej: juan.perez')
+                                        ->helperText('Usado para iniciar sesión en el sistema')
+                                        ->live(debounce: 500)
+                                        ->afterStateUpdated(function ($state, callable $set) {
+                                            // Auto-generar email basado en username si está vacío
+                                            $set('user_email', strtolower($state) . '@clinica.com');
+                                        })
+                                        ->rules([
+                                            'regex:/^[a-zA-Z0-9._-]+$/',
+                                            function () {
+                                                return function (string $attribute, $value, \Closure $fail) {
+                                                    if (\App\Models\User::where('name', $value)->exists()) {
+                                                        $fail('Este nombre de usuario ya está en uso.');
+                                                    }
+                                                };
+                                            },
+                                        ])
+                                        ->dehydrated(),
+                                        
+                                    Forms\Components\TextInput::make('user_email')
+                                        ->label('Email corporativo')
+                                        ->email()
+                                        ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                        ->maxLength(255)
+                                        ->placeholder('Ej: juan.perez@clinica.com')
+                                        ->helperText('Email para notificaciones y recuperación de contraseña')
+                                        ->rules([
+                                            function () {
+                                                return function (string $attribute, $value, \Closure $fail) {
+                                                    if (\App\Models\User::where('email', $value)->exists()) {
+                                                        $fail('Este email ya está en uso.');
+                                                    }
+                                                };
+                                            },
+                                        ])
+                                        ->dehydrated(),
+                                ]),
+                                
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\TextInput::make('user_password')
+                                        ->label('Contraseña')
+                                        ->password()
+                                        ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                        ->minLength(8)
+                                        ->maxLength(255)
+                                        ->placeholder('Mínimo 8 caracteres')
+                                        ->helperText('Contraseña inicial del médico (puede cambiarla después)')
+                                        ->dehydrated(),
+                                        
+                                    Forms\Components\TextInput::make('user_password_confirmation')
+                                        ->label('Confirmar contraseña')
+                                        ->password()
+                                        ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                        ->same('user_password')
+                                        ->placeholder('Repita la contraseña')
+                                        ->helperText('Debe coincidir con la contraseña anterior')
+                                        ->dehydrated(false), // No enviar al servidor
+                                ]),
+                                
+                            Forms\Components\Select::make('user_role')
+                                ->label('Rol en el sistema')
+                                ->options([
+                                    'medico' => 'Médico - Puede gestionar pacientes y consultas',
+                                    'admin' => 'Administrador - Acceso completo al sistema',
+                                    'recepcionista' => 'Recepcionista - Gestión de citas y pacientes',
+                                ])
+                                ->default('medico')
+                                ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                ->helperText('Define los permisos del usuario en el sistema')
+                                ->dehydrated(),
+                                
+                            Forms\Components\Toggle::make('user_active')
+                                ->label('Usuario activo')
+                                ->helperText('Determine si el usuario puede acceder inmediatamente')
+                                ->default(true)
+                                ->inline(false)
+                                ->dehydrated(),
+                                
+                            Forms\Components\Toggle::make('send_welcome_email')
+                                ->label('Enviar email de bienvenida')
+                                ->helperText('Envía las credenciales de acceso por email al médico')
+                                ->default(false)
+                                ->inline(false)
+                                ->dehydrated(),
+                        ])
+                        ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
+                        ->columns(1),
+                        
+                    Forms\Components\Section::make('Generación Automática')
+                        ->description('Opción rápida: generar datos automáticamente')
+                        ->schema([
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('auto_generate')
+                                    ->label('🎲 Generar datos automáticamente')
+                                    ->icon('heroicon-o-sparkles')
+                                    ->color('info')
+                                    ->action(function (callable $set, Forms\Get $get) {
+                                        // Obtener nombre de los datos de persona
+                                        $primerNombre = $get('primer_nombre');
+                                        $primerApellido = $get('primer_apellido');
+                                        
+                                        if ($primerNombre && $primerApellido) {
+                                            $username = strtolower($primerNombre . '.' . $primerApellido);
+                                            $username = preg_replace('/[^a-z0-9.]/', '', $username);
+                                            
+                                            $email = $username . '@clinica.com';
+                                            $password = 'Temp' . rand(1000, 9999);
+                                            
+                                            $set('username', $username);
+                                            $set('user_email', $email);
+                                            $set('user_password', $password);
+                                            $set('user_password_confirmation', $password);
+                                        }
+                                    }),
+                            ])
+                        ])
+                        ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
+                        ->collapsible()
+                        ->collapsed(),
                 ]),
         ])
         ->columnSpanFull() //  Esto hará que el Wizard ocupe el 100% del ancho
@@ -300,6 +446,15 @@ class MedicoResource extends Resource
                 Tables\Columns\TextColumn::make('horario_salida')
                     ->label('Hora de Salida')
                     ->time('g:i A'),
+
+                Tables\Columns\IconColumn::make('persona.user.id')
+                    ->label('Usuario')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger')
+                    ->tooltip(fn ($record) => $record->persona->user ? 'Tiene usuario: ' . $record->persona->user->name : 'Sin usuario de acceso'),
             ])
             ->filters([
                 // Filtros opcionales
@@ -313,6 +468,122 @@ class MedicoResource extends Resource
                     Tables\Actions\EditAction::make()
                         ->label('Editar')
                         ->icon('heroicon-o-pencil'),
+
+                    Tables\Actions\Action::make('crear_usuario')
+                        ->label('Crear Usuario')
+                        ->icon('heroicon-o-user-plus')
+                        ->color('success')
+                        ->visible(fn (Medico $record) => !$record->persona->user)
+                        ->modalHeading('Crear Usuario de Acceso')
+                        ->modalDescription('Complete los datos para crear un usuario de acceso al sistema para este médico')
+                        ->form([
+                            Forms\Components\Section::make('Datos del Usuario')
+                                ->schema([
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('username')
+                                                ->label('Nombre de usuario')
+                                                ->required()
+                                                ->maxLength(255)
+                                                ->placeholder('Ej: juan.perez')
+                                                ->helperText('Usado para iniciar sesión en el sistema')
+                                                ->live(debounce: 500)
+                                                ->afterStateUpdated(function ($state, callable $set) {
+                                                    $set('user_email', strtolower($state) . '@clinica.com');
+                                                })
+                                                ->rules([
+                                                    'regex:/^[a-zA-Z0-9._-]+$/',
+                                                    function () {
+                                                        return function (string $attribute, $value, \Closure $fail) {
+                                                            if (\App\Models\User::where('name', $value)->exists()) {
+                                                                $fail('Este nombre de usuario ya está en uso.');
+                                                            }
+                                                        };
+                                                    },
+                                                ]),
+                                                
+                                            Forms\Components\TextInput::make('user_email')
+                                                ->label('Email corporativo')
+                                                ->email()
+                                                ->required()
+                                                ->maxLength(255)
+                                                ->placeholder('Ej: juan.perez@clinica.com')
+                                                ->rules([
+                                                    function () {
+                                                        return function (string $attribute, $value, \Closure $fail) {
+                                                            if (\App\Models\User::where('email', $value)->exists()) {
+                                                                $fail('Este email ya está en uso.');
+                                                            }
+                                                        };
+                                                    },
+                                                ]),
+                                        ]),
+                                        
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('user_password')
+                                                ->label('Contraseña')
+                                                ->password()
+                                                ->required()
+                                                ->minLength(8)
+                                                ->maxLength(255)
+                                                ->placeholder('Mínimo 8 caracteres'),
+                                                
+                                            Forms\Components\TextInput::make('user_password_confirmation')
+                                                ->label('Confirmar contraseña')
+                                                ->password()
+                                                ->required()
+                                                ->same('user_password')
+                                                ->placeholder('Repita la contraseña'),
+                                        ]),
+                                        
+                                    Forms\Components\Select::make('user_role')
+                                        ->label('Rol en el sistema')
+                                        ->options([
+                                            'medico' => 'Médico - Puede gestionar pacientes y consultas',
+                                            'administrador centro' => 'Administrador Centro - Gestión completa del centro',
+                                            'root' => 'Root - Acceso completo al sistema',
+                                        ])
+                                        ->default('medico')
+                                        ->required(),
+                                        
+                                    Forms\Components\Toggle::make('user_active')
+                                        ->label('Usuario activo')
+                                        ->helperText('Determine si el usuario puede acceder inmediatamente')
+                                        ->default(true)
+                                        ->inline(false),
+                                ])
+                        ])
+                        ->action(function (Medico $record, array $data) {
+                            try {
+                                // Crear el usuario
+                                $user = \App\Models\User::create([
+                                    'name' => $data['username'],
+                                    'email' => $data['user_email'],
+                                    'password' => \Hash::make($data['user_password']),
+                                    'persona_id' => $record->persona->id,
+                                    'centro_id' => session('current_centro_id') ?? auth()->user()->centro_id,
+                                    'email_verified_at' => $data['user_active'] ? now() : null,
+                                ]);
+
+                                // Asignar rol
+                                $user->assignRole($data['user_role']);
+
+                                Notification::make()
+                                    ->title('✅ Usuario creado exitosamente')
+                                    ->body("Usuario '{$data['username']}' creado para {$record->persona->primer_nombre} {$record->persona->primer_apellido}")
+                                    ->success()
+                                    ->persistent()
+                                    ->send();
+
+                            } catch (\Exception $e) {
+                                Notification::make()
+                                    ->title('❌ Error al crear usuario')
+                                    ->body("Error: " . $e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
 
                     Tables\Actions\DeleteAction::make()
                         ->label('Eliminar')
@@ -343,9 +614,9 @@ class MedicoResource extends Resource
             ->searchPlaceholder('Buscar');
     }
 
-    protected function getCreateFormAction(): Action
+    protected function getCreateFormAction(): PageAction
     {
-        return Action::make('create')
+        return PageAction::make('create')
             ->label('Crear Médico') // Texto personalizado del botón
             ->submit('create')
             ->keyBindings(['mod+s']);

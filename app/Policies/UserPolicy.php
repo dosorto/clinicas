@@ -28,7 +28,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('root') || $user->hasRole('administrador centro');
+        return $user->hasRole('root') || $user->hasRole('administrador');
     }
 
     /**
@@ -36,7 +36,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        return $user->hasRole('root') || $user->hasrole('administrador centro');
+        return $user->hasRole('root') || $user->hasrole('administrador');
     }
 
     /**
@@ -44,7 +44,7 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        return $user->hasRole('root') || $user->hasRole('administrador centro');
+        return $user->hasRole('root') || $user->hasRole('administrador');
     }
 
     /**

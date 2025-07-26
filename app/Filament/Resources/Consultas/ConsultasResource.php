@@ -43,12 +43,9 @@ class ConsultasResource extends Resource
         return $form
             ->schema([
                 // El campo centro_id se asigna automáticamente y se oculta
-             Forms\Components\Hidden::make('centro_id')
+                Forms\Components\Hidden::make('centro_id')
                     ->default(fn () => \Illuminate\Support\Facades\Auth::check() ? \Illuminate\Support\Facades\Auth::user()->centro_id : null),
                 
-                // Fecha de consulta automática (oculta)
-                Forms\Components\Hidden::make('fecha_consulta')
-                    ->default(fn () => now()->format('Y-m-d')),
                 Forms\Components\Section::make('Información de la Consulta')
                     ->schema([
                         Forms\Components\Grid::make(2)
@@ -140,12 +137,6 @@ class ConsultasResource extends Resource
                     ->label('Fecha Cita')
                     ->date()
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('fecha_consulta')
-                    ->label('Fecha Consulta')
-                    ->date('d/m/Y')
-                    ->sortable()
-                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha Creación')
@@ -343,6 +334,14 @@ class ConsultasResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::count();
+        try {
+            $modelClass = static::getModel();
+            if (!$modelClass) {
+                return null;
+            }
+            return (string) $modelClass::count();
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }

@@ -26,7 +26,7 @@ return new class extends Migration
             $table->text('diagnostico');
             $table->text('tratamiento');
             $table->text('observaciones');
-            $table->date('fecha_consulta');
+            
     
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
