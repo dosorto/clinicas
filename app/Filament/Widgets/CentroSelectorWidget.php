@@ -13,7 +13,8 @@ class CentroSelectorWidget extends Widget
 
     public static function canView(): bool
     {
-        return auth()->check();
+        // Ocultar este widget ya que ahora está en la barra superior
+        return false;
     }
 
     public function getCentros()
