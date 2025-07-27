@@ -458,42 +458,18 @@ class PerfilMedico extends Page implements HasForms
             }
             
             $recetarioData = $this->recetarioData;
-            
-            // Debug - Ver qué estamos recibiendo
-            \Illuminate\Support\Facades\Log::debug('Logo original: ' . print_r($recetarioData['logo'] ?? 'null', true));
-            
-            // Procesar el logo de forma más segura
-            if (!isset($recetarioData['logo'])) {
+            // Procesar el logo de forma segura: siempre string o null
+            if (!isset($recetarioData['logo']) || $recetarioData['logo'] === '') {
                 $recetarioData['logo'] = null;
             } elseif (is_array($recetarioData['logo'])) {
-                \Illuminate\Support\Facades\Log::debug('Logo es array');
-                $recetarioData['logo'] = reset($recetarioData['logo']);
-                \Illuminate\Support\Facades\Log::debug('Logo transformado: ' . print_r($recetarioData['logo'], true));
-            } elseif ($recetarioData['logo'] === '') {
-                $recetarioData['logo'] = null;
+                $recetarioData['logo'] = $recetarioData['logo'][0] ?? null;
             }
-            
-            $medico = $user->medico;
 
+            $medico = $user->medico;
             // Buscar o crear recetario
             $recetario = Recetario::firstOrNew(['medico_id' => $medico->id]);
-            
-            // Manejar el logo de forma separada
-            $logo = null;
-            if (isset($recetarioData['logo'])) {
-                $logo = $recetarioData['logo'];
-                unset($recetarioData['logo']);
-            }
-            
-            // Actualizar datos
+            // Actualizar datos (incluye logo como string o null)
             $recetario->fill($recetarioData);
-            
-            // Establecer el logo manualmente
-            if ($logo !== null) {
-                \Illuminate\Support\Facades\Log::debug('Estableciendo logo en: ' . print_r($logo, true));
-                $recetario->setAttribute('logo', $logo);
-            }
-            
             $recetario->save();
 
             Notification::make()

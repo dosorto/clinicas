@@ -16,7 +16,12 @@
     <div class="header-principal" style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid {{ $headerColor }};">
         @if($showLogo && $logo)
             <div class="logo-container" style="margin-right: 20px;">
-                @if(Storage::disk('public')->exists($logo))
+                @php
+                    $isTmp = str_starts_with($logo, 'livewire-tmp/');
+                @endphp
+                @if($isTmp)
+                    <img src="{{ asset('storage/'.$logo) }}" alt="Logo" style="max-height: 80px; max-width: 120px;">
+                @elseif(Storage::disk('public')->exists($logo))
                     <img src="{{ Storage::url($logo) }}" alt="Logo" style="max-height: 80px; max-width: 120px;">
                 @elseif(file_exists(public_path('storage/' . $logo)))
                     <img src="{{ asset('storage/' . $logo) }}" alt="Logo" style="max-height: 80px; max-width: 120px;">
