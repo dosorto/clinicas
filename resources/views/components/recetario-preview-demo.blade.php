@@ -1,6 +1,9 @@
 @php
     // Para la vista previa, usamos los valores del formulario
     $logo = $config['logo'] ?? null;
+    if (is_array($logo)){
+        $logo = reset($logo);
+    }
     $showLogo = $config['mostrar_logo'] ?? false;
     $headerColor = $config['color_primario'] ?? '#1e40af';
     $secondaryColor = $config['color_secundario'] ?? '#64748b';
@@ -43,7 +46,17 @@
         </div>
         
         <div class="centro-info" style="text-align: right; color: {{ $secondaryColor }};">
-            <div style="font-weight: 600; color: #333; font-size: 16px;">[Nombre del Centro Médico]</div>
+            <div style="font-weight: 600; color: #333; font-size: 16px;">{{ $config['nombre_centro'] ?? '[Nombre del Centro Médico]' }}</div>
+            @if($config['mostrar_direccion'] ?? true)
+                <div style="font-size: 12px; margin-top: 4px;">
+                    <span style="color: #666;">📍</span> {{ $config['direccion'] ?? '[Dirección del Centro]' }}
+                </div>
+            @endif
+            @if($config['mostrar_telefono'] ?? true)
+                <div style="font-size: 12px; margin-top: 2px;">
+                    <span style="color: #666;">📞</span> {{ $config['telefono'] ?? '[Teléfono del Centro]' }}
+                </div>
+            @endif
         </div>
     </div>
 

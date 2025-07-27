@@ -8,6 +8,7 @@ use App\Models\Traits\TenantScoped; // Assuming you have a trait for recetario s
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Recetario extends ModeloBase
 {
@@ -54,8 +55,11 @@ class Recetario extends ModeloBase
         'mostrar_especialidades' => 'boolean',
         'mostrar_telefono' => 'boolean',
         'mostrar_direccion' => 'boolean',
-        'configuracion_avanzada' => 'array',
+        'configuracion_avanzada' => 'array'
     ];
+
+    // No usamos accessors/mutators para evitar problemas
+    // En su lugar, manualmente manejamos el logo en el controlador
 
     public function consulta()
     {

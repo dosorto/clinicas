@@ -1,6 +1,17 @@
 @php
     $recetario = $medico->recetario ?? null;
     $logo = $recetario?->logo ?? null;
+    
+    // Manejar el logo si es un array
+    if (is_array($logo)){
+        $logo = reset($logo);
+    }
+    
+    // Asegurar que la ruta del logo sea correcta
+    if ($logo && !str_starts_with($logo, 'storage/')) {
+        $logo = 'storage/' . $logo;
+    }
+    
     $showLogo = $recetario?->mostrar_logo ?? false;
     $headerColor = $recetario?->color_primario ?? '#1e40af';
     $secondaryColor = $recetario?->color_secundario ?? '#64748b';
@@ -13,12 +24,10 @@
     <div class="header-principal" style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid {{ $headerColor }};">
         @if($showLogo && $logo)
             <div class="logo-container" style="margin-right: 20px;">
-                @if(Storage::disk('public')->exists($logo))
-                    <img src="{{ Storage::url($logo) }}" alt="Logo" style="max-height: 80px; max-width: 120px;">
-                @elseif(file_exists(public_path('storage/' . $logo)))
-                    <img src="{{ asset('storage/' . $logo) }}" alt="Logo" style="max-height: 80px; max-width: 120px;">
+                @if($logo)
+                    <img src="{{ asset($logo) }}" alt="Logo" style="max-height: 80px; max-width: 120px; object-fit: contain;">
                 @else
-                    <div style="max-height: 80px; max-width: 120px; background: #f3f4f6; border: 1px dashed #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">
+                    <div style="height: 80px; width: 120px; background: #f3f4f6; border: 1px dashed #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">
                         Logo no encontrado
                     </div>
                 @endif
@@ -47,7 +56,17 @@
         
         @if(isset($medico->centro) && $medico->centro)
             <div class="centro-info" style="text-align: right; color: {{ $secondaryColor }};">
-                <div style="font-weight: 600; color: #333; font-size: 16px;">{{ $medico->centro->nombre ?? 'Centro médico' }}</div>
+                <div style="font-weight: 600; color: #333; font-size: 16px;">{{ $medico->centro->nombre_centro ?? 'Centro médico' }}</div>
+                @if($medico->centro->direccion && ($recetario?->mostrar_direccion ?? true))
+                    <div style="font-size: 11px; margin-top: 4px; line-height: 1.3;">
+                        <span style="color: #666;">📍</span> {{ $medico->centro->direccion }}
+                    </div>
+                @endif
+                @if($medico->centro->telefono && ($recetario?->mostrar_telefono ?? true))
+                    <div style="font-size: 11px; margin-top: 2px; line-height: 1.3;">
+                        <span style="color: #666;">📞</span> {{ $medico->centro->telefono }}
+                    </div>
+                @endif
             </div>
         @endif
     </div>

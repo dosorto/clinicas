@@ -136,10 +136,13 @@ class PerfilMedico extends Page implements HasForms
             $recetario = $medico->recetarios()->latest()->first();
 
             if ($recetario) {
+                // Debug el logo que viene de la BD
+                \Illuminate\Support\Facades\Log::debug('Logo de BD: ' . print_r($recetario->logo, true));
+                
                 $this->recetarioData = [
                     'tiene_recetario' => $recetario->tiene_recetario ?? true,
                     'centro_id' => $recetario->centro_id ?? session('current_centro_id') ?? $user->centro_id,
-                    'logo' => $recetario->logo,
+                    'logo' => is_array($recetario->logo) ? ($recetario->logo[0] ?? null) : $recetario->logo,
                     'encabezado_texto' => $recetario->encabezado_texto ?? 'RECETA MÉDICA',
                     'pie_pagina' => $recetario->pie_pagina ?? 'Consulte a su médico antes de usar cualquier medicamento',
                     'color_primario' => $recetario->color_primario ?? '#2563eb',
@@ -266,15 +269,13 @@ class PerfilMedico extends Page implements HasForms
                         ->schema([
                             FileUpload::make('logo')
                                 ->label('Logo de la Clínica/Consultorio')
+                                ->disk('public')
+                                ->directory('recetarios/logos')
                                 ->image()
                                 ->maxSize(2048)
-                                ->directory('recetarios/logos')
-                                ->visibility('public')
-                                ->imageEditor()
                                 ->helperText('Imagen que aparecerá en el encabezado')
-                                ->multiple(false)
-                                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif'])
                                 ->disabled(fn() => !auth()->user()->can('uploadLogo', self::class))
+                                ->multiple(false) // Explícitamente lo configuramos como no múltiple
                                 ->live(),
                                 
                             Toggle::make('mostrar_logo')
@@ -283,28 +284,7 @@ class PerfilMedico extends Page implements HasForms
                                 ->live(),
                         ]),
                         
-                    Grid::make(1)
-                        ->schema([
-                            TextInput::make('encabezado_texto')
-                                ->label('Texto del Encabezado')
-                                ->placeholder('RECETA MÉDICA')
-                                ->helperText('Texto principal que aparece en la parte superior')
-                                ->live(),
-                                
-                            Textarea::make('pie_pagina')
-                                ->label('Pie de Página')
-                                ->placeholder('Consulte a su médico antes de usar cualquier medicamento')
-                                ->rows(2)
-                                ->helperText('Texto que aparece al final del recetario')
-                                ->live(),
-                                
-                            Textarea::make('texto_adicional')
-                                ->label('Texto Adicional')
-                                ->placeholder('Información adicional...')
-                                ->rows(2)
-                                ->helperText('Texto extra que desee incluir')
-                                ->live(),
-                        ]),
+                    
                 ])
                 ->visible(fn (callable $get) => $get('tiene_recetario'))
                 ->columns(1),
@@ -479,9 +459,18 @@ class PerfilMedico extends Page implements HasForms
             
             $recetarioData = $this->recetarioData;
             
-            // Procesar el logo si es un array (cuando se sube nueva imagen)
-            if (isset($recetarioData['logo']) && is_array($recetarioData['logo'])) {
-                $recetarioData['logo'] = $recetarioData['logo'][0] ?? null;
+            // Debug - Ver qué estamos recibiendo
+            \Illuminate\Support\Facades\Log::debug('Logo original: ' . print_r($recetarioData['logo'] ?? 'null', true));
+            
+            // Procesar el logo de forma más segura
+            if (!isset($recetarioData['logo'])) {
+                $recetarioData['logo'] = null;
+            } elseif (is_array($recetarioData['logo'])) {
+                \Illuminate\Support\Facades\Log::debug('Logo es array');
+                $recetarioData['logo'] = reset($recetarioData['logo']);
+                \Illuminate\Support\Facades\Log::debug('Logo transformado: ' . print_r($recetarioData['logo'], true));
+            } elseif ($recetarioData['logo'] === '') {
+                $recetarioData['logo'] = null;
             }
             
             $medico = $user->medico;
@@ -489,8 +478,22 @@ class PerfilMedico extends Page implements HasForms
             // Buscar o crear recetario
             $recetario = Recetario::firstOrNew(['medico_id' => $medico->id]);
             
+            // Manejar el logo de forma separada
+            $logo = null;
+            if (isset($recetarioData['logo'])) {
+                $logo = $recetarioData['logo'];
+                unset($recetarioData['logo']);
+            }
+            
             // Actualizar datos
             $recetario->fill($recetarioData);
+            
+            // Establecer el logo manualmente
+            if ($logo !== null) {
+                \Illuminate\Support\Facades\Log::debug('Estableciendo logo en: ' . print_r($logo, true));
+                $recetario->setAttribute('logo', $logo);
+            }
+            
             $recetario->save();
 
             Notification::make()
