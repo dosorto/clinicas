@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PacientesResource\Pages;
 
 use App\Filament\Resources\PacientesResource;
+use App\Filament\Resources\Consultas\ConsultasResource;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
@@ -349,6 +350,15 @@ class ViewPacientes extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('crear_consulta')
+                ->label('Crear Consulta')
+                ->icon('heroicon-m-clipboard-document-list')
+                ->color('success')
+                ->url(function () {
+                    return \App\Filament\Resources\Consultas\ConsultasResource::getUrl('create', [
+                        'paciente_id' => $this->record->id
+                    ]);
+                }),
             Actions\EditAction::make()
                 ->label('Editar Paciente')
                 ->icon('heroicon-m-pencil'),
@@ -358,7 +368,7 @@ class ViewPacientes extends ViewRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $persona = $this->record->persona;
-        
+
         if ($persona) {
             $data['primer_nombre'] = $persona->primer_nombre;
             $data['segundo_nombre'] = $persona->segundo_nombre;
@@ -385,8 +395,8 @@ class ViewPacientes extends ViewRecord
                     'enfermedad_id' => $enfermedad->id,
                     'fecha_diagnostico' => $pivot->fecha_diagnostico,
                     'tratamiento' => $pivot->tratamiento,
-                    'ano_diagnostico' => $pivot->fecha_diagnostico ? 
-                        date('Y', strtotime($pivot->fecha_diagnostico)) : 
+                    'ano_diagnostico' => $pivot->fecha_diagnostico ?
+                        date('Y', strtotime($pivot->fecha_diagnostico)) :
                         date('Y'),
                 ];
             }
@@ -394,7 +404,7 @@ class ViewPacientes extends ViewRecord
             // Para compatibilidad con el código original (primera enfermedad)
             $primeraEnfermedad = $this->record->enfermedades->first();
             $pivot = $primeraEnfermedad->pivot;
-            
+
             $data['enfermedad_id'] = $primeraEnfermedad->id;
             $data['fecha_diagnostico'] = $pivot->fecha_diagnostico;
             $data['tratamiento'] = $pivot->tratamiento;
