@@ -16,7 +16,6 @@ return new class extends Migration
 
             $table->string('nombre');
             $table->text('descripcion')->nullable();
-            $table->foreignId('factura_id')->nullable()->constrained('facturas');
             $table->foreignId('centro_id')->constrained('centros_medicos');
 
             /* logs */

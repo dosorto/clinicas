@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Traits\TenantScoped;
 
-class Descuento extends ModeloBase
+class Impuesto extends ModeloBase
 {
     use HasFactory, SoftDeletes, TenantScoped;
 
@@ -16,11 +16,10 @@ class Descuento extends ModeloBase
 
     protected $fillable = [
         'nombre',
-        'tipo',
-        'valor',
-        'aplica_desde',
-        'aplica_hasta',
-        'activo',
+        'porcentaje',
+        'es_exento',
+        'vigente_desde',
+        'vigente_hasta',
         'centro_id',
         'created_by',
         'updated_by',
