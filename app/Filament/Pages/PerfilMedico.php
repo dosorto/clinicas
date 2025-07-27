@@ -20,6 +20,7 @@ use Illuminate\Support\HtmlString;
 use App\Models\Medico;
 use App\Models\Recetario;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 class PerfilMedico extends Page implements HasForms
@@ -136,13 +137,16 @@ class PerfilMedico extends Page implements HasForms
             $recetario = $medico->recetarios()->latest()->first();
 
             if ($recetario) {
-                // Debug el logo que viene de la BD
-                \Illuminate\Support\Facades\Log::debug('Logo de BD: ' . print_r($recetario->logo, true));
+                // Procesar logo correctamente - debe venir como string desde la BD
+                $logo = $recetario->logo;
+                
+                // Debug para ver qué tenemos en la BD
+                \Log::info('Logo desde BD:', ['logo' => $logo, 'tipo' => gettype($logo)]);
                 
                 $this->recetarioData = [
                     'tiene_recetario' => $recetario->tiene_recetario ?? true,
                     'centro_id' => $recetario->centro_id ?? session('current_centro_id') ?? $user->centro_id,
-                    'logo' => is_array($recetario->logo) ? ($recetario->logo[0] ?? null) : $recetario->logo,
+                    'logo' => $logo, // Mantener como string
                     'encabezado_texto' => $recetario->encabezado_texto ?? 'RECETA MÉDICA',
                     'pie_pagina' => $recetario->pie_pagina ?? 'Consulte a su médico antes de usar cualquier medicamento',
                     'color_primario' => $recetario->color_primario ?? '#2563eb',
@@ -272,11 +276,22 @@ class PerfilMedico extends Page implements HasForms
                                 ->disk('public')
                                 ->directory('recetarios/logos')
                                 ->image()
+                                ->imageEditor()
+                                ->imageEditorAspectRatios([
+                                    '16:9',
+                                    '4:3',
+                                    '1:1',
+                                ])
                                 ->maxSize(2048)
-                                ->helperText('Imagen que aparecerá en el encabezado')
+                                ->helperText('Imagen que aparecerá en el encabezado (máximo 2MB)')
                                 ->disabled(fn() => !auth()->user()->can('uploadLogo', self::class))
-                                ->multiple(false) // Explícitamente lo configuramos como no múltiple
-                                ->live(),
+                                ->multiple(false)
+                                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif'])
+                                ->live()
+                                ->afterStateUpdated(function ($state) {
+                                    // Debug para ver qué llega cuando se sube
+                                    \Log::info('Logo uploaded state:', ['state' => $state, 'tipo' => gettype($state)]);
+                                }),
                                 
                             Toggle::make('mostrar_logo')
                                 ->label('Mostrar Logo')
@@ -386,8 +401,10 @@ class PerfilMedico extends Page implements HasForms
                             }
                             
                             $config = $get();
-                            // Debug: vamos a ver qué datos llegan
-                            // dd($config); // Descomenta para debug
+                            
+                            // Debug para ver la configuración completa
+                            \Log::info('Config para preview:', $config);
+                            
                             return new \Illuminate\Support\HtmlString(
                                 view('components.recetario-preview-demo', compact('config'))->render()
                             );
@@ -457,20 +474,71 @@ class PerfilMedico extends Page implements HasForms
                 return;
             }
             
+            // Validar el formulario primero
+            $this->getRecetarioForm()->getState();
+            
             $recetarioData = $this->recetarioData;
-            // Procesar el logo de forma segura: siempre string o null
-            if (!isset($recetarioData['logo']) || $recetarioData['logo'] === '') {
+            
+            // Procesar el logo correctamente
+            if (isset($recetarioData['logo'])) {
+                $logo = $recetarioData['logo'];
+                
+                // Debug completo del logo
+                \Log::info('Procesando logo:', [
+                    'logo_original' => $logo,
+                    'es_array' => is_array($logo),
+                    'tipo' => gettype($logo)
+                ]);
+                
+                // Si es array (viene de FileUpload), tomar el primer elemento
+                if (is_array($logo) && !empty($logo)) {
+                    $logo = reset($logo);
+                }
+                
+                // Si es string vacío, convertir a null
+                if (empty($logo)) {
+                    $logo = null;
+                }
+                
+                // Verificar que el archivo existe antes de guardarlo
+                if ($logo && !Storage::disk('public')->exists($logo)) {
+                    \Log::warning('Archivo de logo no encontrado:', ['path' => $logo]);
+                    // No establecer logo si el archivo no existe
+                    $logo = null;
+                }
+                
+                $recetarioData['logo'] = $logo;
+                
+                \Log::info('Logo procesado final:', [
+                    'logo_final' => $logo,
+                    'existe_archivo' => $logo ? Storage::disk('public')->exists($logo) : false
+                ]);
+            } else {
                 $recetarioData['logo'] = null;
-            } elseif (is_array($recetarioData['logo'])) {
-                $recetarioData['logo'] = $recetarioData['logo'][0] ?? null;
             }
 
             $medico = $user->medico;
+            
+            if (!$medico) {
+                throw new Exception('No se encontró registro de médico asociado');
+            }
+            
             // Buscar o crear recetario
             $recetario = Recetario::firstOrNew(['medico_id' => $medico->id]);
-            // Actualizar datos (incluye logo como string o null)
+            
+            // Llenar con todos los datos
             $recetario->fill($recetarioData);
+            
+            // Guardar
             $recetario->save();
+            
+            // Verificar qué se guardó realmente
+            $recetario->refresh();
+            \Log::info('Recetario guardado en BD:', [
+                'id' => $recetario->id,
+                'logo_en_bd' => $recetario->logo,
+                'existe_archivo' => $recetario->logo ? Storage::disk('public')->exists($recetario->logo) : false
+            ]);
 
             Notification::make()
                 ->title('Configuración Guardada')
@@ -478,10 +546,12 @@ class PerfilMedico extends Page implements HasForms
                 ->success()
                 ->send();
 
-            // Recargar datos
+            // Recargar datos desde la BD
             $this->loadRecetarioData();
+            $this->getRecetarioForm()->fill($this->recetarioData);
 
         } catch (Exception $e) {
+            \Log::error('Error al guardar recetario: ' . $e->getMessage());
             Notification::make()
                 ->title('Error al Guardar')
                 ->body('Error: ' . $e->getMessage())

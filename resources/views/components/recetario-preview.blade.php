@@ -7,16 +7,52 @@
         $logo = reset($logo);
     }
     
-    // Asegurar que la ruta del logo sea correcta
-    if ($logo && !str_starts_with($logo, 'storage/')) {
-        $logo = 'storage/' . $logo;
-    }
-    
     $showLogo = $recetario?->mostrar_logo ?? false;
     $headerColor = $recetario?->color_primario ?? '#1e40af';
     $secondaryColor = $recetario?->color_secundario ?? '#64748b';
     $fontFamily = $recetario?->fuente_familia ?? 'Arial, sans-serif';
     $fontSize = $recetario?->fuente_tamano ?? '14px';
+
+    // Función mejorada para manejar rutas de logo
+    $logoPath = null;
+    $logoExists = false;
+    
+    if ($logo) {
+        // Caso 1: Archivo temporal de Livewire
+        if (str_starts_with($logo, 'livewire-tmp/')) {
+            try {
+                $logoPath = \Livewire\Features\SupportFileUploads\TemporaryUploadedFile::createFromLivewire($logo)->temporaryUrl();
+                $logoExists = true;
+            } catch (Exception $e) {
+                $logoExists = false;
+            }
+        }
+        // Caso 2: Archivo en storage/app/public
+        elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists($logo)) {
+            $logoPath = \Illuminate\Support\Facades\Storage::disk('public')->url($logo);
+            $logoExists = true;
+        }
+        // Caso 3: Ruta relativa - intentar con storage/
+        elseif (\Illuminate\Support\Facades\Storage::disk('public')->exists(str_replace('storage/', '', $logo))) {
+            $logoPath = \Illuminate\Support\Facades\Storage::disk('public')->url(str_replace('storage/', '', $logo));
+            $logoExists = true;
+        }
+        // Caso 4: Archivo en public/storage
+        elseif (file_exists(public_path('storage/' . str_replace('storage/', '', $logo)))) {
+            $logoPath = asset('storage/' . str_replace('storage/', '', $logo));
+            $logoExists = true;
+        }
+        // Caso 5: URL completa
+        elseif (filter_var($logo, FILTER_VALIDATE_URL)) {
+            $logoPath = $logo;
+            $logoExists = true;
+        }
+        // Caso 6: Ruta directa en public
+        elseif (file_exists(public_path($logo))) {
+            $logoPath = asset($logo);
+            $logoExists = true;
+        }
+    }
 @endphp
 
 <div class="recetario-preview" style="font-family: {{ $fontFamily }}; font-size: {{ $fontSize }}; width: 100%; max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border: 1px solid #ddd;">
@@ -24,11 +60,15 @@
     <div class="header-principal" style="display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid {{ $headerColor }};">
         @if($showLogo && $logo)
             <div class="logo-container" style="margin-right: 20px;">
-                @if($logo)
-                    <img src="{{ asset($logo) }}" alt="Logo" style="max-height: 80px; max-width: 120px; object-fit: contain;">
+                @if($logoExists && $logoPath)
+                    <img src="{{ $logoPath }}" 
+                         alt="Logo" 
+                         style="max-height: 80px; max-width: 120px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 4px;"
+                         onerror="this.parentElement.innerHTML='<div style=\'height: 80px; width: 120px; background: #fee2e2; border: 1px dashed #ef4444; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #dc2626; text-align: center; padding: 5px;\'>Error cargando imagen</div>'">
                 @else
-                    <div style="height: 80px; width: 120px; background: #f3f4f6; border: 1px dashed #d1d5db; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666;">
-                        Logo no encontrado
+                    <div style="height: 80px; width: 120px; background: #fef3c7; border: 1px dashed #f59e0b; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #d97706; text-align: center; padding: 5px;">
+                        Logo no encontrado<br>
+                        <small style="font-size: 8px; margin-top: 2px;">{{ Str::limit($logo, 20) }}</small>
                     </div>
                 @endif
             </div>
