@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class CreateMedico extends CreateRecord
 {
@@ -22,7 +23,7 @@ protected function handleRecordCreation(array $data): Medico
 {
     try {
         // Debug completo de datos recibidos
-        \Log::info("=== INICIO CREACIÓN MÉDICO (SIN TRANSACCIÓN MANUAL) ===", [
+        Log::info("=== INICIO CREACIÓN MÉDICO (SIN TRANSACCIÓN MANUAL) ===", [
             'crear_usuario' => $data['crear_usuario'] ?? 'NO_DEFINIDO',
             'username' => $data['username'] ?? 'NO_DEFINIDO',
             'user_email' => $data['user_email'] ?? 'NO_DEFINIDO',
@@ -46,7 +47,7 @@ protected function handleRecordCreation(array $data): Medico
             ]
         );
 
-        \Log::info("Persona creada/actualizada", ['persona_id' => $persona->id, 'dni' => $persona->dni]);
+        Log::info("Persona creada/actualizada", ['persona_id' => $persona->id, 'dni' => $persona->dni]);
 
         // Luego creamos el médico asociado
         $medico = Medico::create([
@@ -57,31 +58,31 @@ protected function handleRecordCreation(array $data): Medico
             'centro_id' => session('current_centro_id') ?? auth()->user()->centro_id,
         ]);
 
-        \Log::info("Médico creado", ['medico_id' => $medico->id]);
+        Log::info("Médico creado", ['medico_id' => $medico->id]);
 
         // Sincronizar especialidades
         if (isset($data['especialidades']) && !empty($data['especialidades'])) {
             $medico->especialidades()->sync($data['especialidades']);
-            \Log::info("Especialidades sincronizadas", ['especialidades' => $data['especialidades']]);
+            Log::info("Especialidades sincronizadas", ['especialidades' => $data['especialidades']]);
         }
 
         // Verificar si debe crear usuario
         $crearUsuario = $data['crear_usuario'] ?? false;
-        \Log::info("¿Crear usuario?", ['crear_usuario' => $crearUsuario, 'tipo' => gettype($crearUsuario)]);
+        Log::info("¿Crear usuario?", ['crear_usuario' => $crearUsuario, 'tipo' => gettype($crearUsuario)]);
 
         if ($crearUsuario) {
-            \Log::info("Iniciando creación de usuario (confiando en transacción de Filament)...");
+            Log::info("Iniciando creación de usuario (confiando en transacción de Filament)...");
             $this->createUserForMedicoSimple($persona, $medico, $data);
         } else {
-            \Log::info("No se creará usuario - toggle desactivado");
+            Log::info("No se creará usuario - toggle desactivado");
         }
 
-        \Log::info("=== FIN CREACIÓN MÉDICO EXITOSA ===");
+        Log::info("=== FIN CREACIÓN MÉDICO EXITOSA ===");
         
         return $medico;
 
     } catch (\Exception $e) {
-        \Log::error("Error en handleRecordCreation", [
+        Log::error("Error en handleRecordCreation", [
             'error' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
@@ -94,7 +95,7 @@ protected function handleRecordCreation(array $data): Medico
 protected function createUserForMedicoSimple(Persona $persona, Medico $medico, array $data): void
 {
     try {
-        \Log::info("=== INICIO CREACIÓN USUARIO SIMPLE ===", [
+        Log::info("=== INICIO CREACIÓN USUARIO SIMPLE ===", [
             'persona_id' => $persona->id,
             'medico_id' => $medico->id,
             'username' => $data['username'] ?? 'NO_SET',
@@ -105,7 +106,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
         $existingUser = User::where('persona_id', $persona->id)->first();
         
         if ($existingUser) {
-            \Log::info("Usuario ya existe", ['user_id' => $existingUser->id, 'email' => $existingUser->email]);
+            Log::info("Usuario ya existe", ['user_id' => $existingUser->id, 'email' => $existingUser->email]);
             Notification::make()
                 ->title('Usuario existente')
                 ->body("La persona ya tiene un usuario: {$existingUser->name} ({$existingUser->email})")
@@ -121,7 +122,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
         $role = $data['user_role'] ?? 'medico';
         $isActive = $data['user_active'] ?? true;
 
-        \Log::info("Datos de usuario preparados", [
+        Log::info("Datos de usuario preparados", [
             'username' => $username,
             'email' => $email,
             'role' => $role,
@@ -130,12 +131,12 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
 
         // Validar que no existan duplicados
         if (User::where('name', $username)->exists()) {
-            \Log::error("Username duplicado: {$username}");
+            Log::error("Username duplicado: {$username}");
             throw new \Exception("El nombre de usuario '{$username}' ya está en uso.");
         }
         
         if (User::where('email', $email)->exists()) {
-            \Log::error("Email duplicado: {$email}");
+            Log::error("Email duplicado: {$email}");
             throw new \Exception("El email '{$email}' ya está en uso.");
         }
 
@@ -149,7 +150,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
             'email_verified_at' => $isActive ? now() : null,
         ]);
 
-        \Log::info("Usuario creado en BD", [
+        Log::info("Usuario creado en BD", [
             'user_id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
@@ -159,14 +160,14 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
         // Asignar rol seleccionado
         try {
             $user->assignRole($role);
-            \Log::info("Rol '{$role}' asignado exitosamente");
+            Log::info("Rol '{$role}' asignado exitosamente");
         } catch (\Exception $roleError) {
-            \Log::warning("No se pudo asignar rol '{$role}', intentando rol por defecto", ['error' => $roleError->getMessage()]);
+            Log::warning("No se pudo asignar rol '{$role}', intentando rol por defecto", ['error' => $roleError->getMessage()]);
             try {
                 $user->assignRole('medico');
-                \Log::info("Rol por defecto 'medico' asignado");
+                Log::info("Rol por defecto 'medico' asignado");
             } catch (\Exception $defaultRoleError) {
-                \Log::error("No se pudo asignar ningún rol", ['error' => $defaultRoleError->getMessage()]);
+                Log::error("No se pudo asignar ningún rol", ['error' => $defaultRoleError->getMessage()]);
             }
         }
 
@@ -181,7 +182,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
 
         // Enviar email de bienvenida si está activado
         if ($data['send_welcome_email'] ?? false) {
-            \Log::info("Email de bienvenida programado para envío", ['email' => $email]);
+            Log::info("Email de bienvenida programado para envío", ['email' => $email]);
             Notification::make()
                 ->title('📧 Email programado')
                 ->body("Se enviará un email de bienvenida a {$email}")
@@ -189,7 +190,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
                 ->send();
         }
             
-        \Log::info("=== FIN CREACIÓN USUARIO SIMPLE EXITOSA ===", [
+        Log::info("=== FIN CREACIÓN USUARIO SIMPLE EXITOSA ===", [
             'user_id' => $user->id,
             'username' => $username,
             'email' => $email,
@@ -197,7 +198,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
         ]);
         
     } catch (\Exception $e) {
-        \Log::error("=== ERROR EN CREACIÓN USUARIO SIMPLE ===", [
+        Log::error("=== ERROR EN CREACIÓN USUARIO SIMPLE ===", [
             'error' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
@@ -212,7 +213,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
 protected function createUserForMedicoInTransaction(Persona $persona, Medico $medico, array $data): bool
 {
     try {
-        \Log::info("=== INICIO CREACIÓN USUARIO EN TRANSACCIÓN ===", [
+        Log::info("=== INICIO CREACIÓN USUARIO EN TRANSACCIÓN ===", [
             'persona_id' => $persona->id,
             'medico_id' => $medico->id,
             'username' => $data['username'] ?? 'NO_SET',
@@ -223,7 +224,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
         $existingUser = User::where('persona_id', $persona->id)->first();
         
         if ($existingUser) {
-            \Log::info("Usuario ya existe", ['user_id' => $existingUser->id, 'email' => $existingUser->email]);
+            Log::info("Usuario ya existe", ['user_id' => $existingUser->id, 'email' => $existingUser->email]);
             Notification::make()
                 ->title('Usuario existente')
                 ->body("La persona ya tiene un usuario: {$existingUser->name} ({$existingUser->email})")
@@ -239,7 +240,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
         $role = $data['user_role'] ?? 'medico';
         $isActive = $data['user_active'] ?? true;
 
-        \Log::info("Datos de usuario preparados", [
+        Log::info("Datos de usuario preparados", [
             'username' => $username,
             'email' => $email,
             'role' => $role,
@@ -248,7 +249,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
 
         // Validar que no existan duplicados
         if (User::where('name', $username)->exists()) {
-            \Log::error("Username duplicado: {$username}");
+            Log::error("Username duplicado: {$username}");
             Notification::make()
                 ->title('❌ Error: Username duplicado')
                 ->body("El nombre de usuario '{$username}' ya está en uso.")
@@ -259,7 +260,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
         }
         
         if (User::where('email', $email)->exists()) {
-            \Log::error("Email duplicado: {$email}");
+            Log::error("Email duplicado: {$email}");
             Notification::make()
                 ->title('❌ Error: Email duplicado')
                 ->body("El email '{$email}' ya está en uso.")
@@ -279,7 +280,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
             'email_verified_at' => $isActive ? now() : null,
         ]);
 
-        \Log::info("Usuario creado en BD", [
+        Log::info("Usuario creado en BD", [
             'user_id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
@@ -289,14 +290,14 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
         // Asignar rol seleccionado
         try {
             $user->assignRole($role);
-            \Log::info("Rol '{$role}' asignado exitosamente");
+            Log::info("Rol '{$role}' asignado exitosamente");
         } catch (\Exception $roleError) {
-            \Log::warning("No se pudo asignar rol '{$role}', intentando rol por defecto", ['error' => $roleError->getMessage()]);
+            Log::warning("No se pudo asignar rol '{$role}', intentando rol por defecto", ['error' => $roleError->getMessage()]);
             try {
                 $user->assignRole('medico');
-                \Log::info("Rol por defecto 'medico' asignado");
+                Log::info("Rol por defecto 'medico' asignado");
             } catch (\Exception $defaultRoleError) {
-                \Log::error("No se pudo asignar ningún rol", ['error' => $defaultRoleError->getMessage()]);
+                Log::error("No se pudo asignar ningún rol", ['error' => $defaultRoleError->getMessage()]);
                 // No fallar por esto, continuar
             }
         }
@@ -312,7 +313,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
 
         // Enviar email de bienvenida si está activado
         if ($data['send_welcome_email'] ?? false) {
-            \Log::info("Email de bienvenida programado para envío", ['email' => $email]);
+            Log::info("Email de bienvenida programado para envío", ['email' => $email]);
             Notification::make()
                 ->title('📧 Email programado')
                 ->body("Se enviará un email de bienvenida a {$email}")
@@ -320,7 +321,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
                 ->send();
         }
             
-        \Log::info("=== FIN CREACIÓN USUARIO EXITOSA EN TRANSACCIÓN ===", [
+        Log::info("=== FIN CREACIÓN USUARIO EXITOSA EN TRANSACCIÓN ===", [
             'user_id' => $user->id,
             'username' => $username,
             'email' => $email,
@@ -330,7 +331,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
         return true;
         
     } catch (\Exception $e) {
-        \Log::error("=== ERROR EN CREACIÓN USUARIO EN TRANSACCIÓN ===", [
+        Log::error("=== ERROR EN CREACIÓN USUARIO EN TRANSACCIÓN ===", [
             'error' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
@@ -351,7 +352,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
 protected function createUserForMedico(Persona $persona, Medico $medico, array $data): void
 {
     try {
-        \Log::info("=== INICIO CREACIÓN USUARIO ===", [
+        Log::info("=== INICIO CREACIÓN USUARIO ===", [
             'persona_id' => $persona->id,
             'medico_id' => $medico->id,
             'data_keys' => array_keys($data)
@@ -361,7 +362,7 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
         $existingUser = User::where('persona_id', $persona->id)->first();
         
         if ($existingUser) {
-            \Log::info("Usuario ya existe", ['user_id' => $existingUser->id, 'email' => $existingUser->email]);
+            Log::info("Usuario ya existe", ['user_id' => $existingUser->id, 'email' => $existingUser->email]);
             Notification::make()
                 ->title('Usuario existente')
                 ->body("La persona ya tiene un usuario: {$existingUser->name} ({$existingUser->email})")
@@ -377,7 +378,7 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
         $role = $data['user_role'] ?? 'medico';
         $isActive = $data['user_active'] ?? true;
 
-        \Log::info("Datos de usuario del formulario", [
+        Log::info("Datos de usuario del formulario", [
             'username' => $username,
             'email' => $email,
             'role' => $role,
@@ -404,7 +405,7 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
             'email_verified_at' => $isActive ? now() : null,
         ]);
 
-        \Log::info("Usuario creado en BD", [
+        Log::info("Usuario creado en BD", [
             'user_id' => $user->id,
             'name' => $user->name,
             'email' => $user->email
@@ -413,15 +414,15 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
         // Asignar rol seleccionado
         try {
             $user->assignRole($role);
-            \Log::info("Rol '{$role}' asignado exitosamente");
+            Log::info("Rol '{$role}' asignado exitosamente");
         } catch (\Exception $roleError) {
-            \Log::warning("No se pudo asignar rol '{$role}'", ['error' => $roleError->getMessage()]);
+            Log::warning("No se pudo asignar rol '{$role}'", ['error' => $roleError->getMessage()]);
             // Intentar asignar rol por defecto
             try {
                 $user->assignRole('medico');
-                \Log::info("Rol por defecto 'medico' asignado");
+                Log::info("Rol por defecto 'medico' asignado");
             } catch (\Exception $defaultRoleError) {
-                \Log::error("No se pudo asignar ningún rol", ['error' => $defaultRoleError->getMessage()]);
+                Log::error("No se pudo asignar ningún rol", ['error' => $defaultRoleError->getMessage()]);
             }
         }
 
@@ -438,7 +439,7 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
         if ($data['send_welcome_email'] ?? false) {
             try {
                 // Aquí puedes implementar el envío de email
-                \Log::info("Email de bienvenida programado para envío", ['email' => $email]);
+                Log::info("Email de bienvenida programado para envío", ['email' => $email]);
                 
                 Notification::make()
                     ->title('📧 Email programado')
@@ -446,11 +447,11 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
                     ->info()
                     ->send();
             } catch (\Exception $emailError) {
-                \Log::warning("Error al enviar email de bienvenida", ['error' => $emailError->getMessage()]);
+                Log::warning("Error al enviar email de bienvenida", ['error' => $emailError->getMessage()]);
             }
         }
             
-        \Log::info("=== FIN CREACIÓN USUARIO EXITOSA ===", [
+        Log::info("=== FIN CREACIÓN USUARIO EXITOSA ===", [
             'user_id' => $user->id,
             'username' => $username,
             'email' => $email,
@@ -458,7 +459,7 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
         ]);
         
     } catch (\Exception $e) {
-        \Log::error("=== ERROR EN CREACIÓN USUARIO ===", [
+        Log::error("=== ERROR EN CREACIÓN USUARIO ===", [
             'error' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
