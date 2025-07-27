@@ -358,12 +358,7 @@ class MedicoResource extends Resource
                                 ->inline(false)
                                 ->dehydrated(),
                                 
-                            Forms\Components\Toggle::make('send_welcome_email')
-                                ->label('Enviar email de bienvenida')
-                                ->helperText('Envía las credenciales de acceso por email al médico')
-                                ->default(false)
-                                ->inline(false)
-                                ->dehydrated(),
+                            
                         ])
                         ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
                         ->columns(1),
