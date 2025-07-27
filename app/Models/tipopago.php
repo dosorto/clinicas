@@ -5,26 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\Traits\TenantScoped;
+use App\Models\Traits\TenantScoped;   
 
-class Descuento extends ModeloBase
+
+class TipoPago extends ModeloBase        
 {
-    use HasFactory, SoftDeletes, TenantScoped;
+    use HasFactory, SoftDeletes;       
+    use TenantScoped;
 
-    protected string $tenantKeyName = 'centro_id';
+    protected string $tenantKeyName = 'centro_id';   
 
     protected $fillable = [
         'nombre',
-        'tipo',
-        'valor',
-        'aplica_desde',
-        'aplica_hasta',
-        'activo',
-        'centro_id',
-        'created_by',
-        'updated_by',
-        'deleted_by',
+        'descripcion',
+        'centro_id',    
+        'created_by',   
+        'updated_by',    
+        'deleted_by',   
     ];
 
     public function centro(): BelongsTo

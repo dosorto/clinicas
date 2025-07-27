@@ -20,7 +20,6 @@ return new class extends Migration
             $table->decimal('precio_unitario', 12, 2);
             $table->foreignId('impuesto_id')->nullable()->constrained('impuestos');
             $table->enum('es_exonerado', ['SI', 'NO'])->default('NO');
-            $table->decimal('porcentaje_impuesto', 5, 2)->nullable();
             $table->foreignId('centro_id')->constrained('centros_medicos');
 
             /* logs */
