@@ -14,11 +14,10 @@ return new class extends Migration
         Schema::create('factura_detalles', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('factura_id')->constrained('facturas');
+            $table->foreignId('factura_id')->nullable()->constrained('facturas');
             $table->foreignId('servicio_id')->constrained('servicios');
             $table->foreignId('consulta_id')->nullable()->constrained('consultas');
             $table->integer('cantidad');
-            $table->decimal('precio_unitario', 12, 2);
             $table->foreignId('descuento_id')->nullable()->constrained('descuentos');
             $table->decimal('subtotal', 12, 2);
             $table->foreignId('impuesto_id')->nullable()->constrained('impuestos');

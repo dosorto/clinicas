@@ -74,6 +74,7 @@ class ListConsultas extends ListRecords
                         ->onlyTrashed()
                         ->count()
                 ),
+                
         ];
     }
 
