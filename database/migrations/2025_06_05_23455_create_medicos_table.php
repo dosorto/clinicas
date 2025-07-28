@@ -60,6 +60,7 @@ return new class extends Migration
     {
         Schema::create('medicos', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->unsignedBigInteger('persona_id'); // referencia a persona
             $table->foreign('persona_id')->references('id')->on('personas');
             $table->string('numero_colegiacion');//->unique(); // número de colegiación
