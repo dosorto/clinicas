@@ -21,6 +21,7 @@ use Filament\Actions\Action as PageAction;
 use Filament\Forms\Components\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Hash;
 
 class MedicoResource extends Resource
 {
@@ -555,7 +556,7 @@ class MedicoResource extends Resource
                                 $user = \App\Models\User::create([
                                     'name' => $data['username'],
                                     'email' => $data['user_email'],
-                                    'password' => \Hash::make($data['user_password']),
+                                    'password' => Hash::make($data['user_password']),
                                     'persona_id' => $record->persona->id,
                                     'centro_id' => session('current_centro_id') ?? auth()->user()->centro_id,
                                     'email_verified_at' => $data['user_active'] ? now() : null,
