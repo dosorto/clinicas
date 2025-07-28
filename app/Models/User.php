@@ -169,5 +169,19 @@ class User extends Authenticatable
         return $query;
     }
 
-   
+    public function eventos()
+    {
+        $medico = $this->medico;
+        if (!$medico) {
+            return collect(); // o []
+        }
+        return Citas::where('medico_id', $medico->id)
+            ->get()
+            ->map(function ($cita) {
+                return [
+                    'title' => $cita->motivo,
+                    // ...otros campos
+                ];
+            });
+    }
 }

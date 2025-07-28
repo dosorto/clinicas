@@ -42,12 +42,120 @@ class UserResource extends Resource
                                 ->label('DNI')
                                 ->required()
                                 ->maxLength(20)
-                                ->live()
-                                ->afterStateUpdated(function (string $operation, $state, Forms\Set $set) {
-                                    if ($operation !== 'create' && !$state) {
+                                ->live(debounce: 500)
+                                ->afterStateUpdated(function (string $operation, $state, Forms\Set $set, Forms\Get $get, $livewire) {
+                                    // Solo ejecutar durante la creación
+                                    if (!($livewire instanceof \Filament\Resources\Pages\CreateRecord) || !$state) {
                                         return;
                                     }
-                                }),
+                                    
+                                    // Buscar persona existente por DNI
+                                    $persona = \App\Models\Persona::where('dni', $state)->first();
+                                    
+                                    if ($persona) {
+                                        // Verificar si esta persona ya tiene un usuario asociado
+                                        $usuarioExistente = \App\Models\User::where('persona_id', $persona->id)->first();
+                                        
+                                        if ($usuarioExistente) {
+                                            // Mostrar advertencia de que ya existe un usuario - esto impedirá continuar
+                                            \Filament\Notifications\Notification::make()
+                                                ->title('❌ No se puede continuar')
+                                                ->body("Esta persona ya tiene un usuario asociado: {$usuarioExistente->name} ({$usuarioExistente->email}). No se puede crear otro usuario para la misma persona.")
+                                                ->danger()
+                                                ->persistent()
+                                                ->send();
+                                        } else {
+                                            // Llenar automáticamente los campos con los datos encontrados
+                                            $set('persona.primer_nombre', $persona->primer_nombre);
+                                            $set('persona.segundo_nombre', $persona->segundo_nombre);
+                                            $set('persona.primer_apellido', $persona->primer_apellido);
+                                            $set('persona.segundo_apellido', $persona->segundo_apellido);
+                                            $set('persona.telefono', $persona->telefono);
+                                            $set('persona.direccion', $persona->direccion);
+                                            $set('persona.sexo', $persona->sexo);
+                                            $set('persona.fecha_nacimiento', $persona->fecha_nacimiento);
+                                            $set('persona.nacionalidad_id', $persona->nacionalidad_id);
+                                            
+                                            // También llenar el email del usuario si existe
+                                            if ($persona->email) {
+                                                $set('email', $persona->email);
+                                            }
+                                            
+                                            // Mostrar notificación de éxito
+                                            \Filament\Notifications\Notification::make()
+                                                ->title('✅ Persona encontrada')
+                                                ->body("Se encontraron datos para el DNI: {$state}. Los campos se han llenado automáticamente. Puede continuar creando el usuario para esta persona.")
+                                                ->success()
+                                                ->send();
+                                        }
+                                    } else {
+                                        // Nueva persona
+                                        \Filament\Notifications\Notification::make()
+                                            ->title('📝 Nueva persona')
+                                            ->body("No se encontraron datos para el DNI: {$state}. Complete los campos para crear una nueva persona.")
+                                            ->info()
+                                            ->send();
+                                    }
+                                })
+                                ->helperText(function($livewire) {
+                                    if ($livewire instanceof \Filament\Resources\Pages\CreateRecord) {
+                                        return 'Ingrese el DNI para buscar automáticamente los datos de la persona si ya existe en el sistema';
+                                    }
+                                    return 'DNI de la persona asociada a este usuario';
+                                })
+                                ->rules([
+                                    function () {
+                                        return function (string $attribute, $value, \Closure $fail) {
+                                            if (!$value) return;
+                                            
+                                            // Solo validar durante la creación
+                                            $livewire = request()->route()->getController();
+                                            if (!($livewire instanceof \Filament\Resources\Pages\CreateRecord)) {
+                                                return; // Skip validation during edit
+                                            }
+                                            
+                                            $persona = \App\Models\Persona::where('dni', $value)->first();
+                                            if ($persona) {
+                                                // Verificar si esta persona ya tiene un usuario asociado
+                                                $usuarioExistente = \App\Models\User::where('persona_id', $persona->id)->first();
+                                                if ($usuarioExistente) {
+                                                    $fail("Esta persona ya tiene un usuario asociado: {$usuarioExistente->name} ({$usuarioExistente->email})");
+                                                }
+                                                // Si no tiene usuario asociado, permitir continuar
+                                            }
+                                            // Si no existe la persona, también permitir continuar (nueva persona)
+                                        };
+                                    }
+                                ]),
+                            
+                            Forms\Components\Placeholder::make('estado_persona')
+                                ->label('Estado de la persona')
+                                ->content(function (Forms\Get $get, $livewire) {
+                                    // Solo mostrar durante la creación
+                                    if (!($livewire instanceof \Filament\Resources\Pages\CreateRecord)) {
+                                        return null;
+                                    }
+                                    
+                                    $dni = $get('persona.dni');
+                                    if (!$dni) {
+                                        return 'Ingrese un DNI para verificar si la persona existe';
+                                    }
+                                    
+                                    $persona = \App\Models\Persona::where('dni', $dni)->first();
+                                    if (!$persona) {
+                                        return '✅ Nueva persona - Se creará un nuevo registro';
+                                    }
+                                    
+                                    $usuarioExistente = \App\Models\User::where('persona_id', $persona->id)->first();
+                                    if ($usuarioExistente) {
+                                        return "❌ ERROR: Esta persona ya tiene usuario: {$usuarioExistente->name} - No se puede continuar";
+                                    }
+                                    
+                                    return '✅ Persona existente encontrada - Se puede crear usuario para esta persona';
+                                })
+                                ->live()
+                                ->columnSpanFull()
+                                ->visible(fn($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord),
 
                             TextInput::make('persona.primer_nombre')
                                 ->label('Primer Nombre')

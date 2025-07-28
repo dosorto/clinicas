@@ -68,8 +68,8 @@ class CreateRecetaWithPatientSearch extends Page implements HasForms
                                         return $p->persona !== null;
                                     })
                                     ->mapWithKeys(function ($p) {
-                                        return [$p->id => $p->persona->nombre_completo];
-                                    })
+                                    return [$p->id => $p->persona->nombre_completo . ' - DNI: ' . $p->persona->dni];
+                                })
                                     ->toArray();
                             })
                             ->searchable()

@@ -39,8 +39,21 @@ class RecetaResource extends Resource
     {
         return $form
             ->schema([
+                // El campo centro_id se asigna automáticamente y se oculta
+                Forms\Components\Hidden::make('centro_id')
+                    ->default(fn () => \Illuminate\Support\Facades\Auth::check() ? \Illuminate\Support\Facades\Auth::user()->centro_id : null),
+                
                 Forms\Components\Section::make('Información de la Receta')
                     ->schema([
+                        Forms\Components\DatePicker::make('fecha_receta')
+                            ->label('Fecha de la Receta')
+                            ->default(now()->format('Y-m-d'))
+                            ->required()
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->columnSpanFull(),
+
                         Forms\Components\Select::make('paciente_id')
                             ->label('Paciente')
                             ->options(function () {
@@ -134,6 +147,12 @@ class RecetaResource extends Resource
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('fecha_receta')
+                    ->label('Fecha Receta')
+                    ->date('d/m/Y')
+                    ->sortable()
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('medicamentos')
                     ->label('Medicamentos')
                     ->limit(50)
@@ -198,6 +217,12 @@ class RecetaResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('imprimir')
+                    ->label('Imprimir Receta')
+                    ->icon('heroicon-o-printer')
+                    ->color('success')
+                    ->url(fn (Receta $record): string => route('receta.imprimir', $record))
+                    ->openUrlInNewTab(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
                 Tables\Actions\RestoreAction::make(),
@@ -218,6 +243,9 @@ class RecetaResource extends Resource
             ->schema([
                 Infolists\Components\Section::make('Información General')
                     ->schema([
+                        Infolists\Components\TextEntry::make('fecha_receta')
+                            ->label('Fecha de la Receta')
+                            ->date('d/m/Y'),
                         Infolists\Components\TextEntry::make('paciente.persona.nombre_completo')
                             ->label('Paciente'),
                         Infolists\Components\TextEntry::make('medico.persona.nombre_completo')
@@ -226,7 +254,7 @@ class RecetaResource extends Resource
                             ->label('Consulta')
                             ->formatStateUsing(fn ($state) => $state ? "Consulta #{$state}" : 'Sin consulta asociada'),
                     ])
-                    ->columns(3),
+                    ->columns(4),
 
                 Infolists\Components\Section::make('Detalles de la Receta')
                     ->schema([
@@ -272,8 +300,22 @@ class RecetaResource extends Resource
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
         return parent::getEloquentQuery()
+            ->where('centro_id', \Filament\Facades\Filament::auth()->user()->centro_id)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        try {
+            $modelClass = static::getModel();
+            if (!$modelClass) {
+                return null;
+            }
+            return (string) $modelClass::count();
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 }

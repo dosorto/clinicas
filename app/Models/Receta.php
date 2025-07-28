@@ -24,6 +24,11 @@ class Receta extends ModeloBase
         'consulta_id',
         'medico_id',
         'centro_id',
+        'fecha_receta', // Nueva columna para la fecha de la receta
+    ];
+
+    protected $casts = [
+        'fecha_receta' => 'date',
     ];
 
     

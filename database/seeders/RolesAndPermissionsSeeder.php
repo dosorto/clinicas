@@ -94,7 +94,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'borrar personas', 'borrar nacionalidad', 'borrar usuario', 'borrar pacientes', 'borrar centromedico', 'borrar medicocentromedico', 'borrar enfermedades', 'borrar especialidad', 'borrar especialidadmedicos', 'borrar medicos', 'borrar enfermedades_pacientes', 'borrar recetas', 'borrar consultas', 'borrar medicocentromedico', 'borrar centromedico',
         ]);
 
-        $roleAdminCentro = Role::create(['name' => 'administrador centro']);
+        $roleAdminCentro = Role::create(['name' => 'administrador']);
         $roleAdminCentro->givePermissionTo([
             // VER
             'ver medicos', 'ver pacientes', 'ver usuario', 'ver enfermedades', 'ver especialidad', 'ver recetas', 'ver consultas',
@@ -106,34 +106,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'borrar medicos', 'borrar pacientes', 'borrar usuario', 'borrar recetas', 'borrar consultas'
         ]);
 
-        $roleAdminNacionalidades = Role::create(['name' => 'admin nacionalidades']);
-        $roleAdminNacionalidades->givePermissionTo(['crear nacionalidad', 'ver nacionalidad', 'actualizar nacionalidad', 'borrar nacionalidad']);
+       
 
-        $roleAdminPersonas = Role::create(['name' => 'admin personas']);
-        $roleAdminPersonas->givePermissionTo(['crear personas', 'ver personas', 'actualizar personas', 'borrar personas']);
-        
-        $roleAdminPacientes = Role::create(['name' => 'admin pacientes']);
-        $roleAdminPacientes->givePermissionTo(['crear pacientes', 'ver pacientes', 'actualizar pacientes', 'borrar pacientes']);
-
-        $roleAdminPacientes = Role::create(['name' => 'admin enfermedades']);
-        $roleAdminPacientes->givePermissionTo(['crear enfermedades', 'ver enfermedades', 'actualizar enfermedades', 'borrar enfermedades']);
-        
-        $roleAdminEnfermedadesPacientes = Role::create(['name' => 'admin enfermedades_pacientes']);
-        $roleAdminEnfermedadesPacientes->givePermissionTo(['crear enfermedades_pacientes', 'ver enfermedades_pacientes', 'actualizar enfermedades_pacientes', 'borrar enfermedades_pacientes']);
-
-        $roleAdminRecetas = Role::create(['name' => 'admin recetas']);
-        $roleAdminRecetas->givePermissionTo(['crear recetas', 'ver recetas', 'actualizar recetas', 'borrar recetas']);
-
-        $roleAdminConsultas = Role::create(['name' => 'admin consultas']);
-        $roleAdminConsultas->givePermissionTo(['crear consultas', 'ver consultas', 'actualizar consultas', 'borrar consultas']);
-
-        $roleAdminMedicoCentroMedico = Role::create(['name' => 'admin medicocentromedico']);
-        $roleAdminMedicoCentroMedico->givePermissionTo(['crear medicocentromedico', 'ver medicocentromedico', 'actualizar medicocentromedico', 'borrar medicocentromedico']);
-
-        $roleAdminEspecialidad = Role::create(['name' => 'admin especialidad']);
-        $roleAdminEspecialidad->givePermissionTo(['crear especialidad', 'ver especialidad', 'actualizar especialidad', 'borrar especialidad']);
-
-        $roleAdminMedicos = Role::create(['name' => 'admin medicos']);
-        $roleAdminMedicos->givePermissionTo(['crear medicos', 'ver medicos', 'actualizar medicos', 'borrar medicos']);
+        $roleAdminMedicos = Role::create(['name' => 'medico']);
+        $roleAdminMedicos->givePermissionTo(['crear pacientes', 'ver pacientes', 'actualizar pacientes', 'borrar pacientes',
+            'crear consultas', 'ver consultas', 'actualizar consultas', 'borrar consultas',
+            'crear recetas', 'ver recetas', 'actualizar recetas', 'borrar recetas',
+            
+        ]);
     }
 }
