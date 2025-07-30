@@ -49,6 +49,8 @@ class AdminPanelProvider extends PanelProvider
                 'panels::user-menu.before',
                 fn () => view('filament.components.centro-selector-topbar')
             )
+            ->plugins([
+             ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
