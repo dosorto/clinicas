@@ -407,6 +407,32 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                 ->success()
                 ->send();
 
+            // Verificar si hay una cita pendiente desde la sesión
+            if (request()->has('cita_id') || session()->has('cita_en_consulta')) {
+                $citaId = request()->get('cita_id') ?? session('cita_en_consulta');
+                
+                if ($citaId) {
+                    $cita = \App\Models\Citas::find($citaId);
+                    
+                    if ($cita) {
+                        // Actualizar el estado de la cita a "Realizada" después de crear la consulta
+                        // Utilizamos fill para asegurarnos de que el formato sea correcto
+                        $cita->fill(['estado' => 'Realizada']);
+                        $cita->save();
+                        
+                        // Crear notificación adicional
+                        Notification::make()
+                            ->title('Cita completada')
+                            ->body('La cita ha sido marcada como realizada')
+                            ->success()
+                            ->send();
+                    }
+                    
+                    // Limpiar la sesión
+                    session()->forget('cita_en_consulta');
+                }
+            }
+
             // Redirigir a la vista previa de la consulta recién creada
             $this->redirect($this->getResource()::getUrl('view', ['record' => $consulta->id]));
         } catch (\Exception $e) {
