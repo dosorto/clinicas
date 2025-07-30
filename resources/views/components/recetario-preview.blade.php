@@ -1,6 +1,15 @@
 @php
-    $recetario = $medico->recetario ?? null;
+    $recetario = $medico->recetarios()->latest()->first() ?? null;
     $logo = $recetario?->logo ?? null;
+    
+    // Debug para ver qué recetario está cargando
+    \Log::info('RecetarioPreview - Debug recetario:', [
+        'medico_id' => $medico->id,
+        'recetario_existe' => $recetario !== null,
+        'recetario_id' => $recetario?->id,
+        'color_primario_db' => $recetario?->color_primario,
+        'color_secundario_db' => $recetario?->color_secundario,
+    ]);
     
     // Manejar el logo si es un array
     if (is_array($logo)){
@@ -11,7 +20,16 @@
     $headerColor = $recetario?->color_primario ?? '#1e40af';
     $secondaryColor = $recetario?->color_secundario ?? '#64748b';
     $fontFamily = $recetario?->fuente_familia ?? 'Arial, sans-serif';
-    $fontSize = $recetario?->fuente_tamano ?? '14px';
+    $fontSize = ($recetario?->fuente_tamano ?? 14) . 'px';
+    $encabezadoTexto = $recetario?->encabezado_texto ?? 'RECETA MÉDICA';
+    $piePagina = $recetario?->pie_pagina ?? 'Este documento es válido únicamente con la firma del médico';
+    $textoAdicional = $recetario?->texto_adicional ?? '';
+    
+    // Debug final de colores procesados
+    \Log::info('RecetarioPreview - Colores procesados:', [
+        'headerColor' => $headerColor,
+        'secondaryColor' => $secondaryColor,
+    ]);
 
     // Función mejorada para manejar rutas de logo
     $logoPath = null;
@@ -76,11 +94,7 @@
         
         <div class="info-header" style="flex: 1;">
             <h2 style="margin: 0; color: {{ $headerColor }}; font-size: 24px; font-weight: bold;">
-                @if(isset($medico->persona))
-                    Dr(a). {{ $medico->persona->primer_nombre ?? '' }} {{ $medico->persona->segundo_nombre ?? '' }} {{ $medico->persona->primer_apellido ?? '' }} {{ $medico->persona->segundo_apellido ?? '' }}
-                @else
-                    Dr(a). [Información del médico no disponible]
-                @endif
+                {{ $recetario?->titulo ?? $recetario?->titulo_medico ?? 'Dr(a).' }} {{ $recetario?->nombre_mostrar ?? $recetario?->nombre_mostrar_medico ?? (isset($medico->persona) ? trim(($medico->persona->primer_nombre ?? '') . ' ' . ($medico->persona->segundo_nombre ?? '') . ' ' . ($medico->persona->primer_apellido ?? '') . ' ' . ($medico->persona->segundo_apellido ?? '')) : '[Información del médico no disponible]') }}
             </h2>
             <div style="margin-top: 8px; color: {{ $secondaryColor }};">
                 @if(isset($medico->especialidades) && $medico->especialidades->count() > 0)
@@ -89,6 +103,11 @@
                         @foreach($medico->especialidades as $index => $especialidad)
                             {{ $especialidad->especialidad }}@if(!$loop->last), @endif
                         @endforeach
+                    </div>
+                @endif
+                @if(!empty($recetario?->telefono_mostrar) || !empty($recetario?->telefonos_medico))
+                    <div style="font-size: 13px; color: {{ $secondaryColor }}; margin-top: 2px;">
+                        <span style="color: #666;">📞</span> {{ $recetario?->telefono_mostrar ?? $recetario?->telefonos_medico }}
                     </div>
                 @endif
             </div>
@@ -146,31 +165,44 @@
         </div>
     </div>
 
-    <!-- Prescripción -->
-    <div class="prescription-section" style="margin-bottom: 30px;">
-        <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 2px solid {{ $headerColor }}; padding-bottom: 8px; font-size: 18px;">
-            ℞ PRESCRIPCIÓN MÉDICA
-        </h4>
-        
-        <div class="prescription-content" style="min-height: 200px; padding: 20px; border: 1px solid #d1d5db; border-radius: 8px; background-color: #ffffff; line-height: 1.8;">
-            @if($receta->medicamentos)
-                <div style="white-space: pre-line; font-size: 15px;">{{ $receta->medicamentos }}</div>
-            @else
-                <div style="color: #9ca3af; font-style: italic; text-align: center; padding: 40px 0;">
-                    [Espacio para medicamentos y dosificación]
-                </div>
-            @endif
+
+    <!-- Receta y Indicaciones en cuadrícula -->
+    <div class="receta-grid" style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; border: 2px solid #e5e7eb; border-radius: 10px; padding: 0; background: #fff; margin-bottom: 30px; box-shadow: 0 2px 8px #0001; overflow: hidden;">
+        <!-- Prescripción -->
+        <div class="prescription-section" style="border-right: 1px solid #e5e7eb; padding: 25px 20px 25px 25px; min-height: 260px;">
+            <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 2px solid {{ $headerColor }}; padding-bottom: 8px; font-size: 18px;">
+                ℞ {{ $encabezadoTexto }}
+            </h4>
+            <div class="prescription-content" style="min-height: 180px; padding: 15px; border: 1px dashed #d1d5db; border-radius: 8px; background-color: #f9fafb; line-height: 1.8;">
+                @if($receta->medicamentos)
+                    <div style="white-space: pre-line; font-size: 15px;">{{ $receta->medicamentos }}</div>
+                @else
+                    <div style="color: #9ca3af; font-style: italic; text-align: center; padding: 40px 0;">
+                        [Espacio para medicamentos y dosificación]
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Indicaciones -->
+        <div class="instructions-section" style="padding: 25px 25px 25px 20px; min-height: 260px;">
+            <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 1px solid {{ $headerColor }}; padding-bottom: 5px;">
+                Indicaciones Especiales
+            </h4>
+            <div style="min-height: 180px; padding: 15px; border: 1px dashed #d1d5db; border-radius: 8px; background-color: #fff; font-size: 14px; line-height: 1.6;">
+                {{ $receta->indicaciones ?: '[Aquí aparecerán las indicaciones especiales]' }}
+            </div>
         </div>
     </div>
 
-    <!-- Indicaciones -->
-    @if($receta->indicaciones)
-    <div class="instructions-section" style="margin-bottom: 25px;">
+    <!-- Texto Adicional del Recetario -->
+    @if($textoAdicional)
+    <div class="additional-text-section" style="margin-bottom: 25px;">
         <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 1px solid {{ $headerColor }}; padding-bottom: 5px;">
-            Indicaciones Especiales
+            Información Adicional
         </h4>
-        <div style="padding: 15px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px; font-size: 14px; line-height: 1.6;">
-            {{ $receta->indicaciones }}
+        <div style="padding: 15px; background-color: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 4px; font-size: 14px; line-height: 1.6;">
+            {{ $textoAdicional }}
         </div>
     </div>
     @endif
@@ -180,15 +212,13 @@
         <div class="signature-area" style="text-align: center; min-width: 250px;">
             <div style="border-top: 1px solid #333; margin-bottom: 5px; width: 250px;"></div>
             <div style="font-weight: 600; font-size: 13px;">
-                @if(isset($medico->persona))
-                    @php
-                        $nombreMedico = trim(($medico->persona->primer_nombre ?? '') . ' ' . ($medico->persona->segundo_nombre ?? '') . ' ' . ($medico->persona->primer_apellido ?? '') . ' ' . ($medico->persona->segundo_apellido ?? ''));
-                    @endphp
-                    Dr(a). {{ $nombreMedico ?: 'Sin nombre' }}
-                @else
-                    Dr(a). [Firma del médico]
-                @endif
+                {{ $recetario?->titulo ?? $recetario?->titulo_medico ?? 'Dr(a).' }} {{ $recetario?->nombre_mostrar ?? $recetario?->nombre_mostrar_medico ?? (isset($medico->persona) ? trim(($medico->persona->primer_nombre ?? '') . ' ' . ($medico->persona->segundo_nombre ?? '') . ' ' . ($medico->persona->primer_apellido ?? '') . ' ' . ($medico->persona->segundo_apellido ?? '')) : '[Firma del médico]') }}
             </div>
+            @if(!empty($recetario?->telefono_mostrar) || !empty($recetario?->telefonos_medico))
+                <div style="font-size: 12px; color: {{ $secondaryColor }}; margin-top: 2px;">
+                    <span style="color: #666;">📞</span> {{ $recetario?->telefono_mostrar ?? $recetario?->telefonos_medico }}
+                </div>
+            @endif
             @if(isset($medico->numero_colegiacion) && $medico->numero_colegiacion)
                 <div style="font-size: 12px; color: {{ $secondaryColor }};">Reg. Médico: {{ $medico->numero_colegiacion }}</div>
             @endif
@@ -196,7 +226,7 @@
         
         <div class="footer-info" style="text-align: right; font-size: 11px; color: {{ $secondaryColor }};">
             <div>Fecha de emisión: {{ now()->format('d/m/Y H:i') }}</div>
-            <div>Este documento es válido únicamente con la firma del médico</div>
+            <div>{{ $piePagina }}</div>
         </div>
     </div>
 </div>

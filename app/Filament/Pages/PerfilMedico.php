@@ -159,6 +159,10 @@ class PerfilMedico extends Page implements HasForms
                     'mostrar_direccion' => $recetario->mostrar_direccion ?? true,
                     'texto_adicional' => $recetario->texto_adicional ?? '',
                     'formato_papel' => $recetario->formato_papel ?? 'half',
+                    // Campos personalizados
+                    'titulo_medico' => $recetario->titulo ?? 'Dr.',
+                    'nombre_mostrar_medico' => $recetario->nombre_mostrar ?? ($medico->persona ? trim("{$medico->persona->primer_nombre} {$medico->persona->segundo_nombre} {$medico->persona->primer_apellido} {$medico->persona->segundo_apellido}") : ''),
+                    'telefonos_medico' => $recetario->telefono_mostrar ?? ($medico->persona->telefono ?? ''),
                 ];
             } else {
                 $this->recetarioData = [
@@ -265,7 +269,7 @@ class PerfilMedico extends Page implements HasForms
                         ->live()
                         ->columnSpanFull(),
                 ]),
-                
+     
             Section::make('Diseño y Personalización')
                 ->description('Configure la apariencia visual de su recetario')
                 ->schema([
@@ -281,26 +285,47 @@ class PerfilMedico extends Page implements HasForms
                                     '16:9',
                                     '4:3',
                                     '1:1',
-                                ])
+                                    ])
                                 ->maxSize(2048)
                                 ->helperText('Imagen que aparecerá en el encabezado (máximo 2MB)')
-                                ->disabled(fn() => !auth()->user()->can('uploadLogo', self::class))
+                                ->disabled(fn() => !$this->canUploadLogo())
                                 ->multiple(false)
                                 ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif'])
                                 ->live()
                                 ->afterStateUpdated(function ($state) {
                                     // Debug para ver qué llega cuando se sube
-                                    \Log::info('Logo uploaded state:', ['state' => $state, 'tipo' => gettype($state)]);
-                                }),
-                                
+                                \Log::info('Logo uploaded state:', ['state' => $state, 'tipo' => gettype($state)]);
+                                    }),
+
                             Toggle::make('mostrar_logo')
                                 ->label('Mostrar Logo')
                                 ->helperText('Mostrar u ocultar el logo en el recetario')
                                 ->live(),
-                        ]),
-                        
-                    
-                ])
+                                ]),
+
+                        Grid::make(2)
+                                ->schema([
+                                    TextInput::make('titulo_medico')
+                                        ->label('Título del Médico')
+                                        ->helperText('Ej: Dr., Dra., Lic., etc.')
+                                        ->live(),
+
+                                    TextInput::make('nombre_mostrar_medico')
+                                        ->label('Nombre a Mostrar del Médico')
+                                        ->helperText('Nombre completo que aparecerá en el recetario.')
+                                        ->live(),
+
+                                    TextInput::make('telefonos_medico')
+                                        ->label('Teléfonos del Médico')
+                                        ->placeholder('Ej: 1234-5678, 9876-5432')
+                                        ->helperText('Ingrese uno o más números de teléfono, separados por comas.')
+                                        ->live()
+                                        ->rules(['nullable', 'string']), // Removed 'tel' rule for more flexibility with commas
+
+                                ]),
+
+                                
+                    ])
                 ->visible(fn (callable $get) => $get('tiene_recetario'))
                 ->columns(1),
                 
@@ -334,18 +359,7 @@ class PerfilMedico extends Page implements HasForms
                                 ->helperText('Fuente principal del texto')
                                 ->live(),
                                 
-                            Select::make('fuente_tamano')
-                                ->label('Tamaño de Fuente')
-                                ->options([
-                                    10 => '10px',
-                                    11 => '11px',
-                                    12 => '12px',
-                                    14 => '14px',
-                                    16 => '16px',
-                                    18 => '18px',
-                                ])
-                                ->helperText('Tamaño base del texto')
-                                ->live(),
+                            
                         ]),
                 ])
                 ->visible(fn (callable $get) => $get('tiene_recetario'))
@@ -371,14 +385,7 @@ class PerfilMedico extends Page implements HasForms
                                 ->helperText('Incluir dirección del consultorio')
                                 ->live(),
                                 
-                            Select::make('formato_papel')
-                                ->label('Formato de Papel')
-                                ->options([
-                                    'half' => 'Media Página',
-                                    'full' => 'Página Completa',
-                                ])
-                                ->helperText('Tamaño del recetario')
-                                ->live(),
+                            
                         ]),
                 ])
                 ->visible(fn (callable $get) => $get('tiene_recetario'))
@@ -392,7 +399,7 @@ class PerfilMedico extends Page implements HasForms
                         ->dehydrated(false)
                         ->content(function (callable $get) {
                             // Verificar permisos para ver la vista previa
-                            if (!auth()->user()->can('viewPreview', self::class)) {
+                            if (!$this->canViewPreview()) {
                                 return new \Illuminate\Support\HtmlString(
                                     '<div style="text-align: center; padding: 40px; color: #666;">
                                         <p>No tiene permisos para ver la vista previa del recetario.</p>
@@ -403,14 +410,18 @@ class PerfilMedico extends Page implements HasForms
                             $config = $get();
                             
                             // Debug para ver la configuración completa
-                            \Log::info('Config para preview:', $config);
+                            \Log::info('Config para preview:', [
+                                'color_primario' => $config['color_primario'] ?? 'no definido',
+                                'color_secundario' => $config['color_secundario'] ?? 'no definido',
+                                'encabezado_texto' => $config['encabezado_texto'] ?? 'no definido'
+                            ]);
                             
                             return new \Illuminate\Support\HtmlString(
                                 view('components.recetario-preview-demo', compact('config'))->render()
                             );
                         }),
                 ])
-                ->visible(fn (callable $get) => $get('tiene_recetario') && auth()->user()->can('viewPreview', self::class))
+                ->visible(fn (callable $get) => $get('tiene_recetario') && $this->canViewPreview())
                 ->collapsible()
                 ->collapsed(false),
                 
@@ -464,11 +475,10 @@ class PerfilMedico extends Page implements HasForms
             $user = auth()->user();
             
             // Validar permisos usando la policy
-            if (!$user->can('updateRecetario', self::class)) {
-                $response = \Illuminate\Support\Facades\Gate::inspect('updateRecetario', self::class);
+            if (!$this->canUpdateRecetario()) {
                 Notification::make()
                     ->title('Acceso Denegado')
-                    ->body($response->message())
+                    ->body('No tiene permisos para actualizar el recetario.')
                     ->warning()
                     ->send();
                 return;
@@ -477,38 +487,47 @@ class PerfilMedico extends Page implements HasForms
             // Validar el formulario primero
             $this->getRecetarioForm()->getState();
             
+
             $recetarioData = $this->recetarioData;
-            
+
+            // Mapear campos personalizados a columnas de BD
+            if (isset($recetarioData['titulo_medico'])) {
+                $recetarioData['titulo'] = $recetarioData['titulo_medico'];
+                unset($recetarioData['titulo_medico']);
+            }
+            if (isset($recetarioData['nombre_mostrar_medico'])) {
+                $recetarioData['nombre_mostrar'] = $recetarioData['nombre_mostrar_medico'];
+                unset($recetarioData['nombre_mostrar_medico']);
+            }
+            if (isset($recetarioData['telefonos_medico'])) {
+                $recetarioData['telefono_mostrar'] = $recetarioData['telefonos_medico'];
+                unset($recetarioData['telefonos_medico']);
+            }
+
             // Procesar el logo correctamente
             if (isset($recetarioData['logo'])) {
                 $logo = $recetarioData['logo'];
-                
                 // Debug completo del logo
                 \Log::info('Procesando logo:', [
                     'logo_original' => $logo,
                     'es_array' => is_array($logo),
                     'tipo' => gettype($logo)
                 ]);
-                
                 // Si es array (viene de FileUpload), tomar el primer elemento
                 if (is_array($logo) && !empty($logo)) {
                     $logo = reset($logo);
                 }
-                
                 // Si es string vacío, convertir a null
                 if (empty($logo)) {
                     $logo = null;
                 }
-                
                 // Verificar que el archivo existe antes de guardarlo
                 if ($logo && !Storage::disk('public')->exists($logo)) {
                     \Log::warning('Archivo de logo no encontrado:', ['path' => $logo]);
                     // No establecer logo si el archivo no existe
                     $logo = null;
                 }
-                
                 $recetarioData['logo'] = $logo;
-                
                 \Log::info('Logo procesado final:', [
                     'logo_final' => $logo,
                     'existe_archivo' => $logo ? Storage::disk('public')->exists($logo) : false
@@ -652,7 +671,7 @@ class PerfilMedico extends Page implements HasForms
         }
 
         // Usar la policy para determinar el acceso
-        return $user->can('view', self::class);
+        return $user->hasRole('medico') || $user->hasRole('root');
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -664,5 +683,24 @@ class PerfilMedico extends Page implements HasForms
     public function getPreviewData()
     {
         return $this->recetarioData;
+    }
+
+    // Métodos de permisos simplificados
+    public function canUploadLogo(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->hasRole('medico') || $user->hasRole('root'));
+    }
+
+    public function canViewPreview(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->hasRole('medico') || $user->hasRole('root'));
+    }
+
+    public function canUpdateRecetario(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->hasRole('medico') || $user->hasRole('root'));
     }
 }
