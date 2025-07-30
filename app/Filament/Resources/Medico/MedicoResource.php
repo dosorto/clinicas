@@ -36,6 +36,9 @@ class MedicoResource extends Resource
     {
     return $form
     ->schema([
+        Forms\Components\Hidden::make('centro_id')
+            ->default(fn() => auth()->user()->centro_id),
+            
         Wizard::make([
             Wizard\Step::make('Datos Personales')
                 ->schema([
@@ -187,6 +190,9 @@ class MedicoResource extends Resource
                 
             Wizard\Step::make('Datos Profesionales')
                 ->schema([
+                    Forms\Components\Hidden::make('centro_id')
+                        ->default(fn() => session('current_centro_id')),
+                        
                     Forms\Components\TextInput::make('numero_colegiacion')
                         ->label('Número de Colegiación')
                         ->required()
@@ -248,6 +254,87 @@ class MedicoResource extends Resource
             ]),
                 ]) ->columns(2),
                 
+            Wizard\Step::make('Información Contractual')
+                ->description('Información del contrato laboral')
+                ->schema([
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            Forms\Components\TextInput::make('salario_quincenal')
+                                ->label('Salario Quincenal')
+                                ->required()
+                                ->numeric()
+                                ->prefix('L')
+                                ->placeholder('0.00')
+                                ->live(onBlur: true)
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    if ($state) {
+                                        $set('salario_mensual', $state * 2);
+                                    }
+                                }),
+
+                            Forms\Components\TextInput::make('salario_mensual')
+                                ->label('Salario Mensual')
+                                ->required()
+                                ->numeric()
+                                ->prefix('L')
+                                ->placeholder('0.00')
+                                ->disabled()
+                                ->dehydrated(),
+                        ]),
+
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            Forms\Components\TextInput::make('porcentaje_servicio')
+                                ->label('Porcentaje por Servicios')
+                                ->numeric()
+                                ->suffix('%')
+                                ->placeholder('0')
+                                ->default(0)
+                                ->minValue(0)
+                                ->maxValue(100)
+                                ->required()
+                                ->live(onBlur: true)
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    if ($state === '' || $state === null) {
+                                        $set('porcentaje_servicio', 0);
+                                    }
+                                    // Convertir a número para evitar problemas con strings vacíos
+                                    $set('porcentaje_servicio', floatval($state ?? 0));
+                                }),
+
+                            Forms\Components\DatePicker::make('fecha_inicio')
+                                ->label('Fecha de Inicio')
+                                ->required()
+                                ->native(false)
+                                ->displayFormat('d/m/Y')
+                                ->default(now())
+                                ->minDate(now()),
+                        ]),
+
+                    Forms\Components\Grid::make(2)
+                        ->schema([
+                            Forms\Components\DatePicker::make('fecha_fin')
+                                ->label('Fecha de Finalización')
+                                ->native(false)
+                                ->displayFormat('d/m/Y')
+                                ->minDate(fn (Get $get) => $get('fecha_inicio'))
+                                ->placeholder('Sin fecha de finalización')
+                                ->helperText('Dejar vacío si el contrato es indefinido'),
+
+                            Forms\Components\Toggle::make('activo')
+                                ->label('Contrato Activo')
+                                ->helperText('Indica si el contrato está vigente')
+                                ->default(true)
+                                ->inline(false),
+                        ]),
+
+                    Forms\Components\Textarea::make('observaciones_contrato')
+                        ->label('Observaciones del Contrato')
+                        ->placeholder('Ingrese cualquier observación relevante sobre el contrato')
+                        ->maxLength(65535)
+                        ->columnSpanFull(),
+                ]),
+
             Wizard\Step::make('Especialidades')
                 ->schema([
                     Forms\Components\CheckboxList::make('especialidades')
@@ -558,7 +645,7 @@ class MedicoResource extends Resource
                                     'email' => $data['user_email'],
                                     'password' => Hash::make($data['user_password']),
                                     'persona_id' => $record->persona->id,
-                                    'centro_id' => session('current_centro_id') ?? auth()->user()->centro_id,
+                                    'centro_id' => $centro_id,
                                     'email_verified_at' => $data['user_active'] ? now() : null,
                                 ]);
 
@@ -632,9 +719,12 @@ class MedicoResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // Si no es usuario root, filtrar por centro actual
+        // Obtener centro_id del usuario autenticado
+        $centro_id = auth()->user()->centro_id;
+        
+        // Filtrar por el centro del usuario a menos que sea root
         if (!auth()->user()?->hasRole('root')) {
-            $query->where('centro_id', session('current_centro_id'));
+            $query->where('centro_id', $centro_id);
         }
 
         return $query;
@@ -645,6 +735,12 @@ class MedicoResource extends Resource
         DB::beginTransaction();
         
         try {
+            // Obtener el centro_id del usuario autenticado
+            $centro_id = auth()->user()->centro_id ?? null;
+            if (!$centro_id) {
+                throw new \Exception('No se ha seleccionado un centro médico.');
+            }
+            
             $persona = Persona::where('dni', $data['dni'])->first();
             
             if (!$persona) {
@@ -662,17 +758,61 @@ class MedicoResource extends Resource
                 ]);
             }
 
-            $medico = Medico::updateOrCreate(
-                ['persona_id' => $persona->id],
-                [
-                    'numero_colegiacion' => $data['numero_colegiacion'],
-                    'horario_entrada' => $data['horario_entrada'],
-                    'horario_salida' => $data['horario_salida']
-                ]
-            );
+            // Crear el médico con el centro_id verificado
+            $medico = Medico::create([
+                'persona_id' => $persona->id,
+                'numero_colegiacion' => $data['numero_colegiacion'],
+                'horario_entrada' => $data['horario_entrada'],
+                'horario_salida' => $data['horario_salida'],
+                'centro_id' => $centro_id,
+            ]);
 
             if (isset($data['especialidades'])) {
                 $medico->especialidades()->sync($data['especialidades']);
+            }
+
+            // Crear el contrato médico
+            if (isset($data['salario_quincenal']) && isset($data['porcentaje_servicio'])) {
+                $contrato = \App\Models\ContabilidadMedica\ContratoMedico::create([
+                    'medico_id' => $medico->id,
+                    'salario_quincenal' => $data['salario_quincenal'],
+                    'salario_mensual' => $data['salario_quincenal'] * 2,
+                    'porcentaje_servicio' => $data['porcentaje_servicio'] ?? 0,
+                    'fecha_inicio' => $data['fecha_inicio'],
+                    'fecha_fin' => isset($data['fecha_fin']) && $data['fecha_fin'] ? $data['fecha_fin'] : null,
+                    'activo' => $data['activo'] ?? true,
+                    'centro_id' => $centro_id, // Usar la misma variable que usamos para el médico
+                ]);
+            }
+
+            // Crear usuario si se ha solicitado
+            if (isset($data['crear_usuario']) && $data['crear_usuario']) {
+                try {
+                    $user = \App\Models\User::create([
+                        'name' => $data['username'],
+                        'email' => $data['user_email'],
+                        'password' => Hash::make($data['user_password']),
+                        'persona_id' => $persona->id,
+                        'centro_id' => session('current_centro_id'),
+                        'email_verified_at' => $data['user_active'] ? now() : null,
+                    ]);
+
+                    // Asignar rol
+                    $user->assignRole($data['user_role']);
+
+                    Notification::make()
+                        ->title('✅ Usuario creado exitosamente')
+                        ->body("Usuario '{$data['username']}' creado para {$persona->primer_nombre} {$persona->primer_apellido}")
+                        ->success()
+                        ->persistent()
+                        ->send();
+                } catch (\Exception $e) {
+                    Notification::make()
+                        ->title('❌ Error al crear usuario')
+                        ->body("Error: " . $e->getMessage())
+                        ->danger()
+                        ->send();
+                }
             }
 
             DB::commit();

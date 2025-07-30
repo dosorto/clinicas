@@ -63,7 +63,20 @@ protected $table = 'medicos';
 
     public function especialidades()
     {
-    return $this->belongsToMany(Especialidad::class, 'especialidad_medicos', 'medico_id', 'especialidad_id');
+        return $this->belongsToMany(Especialidad::class, 'especialidad_medicos', 'medico_id', 'especialidad_id');
     }
     
+    public function contratos()
+    {
+        return $this->hasMany(\App\Models\ContabilidadMedica\ContratoMedico::class, 'medico_id');
+    }
+
+    public function contratoActivo()
+    {
+        return $this->hasOne(\App\Models\ContabilidadMedica\ContratoMedico::class, 'medico_id')
+            ->where('activo', true)
+            ->whereNull('fecha_fin')
+            ->orWhere('fecha_fin', '>=', now())
+            ->latest('fecha_inicio');
+    }
 }
