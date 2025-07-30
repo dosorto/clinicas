@@ -19,14 +19,15 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Persona::class, 'persona_id');
     }
-    public function medico()
-    {
-    return $this->hasOne(Medico::class);   
-}
-
+    
     public function centro()
     {
         return $this->belongsTo(Centros_Medico::class, 'centro_id');
+    }
+
+    public function medico()
+    {
+        return $this->hasOne(Medico::class, 'persona_id', 'persona_id');
     }
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles, SoftDeletes;
@@ -169,19 +170,5 @@ class User extends Authenticatable
         return $query;
     }
 
-    public function eventos()
-    {
-        $medico = $this->medico;
-        if (!$medico) {
-            return collect(); // o []
-        }
-        return Citas::where('medico_id', $medico->id)
-            ->get()
-            ->map(function ($cita) {
-                return [
-                    'title' => $cita->motivo,
-                    // ...otros campos
-                ];
-            });
-    }
+   
 }
