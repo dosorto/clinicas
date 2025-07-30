@@ -220,7 +220,18 @@
                                     <!-- CASO 2: Cita confirmada - Mostrar botones de cancelar y crear consulta -->
                                     <template x-if="cita.estado === 'Confirmado'">
                                         <button 
-                                            @click.prevent="$wire.crearConsulta(cita.id)"
+                                            @click.prevent="
+                                                // Mostrar indicador de carga
+                                                $el.disabled = true;
+                                                $el.innerHTML = 'Redirigiendo...';
+                                                
+                                                // Llamar al método y esperar respuesta
+                                                $wire.crearConsulta(cita.id).catch(error => {
+                                                    console.error('Error al crear consulta:', error);
+                                                    $el.disabled = false;
+                                                    $el.innerHTML = 'Crear consulta';
+                                                });
+                                            "
                                             class="px-3 py-1 text-sm font-medium text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 border border-green-300 hover:border-green-500 rounded"
                                         >
                                             Crear consulta
@@ -269,7 +280,7 @@
     
     <script>
         // Guardar las citas por día en una variable global
-        window.citasPorDia = {!! json_encode($citasPorDia) !!};
+        window.citasPorDia = {!! json_encode($citasPorDia) !!} || {};
         
         document.addEventListener('DOMContentLoaded', function() {
             // Obtener todos los días del calendario (con o sin citas)
@@ -306,23 +317,25 @@
             
             // Escuchar actualización del mes
             Livewire.on('mesActualizado', () => {
-                // Forzar recarga de la página para mostrar el nuevo mes
-                window.location.reload();
+                // Ya no necesitamos recargar la página aquí porque ahora usamos redirecciones con parámetros
+                // Esto evita el comportamiento de cambiar y luego volver al mes anterior
+            });
+            
+            // Añadir manejador para redirección a consulta
+            Livewire.on('redirigirConsulta', (data) => {
+                console.log('Redirigiendo a:', data.url);
+                // Redirigir a la URL de creación de consulta
+                window.location.href = data.url;
             });
             
             // Solo recargar cuando hay cambios que afectan a todo el calendario
-            window.$wireui.hook('refresh', () => {
-                // Si estamos en la página del calendario y hay un cambio global, recargar
-                if (window.location.pathname.includes('calendario-citas')) {
-                    // Recargar solo si no hay una operación de cita en curso
-                    // Esto evita recargas innecesarias cuando simplemente estamos actualizando el estado de una cita
-                    if (!document.querySelector('[x-data]').__x.$data.showModal) {
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 300);
-                    }
-                }
-            });
+            // Quitamos el hook de refresh para evitar recargas automáticas no deseadas
+            if (window.$wireui && window.$wireui.hook) {
+                window.$wireui.hook('refresh', () => {
+                    // No hacemos nada aquí para evitar recargas automáticas
+                    // La navegación entre meses se maneja con redirecciones explícitas
+                });
+            }
         });
     </script>
 

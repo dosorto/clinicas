@@ -415,15 +415,15 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                     $cita = \App\Models\Citas::find($citaId);
                     
                     if ($cita) {
-                        // Actualizar el estado de la cita a "Realizada" después de crear la consulta
+                        // Actualizar el estado de la cita a "Realizado" después de crear la consulta
                         // Utilizamos fill para asegurarnos de que el formato sea correcto
-                        $cita->fill(['estado' => 'Realizada']);
+                        $cita->fill(['estado' => 'Realizado']);
                         $cita->save();
                         
                         // Crear notificación adicional
                         Notification::make()
                             ->title('Cita completada')
-                            ->body('La cita ha sido marcada como realizada')
+                            ->body('La cita ha sido marcada como realizado')
                             ->success()
                             ->send();
                     }
