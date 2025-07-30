@@ -309,8 +309,8 @@ class MedicoResource extends Resource
                                 ->required()
                                 ->native(false)
                                 ->displayFormat('d/m/Y')
-                                ->default(now())
-                                ->minDate(now()),
+                                ->default(now()),
+                                //->minDate(now()),
                         ]),
 
                     Forms\Components\Grid::make(2)
@@ -319,7 +319,8 @@ class MedicoResource extends Resource
                                 ->label('Fecha de Finalización')
                                 ->native(false)
                                 ->displayFormat('d/m/Y')
-                                ->minDate(fn (Get $get) => $get('fecha_inicio'))
+                                
+                              //  ->minDate(fn (Get $get) => $get('fecha_inicio'))
                                 ->placeholder('Sin fecha de finalización')
                                 ->helperText('Dejar vacío si el contrato es indefinido'),
 
@@ -641,9 +642,8 @@ class MedicoResource extends Resource
                         ])
                         ->action(function (Medico $record, array $data) {
                             try {
-                                // Obtener centro_id del usuario autenticado o del médico
-                                $centro_id = Auth::user()->centro_id ?? $record->centro_id;
-
+                                // Obtener centro_id del usuario autenticado
+                                $centro_id = auth()->user()->centro_id ?? null;
                                 // Crear el usuario
                                 $user = \App\Models\User::create([
                                     'name' => $data['username'],
