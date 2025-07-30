@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Traits\TenantScoped; 
+use App\Models\Traits\TenantScoped;
 
 class Consulta extends ModeloBase
 {
@@ -22,21 +22,27 @@ class Consulta extends ModeloBase
         'observaciones',
         'paciente_id',
         'medico_id',
-        'cita_id',
         'centro_id',
     ];
 
-    
+
     public function paciente()
     {
         return $this->belongsTo(Pacientes::class, 'paciente_id');
     }
+
     public function medico()
     {
         return $this->belongsTo(Medico::class, 'medico_id');
     }
+
     public function cita()
     {
         return $this->belongsTo(Citas::class, 'cita_id');
+    }
+
+    public function recetas()
+    {
+        return $this->hasMany(Receta::class, 'consulta_id');
     }
 }

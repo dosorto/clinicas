@@ -113,7 +113,7 @@ class EditMedico extends EditRecord
                 ->label('Cancelar')
                 ->url($this->getResource()::getUrl('index'))
                 ->icon('heroicon-o-x-mark')
-                ->color('danger')
+->color('danger')
         ];
     }
 

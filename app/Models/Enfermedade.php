@@ -43,7 +43,7 @@ class Enfermedade extends ModeloBase
 
     public function enfermedades_paciente()
     {
-        return $this->hasMany(Enfermedades_Paciente::class, 'enfermedad_id');
+        return $this->hasMany(Enfermedades__Paciente::class, 'enfermedad_id');
     }
     
 }

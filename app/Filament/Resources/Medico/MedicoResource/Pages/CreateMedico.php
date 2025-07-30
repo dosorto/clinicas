@@ -103,7 +103,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
         ]);
 
         // Verificar si ya existe un usuario para esta persona
-        $existingUser = User::where('persona_id', $persona->id)->first();
+$existingUser = User::where('persona_id', $persona->id)->first();
         
         if ($existingUser) {
             Log::info("Usuario ya existe", ['user_id' => $existingUser->id, 'email' => $existingUser->email]);
@@ -175,7 +175,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
         $nombreCompleto = trim("{$persona->primer_nombre} {$persona->primer_apellido}");
         Notification::make()
             ->title('✅ Usuario creado exitosamente')
-            ->body("**Usuario creado para {$nombreCompleto}:**\n\n🔑 **Usuario:** {$username}\n📧 **Email:** {$email}\n🔒 **Contraseña:** {$password}\n👤 **Rol:** " . ucfirst($role) . "\n\n⚠️ **IMPORTANTE:** Guarde estas credenciales.")
+            ->body("**Usuario creado para {$nombreCompleto}:**\n\n🔑 Usuario: {$username}\n📧 Email: {$email}\n🔒 Contraseña: {$password}\n👤 Rol: " . ucfirst($role) . "\n\n⚠️ IMPORTANTE: Guarde estas credenciales.")
             ->success()
             ->persistent()
             ->send();
@@ -202,7 +202,7 @@ protected function createUserForMedicoSimple(Persona $persona, Medico $medico, a
             'error' => $e->getMessage(),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString()
+'trace' => $e->getTraceAsString()
         ]);
         
         // Re-lanzar la excepción para que Filament maneje el rollback
@@ -306,7 +306,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
         $nombreCompleto = trim("{$persona->primer_nombre} {$persona->primer_apellido}");
         Notification::make()
             ->title('✅ Usuario creado exitosamente')
-            ->body("**Usuario creado para {$nombreCompleto}:**\n\n🔑 **Usuario:** {$username}\n📧 **Email:** {$email}\n🔒 **Contraseña:** {$password}\n👤 **Rol:** " . ucfirst($role) . "\n\n⚠️ **IMPORTANTE:** Guarde estas credenciales.")
+->body("**Usuario creado para {$nombreCompleto}:**\n\n🔑 Usuario: {$username}\n📧 Email: {$email}\n🔒 Contraseña: {$password}\n👤 Rol: " . ucfirst($role) . "\n\n⚠️ IMPORTANTE: Guarde estas credenciales.")
             ->success()
             ->persistent()
             ->send();
@@ -416,7 +416,7 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
             $user->assignRole($role);
             Log::info("Rol '{$role}' asignado exitosamente");
         } catch (\Exception $roleError) {
-            Log::warning("No se pudo asignar rol '{$role}'", ['error' => $roleError->getMessage()]);
+Log::warning("No se pudo asignar rol '{$role}'", ['error' => $roleError->getMessage()]);
             // Intentar asignar rol por defecto
             try {
                 $user->assignRole('medico');
@@ -430,7 +430,7 @@ protected function createUserForMedico(Persona $persona, Medico $medico, array $
         $nombreCompleto = trim("{$persona->primer_nombre} {$persona->primer_apellido}");
         Notification::make()
             ->title('✅ Usuario creado exitosamente')
-            ->body("**Usuario creado para {$nombreCompleto}:**\n\n🔑 **Usuario:** {$username}\n📧 **Email:** {$email}\n🔒 **Contraseña:** {$password}\n👤 **Rol:** " . ucfirst($role) . "\n\n⚠️ **IMPORTANTE:** Guarde estas credenciales.")
+            ->body("**Usuario creado para {$nombreCompleto}:**\n\n🔑 Usuario: {$username}\n📧 Email: {$email}\n🔒 Contraseña: {$password}\n👤 Rol: " . ucfirst($role) . "\n\n⚠️ IMPORTANTE: Guarde estas credenciales.")
             ->success()
             ->persistent()
             ->send();
@@ -535,8 +535,7 @@ protected function generatePassword(): string
     {
         return $this->getResource()::getUrl('index');
     }
-
-    protected function getCreatedNotificationTitle(): ?string
+protected function getCreatedNotificationTitle(): ?string
     {
         return 'Médico y usuario creados exitosamente';
     }
