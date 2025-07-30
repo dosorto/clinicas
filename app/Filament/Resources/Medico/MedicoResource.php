@@ -23,6 +23,8 @@ use Filament\Tables\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use App\Models\Centros_Medico;
 
 
 class MedicoResource extends Resource
@@ -643,7 +645,19 @@ class MedicoResource extends Resource
                         ->action(function (Medico $record, array $data) {
                             try {
                                 // Obtener centro_id del usuario autenticado
-                                $centro_id = auth()->user()->centro_id ?? null;
+                                $centro_id = Auth::user()->centro_id ?? null;
+                                
+                                // Si no hay centro_id, intentar obtenerlo de otras fuentes
+                                if (!$centro_id) {
+                                    $centro_id = session('current_centro_id') ?? null;
+                                    
+                                    if (!$centro_id) {
+                                        // Usar el primer centro como último recurso
+                                        $centro_id = Centros_Medico::first()->id ?? 1;
+                                        Log::warning("No se encontró centro_id para crear usuario, usando valor por defecto: {$centro_id}");
+                                    }
+                                }
+                                
                                 // Crear el usuario
                                 $user = \App\Models\User::create([
                                     'name' => $data['username'],
@@ -725,10 +739,11 @@ class MedicoResource extends Resource
         $query = parent::getEloquentQuery();
 
         // Obtener centro_id del usuario autenticado
-        $centro_id = Auth::user()->centro_id;
-
-        // Filtrar por el centro del usuario a menos que sea root
-        /*if (!Auth::user()?->hasRole('root')) {
+        $centro_id = Auth::user()?->centro_id;
+        
+        // Solo filtrar si hay un centro_id y si no está comentada la condición
+        // como en el código original
+        /*if ($centro_id) {
             $query->where('centro_id', $centro_id);
         }*/
 
@@ -740,10 +755,19 @@ class MedicoResource extends Resource
         DB::beginTransaction();
 
         try {
-            // Obtener el centro_id del usuario autenticado
-            $centro_id = Auth::user()->centro_id ?? null;
+            // Obtener el centro_id de múltiples fuentes posibles
+            $centro_id = $data['centro_id'] ?? Auth::user()->centro_id ?? session('current_centro_id') ?? null;
+            
+            // Si no hay centro_id, intentar obtenerlo del modelo o usar un valor por defecto
             if (!$centro_id) {
-                throw new \Exception('No se ha seleccionado un centro médico.');
+                // Buscar el primer centro médico como último recurso
+                $centro_id = Centros_Medico::first()->id ?? 1;
+                
+                // Guardar en la sesión para futuras operaciones
+                session(['current_centro_id' => $centro_id]);
+                
+                // Log para depuración
+                Log::warning("No se encontró centro_id, usando valor por defecto: {$centro_id}");
             }
 
             $persona = Persona::where('dni', $data['dni'])->first();
@@ -787,6 +811,7 @@ class MedicoResource extends Resource
                     'fecha_fin' => isset($data['fecha_fin']) && $data['fecha_fin'] ? $data['fecha_fin'] : null,
                     'activo' => $data['activo'] ?? true,
                     'centro_id' => $centro_id, // Usar la misma variable que usamos para el médico
+                    'observaciones' => $data['observaciones_contrato'] ?? null, // Añadir observaciones si existen
                 ]);
             }
 
@@ -798,7 +823,7 @@ class MedicoResource extends Resource
                         'email' => $data['user_email'],
                         'password' => Hash::make($data['user_password']),
                         'persona_id' => $persona->id,
-                        'centro_id' => session('current_centro_id'),
+                        'centro_id' => $centro_id, // Usar el mismo centro_id obtenido anteriormente
                         'email_verified_at' => $data['user_active'] ? now() : null,
                     ]);
 
