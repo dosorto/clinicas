@@ -6,7 +6,6 @@ use App\Filament\Resources\Consultas\ConsultasResource\Pages;
 use App\Models\Consulta;
 use App\Models\Pacientes;
 use App\Models\Medico;
-use App\Models\Citas;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -20,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\ListConsultas;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\CreateConsultas;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\EditConsultas;
+use App\Filament\Resources\Consultas\ConsultasResource\Pages\ViewConsultas;
 
 
 class ConsultasResource extends Resource
@@ -45,50 +45,64 @@ class ConsultasResource extends Resource
                 // El campo centro_id se asigna automáticamente y se oculta
                 Forms\Components\Hidden::make('centro_id')
                     ->default(fn () => \Illuminate\Support\Facades\Auth::check() ? \Illuminate\Support\Facades\Auth::user()->centro_id : null),
-                
+
+                // Campo paciente_id oculto - se debe asignar al crear la consulta
+                Forms\Components\Hidden::make('paciente_id')
+                    ->default(null),
+
                 Forms\Components\Section::make('Información de la Consulta')
                     ->schema([
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\Select::make('paciente_id')
-                                    ->label('Paciente')
-                                    ->options(function () {
-                                        return ['' => 'Seleccionar'] + Pacientes::with('persona')->get()->filter(function ($p) {
-                                            return $p->persona !== null;
-                                        })->mapWithKeys(function ($p) {
-                                            return [$p->id => $p->persona->nombre_completo];
-                                        })->toArray();
-                                    })
-                                    ->searchable()
-                                    ->preload()
-                                    ->required()
-                                    ->columnSpan(1),
+                        Forms\Components\Placeholder::make('medico_info')
+                            ->label('Médico')
+                            ->content(function () {
+                                $user = \Illuminate\Support\Facades\Auth::user();
 
-                                Forms\Components\Select::make('medico_id')
-                                    ->label('Médico')
-                                    ->options(function () {
-                                        return ['' => 'Seleccionar'] + Medico::with('persona')->get()->filter(function ($m) {
-                                            return $m->persona !== null;
-                                        })->mapWithKeys(function ($m) {
-                                            return [$m->id => $m->persona->nombre_completo];
-                                        })->toArray();
-                                    })
-                                    ->searchable()
-                                    ->preload()
-                                    ->required()
-                                    ->columnSpan(1),
-                            ]),
+                                // Primero intentar con la relación directa
+                                if ($user && $user->medico && $user->medico->persona) {
+                                    $nombre = $user->medico->persona->nombre_completo;
+                                    $dni = $user->medico->persona->dni ?? 'Sin DNI';
+                                    return "{$nombre} - DNI: {$dni}";
+                                }
 
-                        Forms\Components\Select::make('cita_id')
-                            ->label('Cita')
-                            ->options(Citas::with(['paciente', 'medico'])
-                                ->get()
-                                ->mapWithKeys(function ($cita) {
-                                    return [$cita->id => "Cita #{$cita->id} - {$cita->fecha} {$cita->hora}"];
-                                }))
-                            ->searchable()
-                            ->preload()
-                            ->required(),
+                                // Si no tiene relación directa, buscar por persona_id
+                                if ($user && $user->persona_id) {
+                                    $medico = \App\Models\Medico::withoutGlobalScopes()->where('persona_id', $user->persona_id)->with('persona')->first();
+                                    if ($medico && $medico->persona) {
+                                        $nombre = $medico->persona->nombre_completo;
+                                        $dni = $medico->persona->dni ?? 'Sin DNI';
+                                        return "{$nombre} - DNI: {$dni}";
+                                    }
+                                }
+
+                                // Si tiene persona pero no es médico, mostrar la información del usuario
+                                if ($user && $user->persona) {
+                                    $nombre = $user->persona->nombre_completo;
+                                    $dni = $user->persona->dni ?? 'Sin DNI';
+                                    return "{$nombre} - DNI: {$dni} (Usuario)";
+                                }
+
+                                return 'No hay médico asociado al usuario';
+                            }),
+
+                        Forms\Components\Hidden::make('medico_id')
+                            ->default(function () {
+                                $user = \Illuminate\Support\Facades\Auth::user();
+
+                                // Primero intentar con la relación directa
+                                if ($user && $user->medico) {
+                                    return $user->medico->id;
+                                }
+
+                                // Si no tiene relación directa, buscar por persona_id
+                                if ($user && $user->persona_id) {
+                                    $medico = \App\Models\Medico::withoutGlobalScopes()->where('persona_id', $user->persona_id)->first();
+                                    if ($medico) {
+                                        return $medico->id;
+                                    }
+                                }
+
+                                return null;
+                            }),
                     ]),
 
                 Forms\Components\Section::make('Detalles Médicos')
@@ -123,19 +137,51 @@ class ConsultasResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('paciente.persona.nombre_completo')
+                Tables\Columns\TextColumn::make('paciente_nombre')
                     ->label('Paciente')
-                    ->sortable()
-                    ->searchable(),
+                    ->state(function (Consulta $record): string {
+                        if ($record->paciente && $record->paciente->persona) {
+                            return $record->paciente->persona->nombre_completo;
+                        }
+                        return 'N/A';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('paciente.persona', function (Builder $subQuery) use ($search) {
+                            $subQuery->where('primer_nombre', 'like', "%{$search}%")
+                                     ->orWhere('segundo_nombre', 'like', "%{$search}%")
+                                     ->orWhere('primer_apellido', 'like', "%{$search}%")
+                                     ->orWhere('segundo_apellido', 'like', "%{$search}%")
+                                     ->orWhere('dni', 'like', "%{$search}%");
+                        });
+                    })
+                    ->sortable(),
 
-                Tables\Columns\TextColumn::make('medico.persona.nombre_completo')
+                Tables\Columns\TextColumn::make('medico_nombre')
                     ->label('Médico')
-                    ->sortable()
-                    ->searchable(),
+                    ->state(function (Consulta $record): string {
+                        if ($record->medico && $record->medico->persona) {
+                            return $record->medico->persona->nombre_completo;
+                        }
 
-                Tables\Columns\TextColumn::make('cita.fecha')
-                    ->label('Fecha Cita')
-                    ->date()
+                        // Si no se cargó la relación, intentar cargarla manualmente
+                        if ($record->medico_id) {
+                            $medico = Medico::withoutGlobalScopes()->with('persona')->find($record->medico_id);
+                            if ($medico && $medico->persona) {
+                                return $medico->persona->nombre_completo;
+                            }
+                        }
+
+                        return 'N/A';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('medico.persona', function (Builder $subQuery) use ($search) {
+                            $subQuery->where('primer_nombre', 'like', "%{$search}%")
+                                     ->orWhere('segundo_nombre', 'like', "%{$search}%")
+                                     ->orWhere('primer_apellido', 'like', "%{$search}%")
+                                     ->orWhere('segundo_apellido', 'like', "%{$search}%")
+                                     ->orWhere('dni', 'like', "%{$search}%");
+                        });
+                    })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
@@ -159,13 +205,35 @@ class ConsultasResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('paciente_id')
                     ->label('Paciente')
-                    ->options(Pacientes::with('persona')->get()->filter(fn($p) => $p->persona !== null)->mapWithKeys(fn($p) => [$p->id => $p->persona->nombre_completo]))
+                    ->options(function () {
+                        return Pacientes::with('persona')
+                            ->get()
+                            ->filter(fn($p) => $p->persona !== null)
+                            ->mapWithKeys(function ($p) {
+                                $nombre = $p->persona->primer_nombre . ' ' .
+                                         ($p->persona->segundo_nombre ? $p->persona->segundo_nombre . ' ' : '') .
+                                         $p->persona->primer_apellido . ' ' .
+                                         ($p->persona->segundo_apellido ? $p->persona->segundo_apellido : '');
+                                return [$p->id => trim($nombre)];
+                            });
+                    })
                     ->searchable()
                     ->preload(),
 
                 Tables\Filters\SelectFilter::make('medico_id')
                     ->label('Médico')
-                    ->options(Medico::with('persona')->get()->filter(fn($m) => $m->persona !== null)->mapWithKeys(fn($m) => [$m->id => $m->persona->nombre_completo]))
+                    ->options(function () {
+                        return Medico::with('persona')
+                            ->get()
+                            ->filter(fn($m) => $m->persona !== null)
+                            ->mapWithKeys(function ($m) {
+                                $nombre = $m->persona->primer_nombre . ' ' .
+                                         ($m->persona->segundo_nombre ? $m->persona->segundo_nombre . ' ' : '') .
+                                         $m->persona->primer_apellido . ' ' .
+                                         ($m->persona->segundo_apellido ? $m->persona->segundo_apellido : '');
+                                return [$m->id => trim($nombre)];
+                            });
+                    })
                     ->searchable()
                     ->preload(),
 
@@ -220,21 +288,44 @@ class ConsultasResource extends Resource
                                     ->dateTime(),
                             ]),
                         ]),
-                    
+
 
                 Infolists\Components\Section::make('Participantes')
                     ->schema([
-                        Infolists\Components\Grid::make(3)
+                        Infolists\Components\Grid::make(2)
                             ->schema([
-                                Infolists\Components\TextEntry::make('paciente.persona.nombre_completo')
-                                    ->label('Paciente'),
+                                Infolists\Components\TextEntry::make('paciente_nombre')
+                                    ->label('Paciente')
+                                    ->state(function (Consulta $record): string {
+                                        if ($record->paciente && $record->paciente->persona) {
+                                            return $record->paciente->persona->nombre_completo;
+                                        }
+                                        return 'No disponible';
+                                    }),
 
-                                Infolists\Components\TextEntry::make('medico.persona.nombre_completo')
-                                    ->label('Médico'),
+                                Infolists\Components\TextEntry::make('medico_nombre')
+                                    ->label('Médico')
+                                    ->state(function (Consulta $record): string {
+                                        // Debug: verificar qué está pasando con el médico
+                                        if (!$record->medico) {
+                                            // Intentar cargar el médico manualmente
+                                            $record->load('medico.persona');
+                                        }
 
-                                Infolists\Components\TextEntry::make('cita.fecha')
-                                    ->label('Fecha Cita')
-                                    ->date(),
+                                        if ($record->medico && $record->medico->persona) {
+                                            return $record->medico->persona->nombre_completo;
+                                        }
+
+                                        // Si todavía no funciona, intentar buscar el médico por ID usando withoutGlobalScopes
+                                        if ($record->medico_id) {
+                                            $medico = Medico::withoutGlobalScopes()->with('persona')->find($record->medico_id);
+                                            if ($medico && $medico->persona) {
+                                                return $medico->persona->nombre_completo;
+                                            }
+                                        }
+
+                                        return 'No disponible (Médico ID: ' . ($record->medico_id ?? 'null') . ')';
+                                    }),
                             ]),
                     ]),
 
@@ -319,6 +410,7 @@ class ConsultasResource extends Resource
             'index' => Pages\ListConsultas::route('/'),
             'create' => Pages\CreateConsultaWithPatientSearch::route('/create'),
             'create-simple' => Pages\CreateConsultas::route('/create-simple'),
+            'view' => Pages\ViewConsultas::route('/{record}'),
             'edit' => Pages\EditConsultas::route('/{record}/edit'),
         ];
     }
@@ -326,6 +418,7 @@ class ConsultasResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->with(['paciente.persona', 'medico.persona'])
             ->where('centro_id', \Filament\Facades\Filament::auth()->user()->centro_id)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,

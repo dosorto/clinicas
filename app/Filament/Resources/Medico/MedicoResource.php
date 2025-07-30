@@ -22,6 +22,8 @@ use Filament\Forms\Components\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+
 
 class MedicoResource extends Resource
 {
@@ -37,8 +39,8 @@ class MedicoResource extends Resource
     return $form
     ->schema([
         Forms\Components\Hidden::make('centro_id')
-            ->default(fn() => auth()->user()->centro_id),
-            
+            ->default(fn() => Auth::user()->centro_id),
+
         Wizard::make([
             Wizard\Step::make('Datos Personales')
                 ->schema([
@@ -65,7 +67,7 @@ class MedicoResource extends Resource
                                         $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
                                         $set('nacionalidad_id', $existingPersona->nacionalidad_id);
                                         $set('persona_id', $existingPersona->id);
-                                        
+
                                         Notification::make()
                                             ->title('Persona encontrada')
                                             ->body("Se encontró: {$existingPersona->nombre_completo}")
@@ -112,39 +114,39 @@ class MedicoResource extends Resource
                         ->required()
                         ->placeholder('Ingrese su primer nombre')
                         ->maxLength(255),
-                        
+
                     Forms\Components\TextInput::make('segundo_nombre')
                         ->label('Segundo Nombre')
                         ->maxLength(255)
                         ->placeholder('Ingrese su segundo nombre')
                         ->nullable(),
-                        
+
                     Forms\Components\TextInput::make('primer_apellido')
                         ->label('Primer Apellido')
                         ->required()
                         ->placeholder('Ingrese su primer apellido')
                         ->maxLength(255),
-                        
+
                     Forms\Components\TextInput::make('segundo_apellido')
                         ->label('Segundo Apellido')
                         ->maxLength(255)
                         ->placeholder('Ingrese su segundo apellido')
                         ->nullable(),
-                        
-                   
+
+
                     Forms\Components\TextInput::make('telefono')
                         ->label('Teléfono')
                         ->maxLength(255)
                         ->placeholder('Ingrese su número de teléfono')
                         ->required(),
-                        
+
                     Forms\Components\Textarea::make('direccion')
                         ->label('Dirección')
                         ->maxLength(255)
                         ->placeholder('Ingrese su dirección')
                         ->required(), // hace obligatorio el campo,
                        // ->columnSpanFull(),
-                        
+
                     Forms\Components\Select::make('sexo')
                         ->label('Sexo')
                         ->placeholder('Seleccione su sexo')
@@ -154,8 +156,8 @@ class MedicoResource extends Resource
                         ])
                         ->required(),
 
-    
-                        
+
+
                     Forms\Components\DatePicker::make('fecha_nacimiento')
                         ->label('Fecha de Nacimiento')
                         ->native(false)
@@ -172,7 +174,7 @@ class MedicoResource extends Resource
                         ->searchable()
                         ->placeholder('Seleccione una nacionalidad')
                         ->required(),
-                        
+
                     Forms\Components\FileUpload::make('persona.foto')
                     ->label('Fotografía')
                     ->image()
@@ -182,17 +184,17 @@ class MedicoResource extends Resource
                     ->visibility('public') // O 'private' según tus necesidades
                     ->imageEditor(), // Opcional: permite recortar/editar la imagen
                     //->columnSpanFull(),
-                     
+
                 ])
                 ->columns(2),
 
-                
-                
+
+
             Wizard\Step::make('Datos Profesionales')
                 ->schema([
                     Forms\Components\Hidden::make('centro_id')
                         ->default(fn() => session('current_centro_id')),
-                        
+
                     Forms\Components\TextInput::make('numero_colegiacion')
                         ->label('Número de Colegiación')
                         ->required()
@@ -233,15 +235,15 @@ class MedicoResource extends Resource
                                     if (strtotime($value) <= strtotime($entrada)) {
                                         $fail('El horario de salida debe ser posterior al horario de entrada');
                                     }
-                                    
+
                                     // Validar que no sea muy temprano o muy tarde
                                     $horaEntrada = (int) date('H', strtotime($entrada));
                                     $horaSalida = (int) date('H', strtotime($value));
-                                    
+
                                     if ($horaEntrada < 6 || $horaSalida > 22) {
                                         $fail('Los horarios deben estar entre las 6:00 AM y 10:00 PM');
                                     }
-                                    
+
                                     // Validar duración mínima de 2 horas
                                     $diferencia = strtotime($value) - strtotime($entrada);
                                     if ($diferencia < 7200) { // 2 horas en segundos
@@ -253,7 +255,7 @@ class MedicoResource extends Resource
                     ]),
             ]),
                 ]) ->columns(2),
-                
+
             Wizard\Step::make('Información Contractual')
                 ->description('Información del contrato laboral')
                 ->schema([
@@ -342,7 +344,7 @@ class MedicoResource extends Resource
                         ->required()
                         ->columns(2),
                 ]),
-                
+
             Wizard\Step::make('Usuario de Acceso')
                 ->description('Configure los datos de acceso del médico al sistema')
                 ->schema([
@@ -357,7 +359,7 @@ class MedicoResource extends Resource
                                 ->inline(false)
                                 ->dehydrated(),
                         ]),
-                        
+
                     Forms\Components\Section::make('Datos del Usuario')
                         ->description('Complete la información de acceso del médico')
                         ->schema([
@@ -385,7 +387,7 @@ class MedicoResource extends Resource
                                             },
                                         ])
                                         ->dehydrated(),
-                                        
+
                                     Forms\Components\TextInput::make('user_email')
                                         ->label('Email corporativo')
                                         ->email()
@@ -404,7 +406,7 @@ class MedicoResource extends Resource
                                         ])
                                         ->dehydrated(),
                                 ]),
-                                
+
                             Forms\Components\Grid::make(2)
                                 ->schema([
                                     Forms\Components\TextInput::make('user_password')
@@ -416,7 +418,7 @@ class MedicoResource extends Resource
                                         ->placeholder('Mínimo 8 caracteres')
                                         ->helperText('Contraseña inicial del médico (puede cambiarla después)')
                                         ->dehydrated(),
-                                        
+
                                     Forms\Components\TextInput::make('user_password_confirmation')
                                         ->label('Confirmar contraseña')
                                         ->password()
@@ -426,7 +428,7 @@ class MedicoResource extends Resource
                                         ->helperText('Debe coincidir con la contraseña anterior')
                                         ->dehydrated(false), // No enviar al servidor
                                 ]),
-                                
+
                             Forms\Components\Select::make('user_role')
                                 ->label('Rol en el sistema')
                                 ->options([
@@ -438,19 +440,19 @@ class MedicoResource extends Resource
                                 ->required(fn (Forms\Get $get) => $get('crear_usuario'))
                                 ->helperText('Define los permisos del usuario en el sistema')
                                 ->dehydrated(),
-                                
+
                             Forms\Components\Toggle::make('user_active')
                                 ->label('Usuario activo')
                                 ->helperText('Determine si el usuario puede acceder inmediatamente')
                                 ->default(true)
                                 ->inline(false)
                                 ->dehydrated(),
-                                
-                            
+
+
                         ])
                         ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
                         ->columns(1),
-                        
+
                     Forms\Components\Section::make('Generación Automática')
                         ->description('Opción rápida: generar datos automáticamente')
                         ->schema([
@@ -463,14 +465,14 @@ class MedicoResource extends Resource
                                         // Obtener nombre de los datos de persona
                                         $primerNombre = $get('primer_nombre');
                                         $primerApellido = $get('primer_apellido');
-                                        
+
                                         if ($primerNombre && $primerApellido) {
                                             $username = strtolower($primerNombre . '.' . $primerApellido);
                                             $username = preg_replace('/[^a-z0-9.]/', '', $username);
-                                            
+
                                             $email = $username . '@clinica.com';
                                             $password = 'Temp' . rand(1000, 9999);
-                                            
+
                                             $set('username', $username);
                                             $set('user_email', $email);
                                             $set('user_password', $password);
@@ -488,7 +490,7 @@ class MedicoResource extends Resource
             ->nextAction(
                 fn ($action) => $action->label('Siguiente')  // "Next" → "Siguiente"
             )
-            
+
 
         ->persistStepInQueryString(),
     ]);
@@ -500,14 +502,14 @@ class MedicoResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('persona.primer_nombre')
                     ->label('Nombre')
-                    ->formatStateUsing(fn ($record) => 
+                    ->formatStateUsing(fn ($record) =>
                         "{$record->persona->primer_nombre} {$record->persona->primer_apellido}")
                     ->searchable(['primer_nombre', 'primer_apellido']),
-                    
+
                 Tables\Columns\TextColumn::make('persona.dni')
                     ->label('DNI')
                     ->searchable(),
-                    
+
                 Tables\Columns\TextColumn::make('numero_colegiacion')
                     ->label('N° Colegiación')
                     ->searchable(),
@@ -584,7 +586,7 @@ class MedicoResource extends Resource
                                                         };
                                                     },
                                                 ]),
-                                                
+
                                             Forms\Components\TextInput::make('user_email')
                                                 ->label('Email corporativo')
                                                 ->email()
@@ -601,7 +603,7 @@ class MedicoResource extends Resource
                                                     },
                                                 ]),
                                         ]),
-                                        
+
                                     Forms\Components\Grid::make(2)
                                         ->schema([
                                             Forms\Components\TextInput::make('user_password')
@@ -611,7 +613,7 @@ class MedicoResource extends Resource
                                                 ->minLength(8)
                                                 ->maxLength(255)
                                                 ->placeholder('Mínimo 8 caracteres'),
-                                                
+
                                             Forms\Components\TextInput::make('user_password_confirmation')
                                                 ->label('Confirmar contraseña')
                                                 ->password()
@@ -619,7 +621,7 @@ class MedicoResource extends Resource
                                                 ->same('user_password')
                                                 ->placeholder('Repita la contraseña'),
                                         ]),
-                                        
+
                                     Forms\Components\Select::make('user_role')
                                         ->label('Rol en el sistema')
                                         ->options([
@@ -629,7 +631,7 @@ class MedicoResource extends Resource
                                         ])
                                         ->default('medico')
                                         ->required(),
-                                        
+
                                     Forms\Components\Toggle::make('user_active')
                                         ->label('Usuario activo')
                                         ->helperText('Determine si el usuario puede acceder inmediatamente')
@@ -639,6 +641,9 @@ class MedicoResource extends Resource
                         ])
                         ->action(function (Medico $record, array $data) {
                             try {
+                                // Obtener centro_id del usuario autenticado o del médico
+                                $centro_id = Auth::user()->centro_id ?? $record->centro_id;
+
                                 // Crear el usuario
                                 $user = \App\Models\User::create([
                                     'name' => $data['username'],
@@ -720,12 +725,12 @@ class MedicoResource extends Resource
         $query = parent::getEloquentQuery();
 
         // Obtener centro_id del usuario autenticado
-        $centro_id = auth()->user()->centro_id;
-        
+        $centro_id = Auth::user()->centro_id;
+
         // Filtrar por el centro del usuario a menos que sea root
-        if (!auth()->user()?->hasRole('root')) {
+        /*if (!Auth::user()?->hasRole('root')) {
             $query->where('centro_id', $centro_id);
-        }
+        }*/
 
         return $query;
     }
@@ -733,16 +738,16 @@ class MedicoResource extends Resource
     public static function handleMedicoCreation(array $data): Medico
     {
         DB::beginTransaction();
-        
+
         try {
             // Obtener el centro_id del usuario autenticado
-            $centro_id = auth()->user()->centro_id ?? null;
+            $centro_id = Auth::user()->centro_id ?? null;
             if (!$centro_id) {
                 throw new \Exception('No se ha seleccionado un centro médico.');
             }
-            
+
             $persona = Persona::where('dni', $data['dni'])->first();
-            
+
             if (!$persona) {
                 $persona = Persona::create([
                     'dni' => $data['dni'],
@@ -816,7 +821,7 @@ class MedicoResource extends Resource
             }
 
             DB::commit();
-            
+
             return $medico;
         } catch (\Exception $e) {
             DB::rollBack();

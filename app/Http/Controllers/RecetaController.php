@@ -28,4 +28,28 @@ class RecetaController extends Controller
 
         return view('receta.imprimir', compact('receta', 'config'));
     }
+
+    public function imprimirPorConsulta(\App\Models\Consulta $consulta)
+    {
+        // Cargar todas las recetas de la consulta con sus relaciones
+        $recetas = $consulta->recetas()->with([
+            'paciente.persona',
+            'medico.persona',
+            'medico.especialidades',
+            'medico.centro',
+            'medico.recetario',
+            'consulta'
+        ])->get();
+
+        if ($recetas->isEmpty()) {
+            abort(404, 'No hay recetas asociadas a esta consulta.');
+        }
+
+        // Obtener la configuración del recetario del médico (usando la primera receta como referencia)
+        $primeraReceta = $recetas->first();
+        $recetario = $primeraReceta->medico->recetario ?? null;
+        $config = $recetario ? $recetario->configuracion : [];
+
+        return view('receta.imprimir-consulta', compact('recetas', 'consulta', 'config'));
+    }
 }
