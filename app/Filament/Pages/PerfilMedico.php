@@ -423,10 +423,10 @@ class PerfilMedico extends Page implements HasForms
                                 <button 
                                     type="button" 
                                     wire:click="saveRecetario"
-                                    class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                    style="background-color: #059669; color: white; border: 2px solid #047857; padding: 10px 20px; border-radius: 6px; font-weight: 500; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-flex; align-items: center;"
                                 >
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <svg style="width: 20px; height: 20px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
                                     Guardar Configuración del Recetario
                                 </button>

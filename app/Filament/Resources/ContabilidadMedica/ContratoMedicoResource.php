@@ -66,8 +66,7 @@ class ContratoMedicoResource extends Resource
                     ->required(),
                     
                 Forms\Components\DatePicker::make('fecha_fin')
-                    ->nullable()
-                    ->clearable(),
+                    ->nullable(),
                 
                 Forms\Components\Toggle::make('activo')
                     ->inline(false)
