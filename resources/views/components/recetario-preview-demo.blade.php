@@ -11,7 +11,18 @@
     $headerColor = $config['color_primario'] ?? '#1e40af';
     $secondaryColor = $config['color_secundario'] ?? '#64748b';
     $fontFamily = $config['fuente_familia'] ?? 'Arial, sans-serif';
-    $fontSize = $config['fuente_tamano'] ?? '14px';
+    $fontSize = ($config['fuente_tamano'] ?? 14) . 'px';
+    $encabezadoTexto = $config['encabezado_texto'] ?? 'RECETA MÉDICA';
+    $piePagina = $config['pie_pagina'] ?? 'Consulte a su médico antes de usar cualquier medicamento';
+    $textoAdicional = $config['texto_adicional'] ?? '';
+
+    // Debug - mostrar valores recibidos
+    \Log::info('Vista previa recibió:', [
+        'color_primario_recibido' => $config['color_primario'] ?? 'NULL',
+        'color_secundario_recibido' => $config['color_secundario'] ?? 'NULL',
+        'headerColor_procesado' => $headerColor,
+        'secondaryColor_procesado' => $secondaryColor
+    ]);
 
     // Función mejorada para manejar rutas de logo (igual que en la vista de impresión)
     $logoPath = null;
@@ -82,12 +93,17 @@
         
         <div class="info-header" style="flex: 1;">
             <h2 style="margin: 0; color: {{ $headerColor }}; font-size: 24px; font-weight: bold;">
-                Dr(a). {{ auth()->user()->name ?? '[Su Nombre Completo]' }}
+                {{ ($config['titulo'] ?? $config['titulo_medico'] ?? 'Dr(a).') }} {{ $config['nombre_mostrar'] ?? $config['nombre_mostrar_medico'] ?? (auth()->user()->name ?? '[Su Nombre Completo]') }}
             </h2>
             <div style="margin-top: 8px; color: {{ $secondaryColor }};">
                 <div style="font-weight: 600; color: #333; margin-bottom: 4px;">
                     Especialidades: [Sus Especialidades]
                 </div>
+                @if(!empty($config['telefono_mostrar']) || !empty($config['telefonos_medico']))
+                    <div style="font-size: 13px; color: {{ $secondaryColor }}; margin-top: 2px;">
+                        <span style="color: #666;">📞</span> {{ $config['telefono_mostrar'] ?? $config['telefonos_medico'] }}
+                    </div>
+                @endif
             </div>
         </div>
         
@@ -128,26 +144,29 @@
         </div>
     </div>
 
-    <!-- Prescripción -->
-    <div class="prescription-section" style="margin-bottom: 30px;">
-        <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 2px solid {{ $headerColor }}; padding-bottom: 8px; font-size: 18px;">
-            ℞ PRESCRIPCIÓN MÉDICA
-        </h4>
-        
-        <div class="prescription-content" style="min-height: 200px; padding: 20px; border: 1px solid #d1d5db; border-radius: 8px; background-color: #ffffff; line-height: 1.8;">
-            <div style="color: #9ca3af; font-style: italic; text-align: center; padding: 40px 0;">
-                [Aquí aparecerán los medicamentos y dosificación]
+
+    <!-- Receta y Indicaciones en cuadrícula -->
+    <div class="receta-grid" style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; border: 2px solid #e5e7eb; border-radius: 10px; padding: 0; background: #fff; margin-bottom: 30px; box-shadow: 0 2px 8px #0001; overflow: hidden;">
+        <!-- Prescripción -->
+        <div class="prescription-section" style="border-right: 1px solid #e5e7eb; padding: 25px 20px 25px 25px; min-height: 260px;">
+            <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 2px solid {{ $headerColor }}; padding-bottom: 8px; font-size: 18px;">
+                ℞ {{ $encabezadoTexto }}
+            </h4>
+            <div class="prescription-content" style="min-height: 180px; padding: 15px; border: 1px dashed #d1d5db; border-radius: 8px; background-color: #f9fafb; line-height: 1.8;">
+                <div style="color: #9ca3af; font-style: italic; text-align: center; padding: 40px 0;">
+                    [Aquí aparecerán los medicamentos y dosificación]
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Indicaciones -->
-    <div class="instructions-section" style="margin-bottom: 25px;">
-        <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 1px solid {{ $headerColor }}; padding-bottom: 5px;">
-            Indicaciones Especiales
-        </h4>
-        <div style="padding: 15px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px; font-size: 14px; line-height: 1.6;">
-            [Indicaciones especiales para el paciente]
+        <!-- Indicaciones -->
+        <div class="instructions-section" style="padding: 25px 25px 25px 20px; min-height: 260px; background: #fef9c3;">
+            <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 1px solid {{ $headerColor }}; padding-bottom: 5px;">
+                Indicaciones Especiales
+            </h4>
+            <div style="padding: 10px 0 0 0; font-size: 14px; line-height: 1.6;">
+                {{ $textoAdicional ?: '[Aquí aparecerán las indicaciones especiales]' }}
+            </div>
         </div>
     </div>
 
@@ -155,13 +174,20 @@
     <div class="footer-section" style="margin-top: 40px; display: flex; justify-content: space-between; align-items: end; border-top: 1px solid #e5e7eb; padding-top: 20px;">
         <div class="signature-area" style="text-align: center; min-width: 250px;">
             <div style="border-top: 1px solid #333; margin-bottom: 5px; width: 250px;"></div>
-            <div style="font-weight: 600; font-size: 13px;">Dr(a). {{ auth()->user()->name ?? '[Su Nombre Completo]' }}</div>
+            <div style="font-weight: 600; font-size: 13px;">
+                {{ ($config['titulo'] ?? $config['titulo_medico'] ?? 'Dr(a).') }} {{ $config['nombre_mostrar'] ?? $config['nombre_mostrar_medico'] ?? (auth()->user()->name ?? '[Su Nombre Completo]') }}
+            </div>
+            @if(!empty($config['telefono_mostrar']) || !empty($config['telefonos_medico']))
+                <div style="font-size: 12px; color: {{ $secondaryColor }}; margin-top: 2px;">
+                    <span style="color: #666;">📞</span> {{ $config['telefono_mostrar'] ?? $config['telefonos_medico'] }}
+                </div>
+            @endif
             <div style="font-size: 12px; color: {{ $secondaryColor }};">Reg. Médico: [Su Número de Colegiación]</div>
         </div>
         
         <div class="footer-info" style="text-align: right; font-size: 11px; color: {{ $secondaryColor }};">
             <div>Fecha de emisión: {{ now()->format('d/m/Y H:i') }}</div>
-            <div>Este documento es válido únicamente con la firma del médico</div>
+            <div>{{ $piePagina }}</div>
         </div>
     </div>
 </div>

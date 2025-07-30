@@ -15,15 +15,23 @@ class RecetaController extends Controller
             'medico.persona',
             'medico.especialidades',  // Relación many-to-many con tabla pivote
             'medico.centro',          // Relación belongsTo para el centro principal
-            'medico.recetario',
+            'medico.recetarios',      // Cambiado a plural para cargar todos los recetarios
             'consulta'
         ]);
 
         // También cargar las relaciones del médico específicamente para asegurar que se carguen
-        $receta->medico->load(['especialidades', 'centro']);
+        $receta->medico->load(['especialidades', 'centro', 'recetarios']);
 
-        // Obtener la configuración del recetario del médico
-        $recetario = $receta->medico->recetario ?? null;
+
+        // Buscar recetario por medico y consulta (si existe uno para esta consulta)
+        $recetario = $receta->medico->recetarios()
+            ->where('consulta_id', $receta->consulta_id)
+            ->latest()
+            ->first();
+        // Si no existe, usar el más reciente del médico
+        if (!$recetario) {
+            $recetario = $receta->medico->recetarios()->latest()->first();
+        }
         $config = $recetario ? $recetario->configuracion : [];
 
         return view('receta.imprimir', compact('receta', 'config'));
