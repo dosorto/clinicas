@@ -272,7 +272,7 @@ class RecetaResource extends Resource
                     ->label('Imprimir Receta')
                     ->icon('heroicon-o-printer')
                     ->color('success')
-                    ->url(fn (Receta $record): string => route('receta.imprimir', $record))
+                    ->url(fn (Receta $record): string => route('recetas.imprimir', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
