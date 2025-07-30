@@ -2,32 +2,50 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\Citas;
 use Filament\Pages\Page;
+use App\Filament\Widgets\CitasCalendar;
+use App\Models\Citas;
 use Illuminate\Support\Facades\Auth;
 
 class CalendarioCitas extends Page
 {
+    /* ───────── Configuración de la Page ───────── */
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
-    protected static string $view = 'filament.pages.calendario-citas';
+    protected static string  $view           = 'filament.pages.calendario-citas';
 
-    public $eventos = [];
+    /* ───────── Datos que pasaremos a la vista ─── */
+    public array $eventos = [];   // ¡debe existir!
 
-    public function mount()
+    /* ───────── Widgets en el header (opcional) ── */
+    protected function getHeaderWidgets(): array
     {
-        $medico = Auth::user()->medico; // Asumiendo que el usuario tiene relación 'medico'
-
-        $this->eventos = Citas::where('medico_id', $medico->id)
-            ->get()
-            ->map(function ($cita) {
-                return [
-                    'title' => $cita->motivo,
-                    'start' => $cita->fecha . 'T' . $cita->hora,
-                    'id' => $cita->id,
-                ];
-            });
+        return [
+            CitasCalendar::class, // quita esta línea si NO quieres widget arriba
+        ];
     }
 
+    /* ───────── Cargar eventos al montar la Page ─ */
+ public function mount(): void
+{
+    $medico = Auth::user()->medico;
+
+    $this->eventos = Citas::query()
+        ->where('medico_id', $medico?->id)
+        ->where('estado',   '!=', 'Cancelado')
+        ->get()
+        ->map(fn ($cita) => [
+            'title' => $cita->motivo,
+            'start' => "{$cita->fecha}T{$cita->hora}",
+        ])
+        ->values()
+        ->toArray();
+
+    // logger($this->eventos);
+}
+
+
+
+    /* ───────── Pasar variables a la Blade ─────── */
     protected function getViewData(): array
     {
         return [

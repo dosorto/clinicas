@@ -17,7 +17,9 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
 use Althinect\FilamentSpatieRolesPermissions\FilamentSpatieRolesPermissionsPlugin;
+use App\Filament\Widgets\CitasCalendar;  
 
 
 class AdminPanelProvider extends PanelProvider
@@ -44,11 +46,15 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\AccountWidget::class,
                 \App\Filament\Widgets\RecetarioWidget::class,
                 Widgets\FilamentInfoWidget::class,
+                 CitasCalendar::class,
             ])
             ->renderHook(
                 'panels::user-menu.before',
                 fn () => view('filament.components.centro-selector-topbar')
             )
+            ->plugins([
+            FilamentFullCalendarPlugin::make(),
+             ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
