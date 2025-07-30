@@ -27,6 +27,14 @@ class Descuento extends ModeloBase
         'deleted_by',
     ];
 
+    protected $dates = [
+        'aplica_desde',
+        'aplica_hasta',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+    ];
+
     public function centro(): BelongsTo
     {
         return $this->belongsTo(Centros_Medico::class, 'centro_id');

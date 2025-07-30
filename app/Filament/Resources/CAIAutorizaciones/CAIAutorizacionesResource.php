@@ -16,18 +16,25 @@ use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
 
 use Filament\Tables\Filters\SelectFilter;
+use App\Models\Consulta;
+use App\Models\FacturaDetalle;
 
 class CAIAutorizacionesResource extends Resource
 {
     protected static ?string $model = CAIAutorizaciones::class;
 
+    public $record;
+
+    protected static ?string $modelLabel       = 'Correlativo CAI';
+    protected static ?string $pluralModelLabel = 'Correlativos CAI';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     
     protected static ?string $navigationLabel = 'Autorizaciones CAI';
     
     protected static ?string $navigationGroup = 'Gestión de Facturación';
-    
+    protected $listeners = ['serviciosActualizados' => '$refresh'];
 
+    
     public static function form(Form $form): Form
     {
         return $form
@@ -54,11 +61,12 @@ class CAIAutorizacionesResource extends Resource
                 Forms\Components\Section::make('Configuración de Rangos')
                     ->schema([
                         TextInput::make('cantidad')
-                            ->required()
-                            ->numeric()
-                            ->minValue(1)
-                            ->placeholder('1000')
-                            ->helperText('Cantidad total de facturas autorizadas'),
+                            ->disabled()
+                            ->dehydrated()
+                            ->extraInputAttributes(['class'=>'text-gray-400'])
+                            ->default(fn (Forms\Get $get) =>
+                                max(0, (int)$get('rango_final') - (int)$get('rango_inicial') + 1)
+                            ),
                             
                         TextInput::make('rango_inicial')
                             ->required()
@@ -75,7 +83,7 @@ class CAIAutorizacionesResource extends Resource
                             ->helperText('Número final del rango'),
                             
                         TextInput::make('numero_actual')
-                            ->required()
+                            ->disabled()
                             ->numeric()
                             ->default(fn (Forms\Get $get) => $get('rango_inicial'))
                             ->helperText('Número actual a usar (se actualiza automáticamente)'),
@@ -105,10 +113,6 @@ class CAIAutorizacionesResource extends Resource
                     ->sortable()
                     ->limit(20)
                     ->tooltip(fn (CAIAutorizaciones $record): string => $record->cai_codigo),
-
-                TextColumn::make('rtn')
-                    ->searchable()
-                    ->sortable(),
                     
                 TextColumn::make('rango_inicial')
                     ->formatStateUsing(fn (int $state): string => str_pad($state, 9, '0', STR_PAD_LEFT))
@@ -194,6 +198,27 @@ class CAIAutorizacionesResource extends Resource
             ])
             ->defaultSort('created_at', 'desc');
     }
+
+    public function mount(int|string $record): void
+    {
+        $this->record = Consulta::with(['paciente.persona','medico.persona'])
+                        ->findOrFail($record);
+    }
+
+    public function getServiciosTotal(): float
+    {
+        return FacturaDetalle::where('consulta_id', $this->record->id)
+            ->whereNull('factura_id')
+            ->sum('total_linea');
+    }
+
+    public function getCantidadServicios(): int
+    {
+        return FacturaDetalle::where('consulta_id', $this->record->id)
+            ->whereNull('factura_id')
+            ->count();
+    }
+
 
     public static function getRelations(): array
     {

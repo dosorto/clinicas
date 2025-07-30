@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('cantidad');
             $table->unsignedBigInteger('rango_inicial');
             $table->unsignedBigInteger('rango_final');
-            $table->unsignedBigInteger('numero_actual')->default(0);
+            $table->unsignedBigInteger('numero_actual')->nullable();
             $table->date('fecha_limite');
             $table->enum('estado', ['ACTIVA','VENCIDA','AGOTADA','ANULADA'])->default('ACTIVA');
             $table->foreignId('centro_id')->constrained('centros_medicos');

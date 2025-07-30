@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('factura_id')->constrained('facturas');
+            $table->foreignId('paciente_id')->constrained('pacientes');
+            $table->foreignId('pagos_factura_id')->constrained('pagos_facturas');
             $table->decimal('saldo_pendiente', 12, 2);
             $table->date('fecha_vencimiento');
             $table->enum('estado_cuentas_por_cobrar', ['ABIERTA','VENCIDA','CERRADA','INC incobrable'])->default('ABIERTA');

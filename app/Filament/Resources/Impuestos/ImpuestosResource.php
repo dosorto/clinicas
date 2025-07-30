@@ -25,7 +25,7 @@ class ImpuestosResource extends Resource
 
     protected static ?string $navigationGroup = 'Gestión de Facturación';
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-calculator';
 
     public static function form(Form $form): Form
     {
@@ -34,37 +34,37 @@ class ImpuestosResource extends Resource
                 Forms\Components\Section::make('Información del Impuesto')
                     ->schema([
                         TextInput::make('nombre')
+                            ->label('Nombre del Impuesto')
                             ->required()
-                            ->maxLength(255)
-                            ->placeholder('Ej: ISV, Impuesto sobre Ventas'),
+                            ->maxLength(100)
+                            ->placeholder('Ej: ISV, Impuesto sobre Ventas')
+                            ->helperText('Nombre descriptivo del impuesto'),
                             
                         TextInput::make('porcentaje')
-                            ->required()
+                            ->label('Porcentaje (%)')
                             ->numeric()
-                            ->step(0.01)
-                            ->suffix('%')
-                            ->placeholder('Ej: 15.00'),
-                            
-                        Select::make('es_exento')
                             ->required()
-                            ->options([
-                                'SI' => 'Sí',
-                                'NO' => 'No',
-                            ])
-                            ->default('NO')
-                            ->helperText('¿Este impuesto permite exención?'),
-                    ])->columns(3),
+                            ->step(0.01)
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->suffix('%')
+                            ->placeholder('15.00')
+                            ->helperText('Porcentaje de impuesto a aplicar'),
+                    ])->columns(2),
                     
-                Forms\Components\Section::make('Vigencia')
+                Forms\Components\Section::make('Vigencia del Impuesto')
                     ->schema([
                         DatePicker::make('vigente_desde')
+                            ->label('Vigente Desde')
                             ->required()
                             ->default(now())
-                            ->helperText('Fecha desde la cual es válido este impuesto'),
+                            ->helperText('Fecha desde la cual el impuesto es válido'),
                             
                         DatePicker::make('vigente_hasta')
+                            ->label('Vigente Hasta')
                             ->nullable()
-                            ->helperText('Dejar vacío si no tiene fecha de vencimiento'),
+                            ->helperText('Fecha límite del impuesto (opcional)')
+                            ->after('vigente_desde'),
                     ])->columns(2),
             ]);
     }
@@ -74,33 +74,33 @@ class ImpuestosResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('nombre')
+                    ->label('Nombre')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->weight('bold'),
                     
                 TextColumn::make('porcentaje')
+                    ->label('Porcentaje')
                     ->suffix('%')
                     ->sortable()
-                    ->alignEnd(),
-                    
-                TextColumn::make('es_exento')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'SI' => 'success',
-                        'NO' => 'gray',
-                    })
-                    ->formatStateUsing(fn (string $state): string => $state === 'SI' ? 'Permite Exención' : 'No Exento'),
+                    ->alignEnd()
+                    ->color('primary')
+                    ->weight('medium'),
                     
                 TextColumn::make('vigente_desde')
-                    ->date()
+                    ->label('Vigente Desde')
+                    ->date('d/m/Y')
                     ->sortable(),
                     
                 TextColumn::make('vigente_hasta')
-                    ->date()
+                    ->label('Vigente Hasta')
+                    ->date('d/m/Y')
                     ->sortable()
-                    ->placeholder('Sin vencimiento'),
+                    ->placeholder('Sin vencimiento')
+                    ->color('gray'),
                     
-
                 TextColumn::make('estado')
+                    ->label('Estado')
                     ->badge()
                     ->getStateUsing(function (Impuesto $record): string {
                         $hoy = now()->toDateString();
@@ -123,17 +123,56 @@ class ImpuestosResource extends Resource
                         'vencido' => 'Vencido',
                     }),
                     
+                TextColumn::make('centro.nombre_centro')
+                    ->label('Centro Médico')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+                    
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->label('Creado')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('es_exento')
+                SelectFilter::make('estado')
+                    ->label('Estado')
                     ->options([
-                        'SI' => 'Permite Exención',
-                        'NO' => 'No Exento',
-                    ]),
+                        'vigente' => 'Vigente',
+                        'pendiente' => 'Pendiente',
+                        'vencido' => 'Vencido',
+                    ])
+                    ->query(function ($query, array $data) {
+                        if (!isset($data['value'])) {
+                            return $query;
+                        }
+                        
+                        $hoy = now()->toDateString();
+                        
+                        return match($data['value']) {
+                            'vigente' => $query->where('vigente_desde', '<=', $hoy)
+                                              ->where(function ($q) use ($hoy) {
+                                                  $q->whereNull('vigente_hasta')
+                                                    ->orWhere('vigente_hasta', '>=', $hoy);
+                                              }),
+                            'pendiente' => $query->where('vigente_desde', '>', $hoy),
+                            'vencido' => $query->where('vigente_hasta', '<', $hoy),
+                            default => $query,
+                        };
+                    }),
+                    
+                Tables\Filters\Filter::make('vigentes_hoy')
+                    ->label('Solo vigentes hoy')
+                    ->query(function ($query) {
+                        $hoy = now()->toDateString();
+                        return $query->where('vigente_desde', '<=', $hoy)
+                                     ->where(function ($q) use ($hoy) {
+                                         $q->whereNull('vigente_hasta')
+                                           ->orWhere('vigente_hasta', '>=', $hoy);
+                                     });
+                    })
+                    ->default(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -145,7 +184,10 @@ class ImpuestosResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc');
+            ->defaultSort('vigente_desde', 'desc')
+            ->emptyStateHeading('No hay impuestos registrados')
+            ->emptyStateDescription('Crea el primer impuesto para comenzar a facturar')
+            ->emptyStateIcon('heroicon-o-calculator');
     }
 
     public static function getRelations(): array
@@ -163,4 +205,22 @@ class ImpuestosResource extends Resource
             'edit' => Pages\EditImpuestos::route('/{record}/edit'),
         ];
     }
-}
+
+    public static function getNavigationBadge(): ?string
+    {
+        $hoy = now()->toDateString();
+        $vigentes = static::getModel()::where('vigente_desde', '<=', $hoy)
+            ->where(function ($q) use ($hoy) {
+                $q->whereNull('vigente_hasta')
+                  ->orWhere('vigente_hasta', '>=', $hoy);
+            })
+            ->count();
+            
+        return $vigentes > 0 ? (string) $vigentes : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'success';
+    }
+};

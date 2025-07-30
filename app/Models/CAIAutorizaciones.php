@@ -86,6 +86,11 @@ class CAIAutorizaciones extends ModeloBase
 
     public function incrementarNumero(): bool
     {
+        if (is_null($this->numero_actual))
+            $this->numero_actual = $this->rango_inicial;
+        else
+            $this->increment('numero_actual');
+
         if (!$this->esValida()) {
             return false;
         }
@@ -104,7 +109,20 @@ class CAIAutorizaciones extends ModeloBase
     {
         parent::booted();
 
-        static::creating(function ($model) {
+        // ── 1. Al CREAR/ACTUALIZAR recalculamos «cantidad» ───────────────────────
+        static::saving(function ($model) {
+            $model->cantidad = max(
+                0,
+                (int) $model->rango_final - (int) $model->rango_inicial + 1
+            );
+        });
+
+        // ── 2. Cuando el número sube, verificamos agotado o vencido ──────────────
+        static::updated(function ($model) {
+            $model->refrescarEstado();   // método nuevo que vemos abajo
+        });
+
+                static::creating(function ($model) {
             if (auth()->check() && empty($model->centro_id)) {
                 $user = auth()->user();
                 if ($user && isset($user->centro_id)) {
@@ -120,4 +138,23 @@ class CAIAutorizaciones extends ModeloBase
             }
         });
     }
+
+    /** Marca VENCIDA o AGOTADA según corresponda.  */
+    public function refrescarEstado(): void
+    {
+        $hoy      = now()->toDateString();
+        $excedido = $this->numero_actual > $this->rango_final;
+
+        $nuevoEstado = match (true) {
+            $this->fecha_limite < $hoy       => 'VENCIDA',
+            $excedido                        => 'AGOTADA',
+            default                          => 'ACTIVA',
+        };
+
+        if ($nuevoEstado !== $this->estado) {
+            $this->estado = $nuevoEstado;
+            $this->saveQuietly();
+        }
+    }
+
 }

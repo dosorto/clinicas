@@ -24,12 +24,9 @@ class ManageServiciosConsulta extends Page implements HasTable
     use InteractsWithTable;
 
     protected static string $resource = ConsultasResource::class;
+    protected static string $relationship = 'servicios'; // ← Agregar esto
     protected static string $view = 'filament.resources.consultas.pages.manage-servicios-consulta';
 
-    public function mount(int | string $record): void
-    {
-        $this->record = $this->resolveRecord($record);
-    }
 
     protected function getHeaderActions(): array
     {
@@ -290,17 +287,28 @@ class ManageServiciosConsulta extends Page implements HasTable
             ->emptyStateIcon('heroicon-o-plus-circle');
     }
 
-    public function getServiciosTotal(): float
+    public function mount(int|string $record): void
     {
-        return FacturaDetalle::where('consulta_id', $this->record->id)
-            ->whereNull('factura_id')
-            ->sum('total_linea');
+            $this->record = Consulta::with([
+                'paciente.persona',
+                'medico.persona',
+            ])->findOrFail($record);
+    
     }
 
+    public function getServiciosTotal(): float
+    {
+        return \App\Models\FacturaDetalle::where('consulta_id', $this->record->id)
+            ->whereNull('factura_id')          // ← solo los que aún no tienen factura
+            ->sum('total_linea');              // campo DECIMAL(12,2)
+    }
+
+    /* Si también muestras la cantidad de líneas */
     public function getCantidadServicios(): int
     {
-        return FacturaDetalle::where('consulta_id', $this->record->id)
+        return \App\Models\FacturaDetalle::where('consulta_id', $this->record->id)
             ->whereNull('factura_id')
             ->count();
     }
+
 }

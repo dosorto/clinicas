@@ -18,7 +18,7 @@ return new class extends Migration
             $table->enum('tipo', ['PORCENTAJE', 'MONTO']);
             $table->decimal('valor', 10, 2);
             $table->date('aplica_desde');
-            $table->date('aplica_hasta');
+            $table->date('aplica_hasta')->nullable();
             $table->enum('activo', ['SI', 'NO'])->default('SI');
             $table->foreignId('centro_id')->constrained('centros_medicos');
 

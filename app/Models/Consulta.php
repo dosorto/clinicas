@@ -40,6 +40,7 @@ class Consulta extends ModeloBase
     {
         return $this->belongsTo(Medico::class, 'medico_id');
     }
+    
     public function cita()
     {
         return $this->belongsTo(Citas::class, 'cita_id');

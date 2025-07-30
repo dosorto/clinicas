@@ -3,62 +3,86 @@
 namespace App\Filament\Resources\CAICorrelativos;
 
 use App\Filament\Resources\CAICorrelativos\CAICorrelativosResource\Pages;
-use App\Filament\Resources\CAICorrelativos\CAICorrelativosResource\RelationManagers;
 use App\Models\CAI_Correlativos;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Columns\TextColumn;
 
 class CAICorrelativosResource extends Resource
 {
     protected static ?string $model = CAI_Correlativos::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon  = 'heroicon-o-document-text';
+    protected static ?string $navigationGroup = 'Gestión de Facturación';
+    protected static ?string $navigationLabel = 'Correlativos CAI';
 
-    public static function form(Form $form): Form
+    /* -----------------------------------------------------------------------
+     * Solo lectura – no requerimos formulario de edición
+     * -------------------------------------------------------------------- */
+    public static function form(Forms\Form $form): Forms\Form
     {
-        return $form
-            ->schema([
-                //
-            ]);
+        return $form->schema([]);      // vacío
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('numero_factura')
+                    ->label('Nº Factura')
+                    ->searchable()
+                    ->badge()
+                    ->color('primary'),
+
+                TextColumn::make('autorizacion.cai_codigo')
+                    ->label('CAI')
+                    ->searchable()
+                    ->limit(18)
+                    ->tooltip(fn ($record) => $record->autorizacion->cai_codigo),
+
+                TextColumn::make('fecha_emision')
+                    ->dateTime('d/m/Y H:i')
+                    ->label('Emitido'),
+
+                TextColumn::make('usuario.name')
+                    ->label('Usuario')
+                    ->searchable()
+                    ->toggleable(),
+
+                TextColumn::make('centro.nombre_centro')
+                    ->label('Centro')
+                    ->toggleable(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('autorizacion_id')
+                    ->label('CAI')
+                    ->relationship('autorizacion', 'cai_codigo')
+                    ->searchable(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\ViewAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->defaultSort('fecha_emision', 'desc')
+
+            ->emptyStateHeading('Sin correlativos aún')
+            ->emptyStateDescription('Crea tu primera factura para que aparezca aquí.')
+            ->emptyStateIcon('heroicon-o-document-plus');
     }
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListCAICorrelativos::route('/'),
+            'view'  => Pages\ViewCAICorrelativos::route('/{record}'),
             'create' => Pages\CreateCAICorrelativos::route('/create'),
-            'edit' => Pages\EditCAICorrelativos::route('/{record}/edit'),
+            'edit'   => Pages\EditCAICorrelativos::route('/{record}/edit'),
         ];
     }
 }

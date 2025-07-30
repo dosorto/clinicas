@@ -1,15 +1,11 @@
 <?php
-// filepath: c:\xampp\htdocs\Laravel\ProyectoClinica\clinicas\app\Filament\Resources\Facturas\FacturasResource\Pages\CreateFacturas.php
 
 namespace App\Filament\Resources\Facturas\FacturasResource\Pages;
 
 use App\Filament\Resources\Facturas\FacturasResource;
-use App\Models\FacturaDetalle;
-use App\Models\Consulta;
-use App\Models\Servicio;
+use App\Models\{Consulta, FacturaDetalle, Descuento};
 use Filament\Resources\Pages\CreateRecord;
-use Filament\Notifications\Notification;
-use Filament\Forms\Get;
+use Illuminate\Validation\ValidationException;
 
 class CreateFacturas extends CreateRecord
 {
@@ -20,161 +16,122 @@ class CreateFacturas extends CreateRecord
         return $this->getResource()::getUrl('index');
     }
 
+    /* ─────────────────────────  M O U N T  ───────────────────────── */
     public function mount(): void
     {
         parent::mount();
-        
-        // Obtener datos de la consulta desde la URL
+
         $consultaId = request()->get('consulta_id');
-        $subtotalFromUrl = request()->get('subtotal');
-        
-        if ($consultaId) {
-            $consulta = Consulta::with(['paciente.persona', 'medico.persona'])->find($consultaId);
-            
-            if ($consulta) {
-                // Calcular totales automáticamente
-                $serviciosData = $this->calcularTotalesConsulta($consultaId);
-                
-                // Pre-llenar el formulario
-                $this->form->fill([
-                    'consulta_id' => $consultaId,
-                    'fecha_emision' => now()->format('Y-m-d'),
-                    'estado' => 'PENDIENTE',
-                    'subtotal' => $serviciosData['subtotal'],
-                    'impuesto_total' => $serviciosData['impuesto_total'],
-                    'descuento_total' => $serviciosData['descuento_total'],
-                    'total' => $serviciosData['total'],
-                ]);
-            }
+
+        if (! $consultaId) {
+            return;            // Abriste la ruta sin consulta ⇒ campos vacíos
         }
+
+        $consulta = Consulta::with(['paciente.persona','medico.persona'])
+                    ->find($consultaId);
+
+        if (! $consulta) {
+            return;
+        }
+
+        /* 1) Traer los detalles sueltos para mostrar totales preliminares */
+        $detalles = FacturaDetalle::where('consulta_id', $consultaId)
+                    ->whereNull('factura_id')
+                    ->with('servicio.impuesto')
+                    ->get();
+
+        $subtotal      = $detalles->sum('subtotal');
+        $impuestoTotal = $detalles->sum('impuesto_monto');
+
+        /* 2) Pre-rellenamos el formulario */
+        $this->form->fill([
+            'consulta_id'   => $consultaId,
+            'paciente_id'   => $consulta->paciente_id,
+            'medico_id'     => $consulta->medico_id,
+            'fecha_emision' => now()->format('Y-m-d'),
+            'estado'        => 'PENDIENTE',
+            'subtotal'      => round($subtotal,2),
+            'impuesto_total'=> round($impuestoTotal,2),
+            'descuento_id'  => null,
+            'descuento_total'=> 0,
+            'total'         => round($subtotal + $impuestoTotal,2),
+        ]);
     }
 
-    protected function calcularTotalesConsulta(int $consultaId): array
-    {
-        // Obtener todos los servicios de la consulta
-        $serviciosConsulta = FacturaDetalle::where('consulta_id', $consultaId)
-            ->whereNull('factura_id')
-            ->with('servicio.impuesto')
-            ->get();
-
-        $subtotal = 0;
-        $impuestoTotal = 0;
-        $descuentoTotal = 0;
-
-        foreach ($serviciosConsulta as $detalle) {
-            $servicio = $detalle->servicio;
-            $cantidad = $detalle->cantidad;
-            
-            // Subtotal por servicio
-            $subtotalServicio = $servicio->precio_unitario * $cantidad;
-            $subtotal += $subtotalServicio;
-            
-            // Calcular impuesto si no está exonerado
-            if ($servicio->es_exonerado === 'NO' && $servicio->impuesto) {
-                $impuestoServicio = ($subtotalServicio * $servicio->impuesto->porcentaje) / 100;
-                $impuestoTotal += $impuestoServicio;
-            }
-        }
-
-        // Calcular descuento del paciente si existe
-        $consulta = Consulta::with('paciente')->find($consultaId);
-        if ($consulta && $consulta->paciente && isset($consulta->paciente->tipo_descuento)) {
-            $descuentoTotal = $this->calcularDescuentoPaciente($subtotal, $consulta->paciente);
-        }
-
-        $total = $subtotal + $impuestoTotal - $descuentoTotal;
-
-        return [
-            'subtotal' => round($subtotal, 2),
-            'impuesto_total' => round($impuestoTotal, 2),
-            'descuento_total' => round($descuentoTotal, 2),
-            'total' => round($total, 2),
-        ];
-    }
-
-    protected function calcularDescuentoPaciente(float $subtotal, $paciente): float
-    {
-        if (!isset($paciente->tipo_descuento) || !isset($paciente->valor_descuento)) {
-            return 0;
-        }
-
-        switch ($paciente->tipo_descuento) {
-            case 'PORCENTAJE':
-                return ($subtotal * $paciente->valor_descuento) / 100;
-            case 'MONTO_FIJO':
-                return min($paciente->valor_descuento, $subtotal); // No puede ser mayor al subtotal
-            default:
-                return 0;
-        }
-    }
-
+    /* ─────────── P R E  G U A R D A D O ─────────── */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $consultaId = request()->get('consulta_id');
-        
-        if ($consultaId) {
-            $consulta = Consulta::find($consultaId);
-            if ($consulta) {
-                $data['consulta_id'] = $consultaId;
-                $data['paciente_id'] = $consulta->paciente_id;
-                $data['medico_id'] = $consulta->medico_id;
+        $consultaId = request()->get('consulta_id') ?? $data['consulta_id'] ?? null;
+        if (!$consultaId) {
+            throw ValidationException::withMessages(['consulta_id' => 'Falta la consulta.']);
+        }
+
+        $detalles = FacturaDetalle::where('consulta_id', $consultaId)
+                    ->whereNull('factura_id')
+                    ->with('servicio.impuesto')
+                    ->get();
+
+        if ($detalles->isEmpty()) {
+            throw ValidationException::withMessages(['subtotal' => 'No hay servicios para facturar.']);
+        }
+
+        $subtotal      = $detalles->sum('subtotal');
+        $impuestoTotal = $detalles->sum('impuesto_monto');
+
+        $descuentoTotal = 0;
+        if (!empty($data['descuento_id'])) {
+            $descuento = Descuento::find($data['descuento_id']);
+            if ($descuento) {
+                $descuentoTotal = $descuento->tipo === 'PORCENTAJE'
+                    ? $subtotal * $descuento->valor / 100
+                    : min($descuento->valor, $subtotal);
             }
         }
+
+        if (!empty($data['impuesto_id'])) {
+            $impuestoPct   = \App\Models\Impuesto::find($data['impuesto_id'])?->porcentaje ?? 0;
+            $impuestoTotal = round($subtotal * $impuestoPct / 100, 2);
+        }
+
+        $consulta = Consulta::findOrFail($consultaId);
+
+        /* Totales */
+        $data['subtotal']        = round($subtotal,2);
+        $data['impuesto_total']  = round($impuestoTotal,2);
+        $data['descuento_total'] = round($descuentoTotal,2);
+        $data['total']           = round($subtotal + $impuestoTotal - $descuentoTotal,2);
+
+        /* Datos requeridos */
+        $data['consulta_id'] = $consulta->id;
+        $data['paciente_id'] = $consulta->paciente_id;
+        $data['medico_id']   = $consulta->medico_id;
+        $data['cita_id']     = $consulta->cita_id;
+        $data['centro_id']   = auth()->user()->centro_id;
+        $data['created_by']  = auth()->id();
+        $data['fecha_emision'] ??= now()->toDateString();
+        $data['estado']        ??= 'PENDIENTE';
 
         return $data;
     }
 
-    protected function afterCreate(): void
+    /* ─────────────────────  P O S T  G U A R D A D O ─────────────────── */
+    public function afterCreate(): void
     {
-        $consultaId = request()->get('consulta_id');
-        
-        if ($consultaId) {
-            // Asociar los detalles de factura existentes con esta nueva factura
-            FacturaDetalle::where('consulta_id', $consultaId)
-                ->whereNull('factura_id')
-                ->update(['factura_id' => $this->record->id]);
+        // Enlazar detalles…
+        \App\Models\FacturaDetalle::where('consulta_id', $this->record->consulta_id)
+            ->whereNull('factura_id')
+            ->update(['factura_id' => $this->record->id]);
 
-            // Recalcular totales exactos basados en los detalles
-            $this->recalcularTotalesFactura();
-
-            Notification::make()
-                ->title('Factura creada exitosamente')
-                ->body('Los servicios de la consulta han sido transferidos a la factura.')
-                ->success()
-                ->send();
-        }
-    }
-
-    protected function recalcularTotalesFactura(): void
-    {
-        $detalles = FacturaDetalle::where('factura_id', $this->record->id)
-            ->with('servicio.impuesto')
-            ->get();
-
-        $subtotal = 0;
-        $impuestoTotal = 0;
-
-        foreach ($detalles as $detalle) {
-            $subtotal += $detalle->total_linea;
-            
-            // Calcular impuesto real por detalle
-            $servicio = $detalle->servicio;
-            if ($servicio->es_exonerado === 'NO' && $servicio->impuesto) {
-                $impuestoDetalle = ($detalle->total_linea * $servicio->impuesto->porcentaje) / 100;
-                $impuestoTotal += $impuestoDetalle;
-                
-                // Actualizar el impuesto en el detalle
-                $detalle->update(['impuesto_monto' => round($impuestoDetalle, 2)]);
-            }
+        // Registrar pagos (CORREGIDO - removido montoDevolucion)
+        foreach ($this->data['pagos'] ?? [] as $pago) {
+            \App\Services\FacturaPagoService::registrarPago(
+                factura       : $this->record,
+                montoRecibido : $pago['monto_recibido'],
+                tipoPagoId    : $pago['tipo_pago_id'],
+                usuarioId     : auth()->id(),
+            );
         }
 
-        $total = $subtotal + $impuestoTotal - $this->record->descuento_total;
-
-        // Actualizar la factura con los totales calculados
-        $this->record->update([
-            'subtotal' => round($subtotal, 2),
-            'impuesto_total' => round($impuestoTotal, 2),
-            'total' => round($total, 2),
-        ]);
+        parent::afterCreate();
     }
 }

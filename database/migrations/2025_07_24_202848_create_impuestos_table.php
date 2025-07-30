@@ -16,7 +16,6 @@ return new class extends Migration
 
             $table->string('nombre');
             $table->decimal('porcentaje', 5, 2);
-            $table->enum('es_exento', ['SI', 'NO'])->default('NO');
             $table->date('vigente_desde');
             $table->date('vigente_hasta')->nullable();
             $table->foreignId('centro_id')->constrained('centros_medicos');

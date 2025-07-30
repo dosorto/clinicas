@@ -15,9 +15,8 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('autorizacion_id')->constrained('cai_autorizaciones');
-            $table->unsignedBigInteger('numero_factura');
+            $table->string('numero_factura');
             $table->timestamp('fecha_emision');
-            $table->foreignId('factura_id')->constrained('facturas');
             $table->foreignId('usuario_id')->constrained('users');
             $table->foreignId('centro_id')->constrained('centros_medicos');
 

@@ -12,17 +12,25 @@ class FacturaDetalle extends Model
 
     protected $fillable = [
         'factura_id',
-        'servicio_id', 
+        'servicio_id',
         'consulta_id',
         'cantidad',
+        'descuento_id',
         'subtotal',
-        'total_linea',
-        'descuento_monto',
+        'impuesto_id',
         'impuesto_monto',
+        'descuento_monto',
+        'total_linea',
         'centro_id',
         'created_by',
         'updated_by',
         'deleted_by',
+    ];
+
+    protected $dates = [
+        'created_at',
+        'updated_at',
+        'deleted_at',
     ];
 
     protected $casts = [
