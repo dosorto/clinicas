@@ -1,0 +1,101 @@
+<?php
+
+namespace App\Filament\Resources\ContabilidadMedica\DashboardContabilidadResource\Widgets;
+
+use App\Models\ContabilidadMedica\PagoCargoMedico;
+use App\Models\ContabilidadMedica\PagoHonorario;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Support\Collection;
+
+class PagosRecientesWidget extends BaseWidget
+{
+    protected int | string | array $columnSpan = 'full';
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->heading('Pagos Recientes')
+            ->description('Últimos pagos realizados en el sistema')
+            ->columns([
+                Tables\Columns\TextColumn::make('tipo')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'Cargo' => 'warning',
+                        'Honorario' => 'success',
+                        default => 'gray',
+                    }),
+                
+                Tables\Columns\TextColumn::make('medico')
+                    ->label('Médico')
+                    ->searchable(),
+                
+                Tables\Columns\TextColumn::make('fecha')
+                    ->label('Fecha de Pago')
+                    ->date(),
+                
+                Tables\Columns\TextColumn::make('monto')
+                    ->label('Monto')
+                    ->money('HNL'),
+                
+                Tables\Columns\TextColumn::make('metodo')
+                    ->label('Método de Pago')
+                    ->badge(),
+            ])
+            ->actions([
+                Tables\Actions\Action::make('ver')
+                    ->label('Ver')
+                    ->url(fn (array $record): string => $record['url'])
+                    ->icon('heroicon-o-eye'),
+            ])
+            ->paginated(false);
+    }
+    
+    protected function getTableRecords(): array
+    {
+        // Obtener pagos de cargos recientes
+        $pagosCargos = PagoCargoMedico::with(['cargo.medico.persona', 'centro'])
+            ->orderBy('fecha_pago', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($pago) {
+                return [
+                    'id' => 'cargo-' . $pago->id,
+                    'tipo' => 'Cargo',
+                    'medico' => $pago->cargo->medico->persona->nombre_completo,
+                    'fecha' => $pago->fecha_pago,
+                    'monto' => $pago->monto_pagado,
+                    'metodo' => ucfirst($pago->metodo_pago),
+                    'url' => '/admin/contabilidad-medica/pago-cargo-medicos/' . $pago->id,
+                ];
+            });
+            
+        // Obtener pagos de honorarios recientes
+        $pagosHonorarios = PagoHonorario::with(['liquidacion.medico.persona', 'centro'])
+            ->orderBy('fecha_pago', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($pago) {
+                return [
+                    'id' => 'honorario-' . $pago->id,
+                    'tipo' => 'Honorario',
+                    'medico' => $pago->liquidacion->medico->persona->nombre_completo,
+                    'fecha' => $pago->fecha_pago,
+                    'monto' => $pago->monto_pagado,
+                    'metodo' => ucfirst($pago->metodo_pago),
+                    'url' => '/admin/contabilidad-medica/pago-honorarios/' . $pago->id,
+                ];
+            });
+            
+        // Combinar, ordenar por fecha y limitar a los 10 más recientes
+        $combined = collect()
+            ->concat($pagosCargos)
+            ->concat($pagosHonorarios)
+            ->sortByDesc('fecha')
+            ->take(10)
+            ->values();
+            
+        return $combined->toArray();
+    }
+}

@@ -22,6 +22,7 @@ class PagoCargoMedicoResource extends Resource
     protected static ?int $navigationSort = 2;
     protected static ?string $modelLabel = 'Pago de Cargo Médico';
     protected static ?string $pluralModelLabel = 'Pagos de Cargos Médicos';
+    protected static bool $shouldRegisterNavigation = false; // Ocultar - muy complejo
 
     public static function form(Form $form): Form
     {

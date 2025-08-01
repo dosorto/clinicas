@@ -20,6 +20,7 @@ class LiquidacionHonorarioResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationGroup = 'Contabilidad Médica';
     protected static ?int $navigationSort = 4;
+    protected static bool $shouldRegisterNavigation = false; // Ocultar - muy complejo
 
     public static function form(Form $form): Form
     {

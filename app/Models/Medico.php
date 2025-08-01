@@ -73,4 +73,55 @@ protected $table = 'medicos';
             ->orWhere('fecha_fin', '>=', now())
             ->latest('fecha_inicio');
     }
+    
+    // Relaciones con contabilidad médica
+    public function cargos()
+    {
+        return $this->hasMany(\App\Models\ContabilidadMedica\CargoMedico::class, 'medico_id');
+    }
+    
+    public function liquidaciones()
+    {
+        return $this->hasMany(\App\Models\ContabilidadMedica\LiquidacionHonorario::class, 'medico_id');
+    }
+    
+    public function pagos()
+    {
+        return $this->hasManyThrough(
+            \App\Models\ContabilidadMedica\PagoHonorario::class,
+            \App\Models\ContabilidadMedica\LiquidacionHonorario::class,
+            'medico_id', // Foreign key en liquidaciones_honorarios
+            'liquidacion_id', // Foreign key en pagos_honorarios
+            'id', // Local key en medicos
+            'id' // Local key en liquidaciones_honorarios
+        );
+    }
+    
+    // Atributos calculados
+    public function getNombreCompletoAttribute()
+    {
+        if ($this->persona) {
+            return $this->persona->nombre . ' ' . $this->persona->apellido;
+        }
+        
+        return 'Médico #' . $this->id;
+    }
+    
+    public function getEspecialidadAttribute()
+    {
+        return $this->especialidades->first();
+    }
+    
+    // Relación singular para obtener la especialidad principal
+    public function especialidad()
+    {
+        return $this->belongsToMany(Especialidad::class, 'especialidad_medicos', 'medico_id', 'especialidad_id')
+                    ->take(1);
+    }
+    
+    // Método para obtener la primera especialidad
+    public function especialidadPrincipal()
+    {
+        return $this->especialidades()->first();
+    }
 }

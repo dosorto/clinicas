@@ -22,6 +22,7 @@ class CargoMedicoResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
     protected static ?string $navigationGroup = 'Contabilidad Médica';
     protected static ?int $navigationSort = 1;
+    protected static bool $shouldRegisterNavigation = false; // Ocultar - muy complejo
 
     public static function form(Form $form): Form
     {
@@ -102,11 +103,13 @@ class CargoMedicoResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estado')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => ucfirst(strtolower($state))) // Normaliza a formato Título
+                    ->color(fn (string $state): string => match (strtolower($state)) { // Convierte a minúsculas para la comparación
                         'pendiente' => 'warning',
                         'parcial' => 'info',
                         'pagado' => 'success',
                         'anulado' => 'danger',
+                        default => 'gray', // Añadir caso default para evitar errores
                     }),
             ])
             ->filters([
@@ -175,9 +178,10 @@ class CargoMedicoResource extends Resource
     {
         return [
             'index' => Pages\ListCargoMedicos::route('/'),
-            'create' => Pages\CreateCargoMedico::route('/create'),
+            'create' => Pages\CreateCargoMedicoSimple::route('/create'),
             'view' => Pages\ViewCargoMedico::route('/{record}'),
             'edit' => Pages\EditCargoMedico::route('/{record}/edit'),
+            'calcular-porcentaje' => Pages\CalcularPorcentaje::route('/calcular-porcentaje'),
         ];
     }
 }

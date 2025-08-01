@@ -22,6 +22,7 @@ class PagoHonorarioResource extends Resource
     protected static ?int $navigationSort = 5;
     protected static ?string $modelLabel = 'Pago de Honorario';
     protected static ?string $pluralModelLabel = 'Pagos de Honorarios';
+    protected static bool $shouldRegisterNavigation = false; // Ocultar - muy complejo
 
     public static function form(Form $form): Form
     {
@@ -191,28 +192,92 @@ class PagoHonorarioResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('generarRecibo')
+                    ->label('Generar Recibo')
+                    ->icon('heroicon-o-document-text')
+                    ->color('success')
+                    ->url(fn (PagoHonorario $record): string => route('filament.admin.resources.contabilidad-medica.pago-honorarios.generar-recibo', ['pagoId' => $record->id]))
+                    ->openUrlInNewTab(),
+                    
+                Tables\Actions\Action::make('completarLiquidacion')
+                    ->label('Completar Liquidación')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('primary')
+                    ->visible(function (PagoHonorario $record): bool {
+                        // Solo mostrar si la liquidación está en estado parcial
+                        $liquidacion = $record->liquidacion;
+                        return $liquidacion && $liquidacion->estado === 'parcial';
+                    })
+                    ->url(function (PagoHonorario $record): string {
+                        // Redireccionar a la página de crear pago con la liquidación preseleccionada
+                        return route('filament.admin.resources.contabilidad-medica.pago-honorarios.create', [
+                            'liquidacion_id' => $record->liquidacion_id
+                        ]);
+                    }),
+            ])
+            ->headerActions([
+                Tables\Actions\Action::make('pagoRapido')
+                    ->label('Pago Rápido')
+                    ->icon('heroicon-o-bolt')
+                    ->color('success')
+                    ->action(function () {
+                        // Redireccionar a la página de crear pago
+                        return redirect()->route('filament.admin.resources.contabilidad-medica.pago-honorarios.create');
+                    }),
+                    
+                Tables\Actions\Action::make('liquidacionesPendientes')
+                    ->label('Ver Liquidaciones Pendientes')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->color('warning')
+                    ->url(fn (): string => route('filament.admin.resources.contabilidad-medica.liquidacion-honorarios.index', [
+                        'tableFilters[estado][value]' => 'pendiente'
+                    ])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\BulkAction::make('generarRecibosMultiples')
+                        ->label('Generar Recibos')
+                        ->icon('heroicon-o-document-duplicate')
+                        ->color('success')
+                        ->action(function (array $records) {
+                            // Lógica para generar recibos múltiples
+                            // Aquí podrías generar un ZIP con todos los recibos
+                        }),
                 ]),
             ]);
     }
 
-    public static function getRelations(): array
+    public static function getNavigationBadge(): ?string
     {
-        return [
-            //
-        ];
+        // Mostrar cantidad de liquidaciones pendientes como distintivo en el menú
+        return \App\Models\ContabilidadMedica\LiquidacionHonorario::whereIn('estado', ['pendiente', 'parcial'])->count();
+    }
+    
+    public static function getNavigationBadgeColor(): ?string
+    {
+        // Color rojo si hay más de 5 pendientes, amarillo si hay al menos 1
+        $pendientes = \App\Models\ContabilidadMedica\LiquidacionHonorario::whereIn('estado', ['pendiente', 'parcial'])->count();
+        
+        if ($pendientes > 5) {
+            return 'danger';
+        }
+        
+        if ($pendientes >= 1) {
+            return 'warning';
+        }
+        
+        return 'success';
     }
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListPagoHonorarios::route('/'),
-            'create' => Pages\CreatePagoHonorario::route('/create'),
+            'create' => Pages\CreatePagoHonorarioSimple::route('/create'),
             'view' => Pages\ViewPagoHonorario::route('/{record}'),
             'edit' => Pages\EditPagoHonorario::route('/{record}/edit'),
+            'generate-receipt' => Pages\GenerarRecibo::route('/{record}/generar-recibo'),
         ];
     }
 }

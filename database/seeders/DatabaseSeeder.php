@@ -80,7 +80,7 @@ class DatabaseSeeder extends Seeder
 
         // Continuar con el resto de seeders
         $this->call([
-         
+            ContabilidadMedicaSeeder::class,
         ]);
 
 
