@@ -79,4 +79,10 @@ protected $table = 'medicos';
             ->orWhere('fecha_fin', '>=', now())
             ->latest('fecha_inicio');
     }
+
+    public function contratosActivos()
+    {
+        return $this->hasMany(\App\Models\ContabilidadMedica\ContratoMedico::class, 'medico_id')
+            ->where('activo', true);
+    }
 }

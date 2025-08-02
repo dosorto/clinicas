@@ -38,9 +38,17 @@ trait TenantScoped
      */
     protected static function shouldBypassTenantScope(): bool
     {
-        if (Auth::check() && Auth::user()->hasRole('root')) {
+        // Bypass en comandos de consola
+        if (app()->runningInConsole() && !app()->runningUnitTests()) {
+            return true;
+        }
+        
+        if (Auth::check()) {
+            $user = Auth::user();
             // Root puede ver todos los datos si no hay un centro específico seleccionado
-            return !session('current_centro_id');
+            if (method_exists($user, 'hasRole') && $user->hasRole('root')) {
+                return !session('current_centro_id');
+            }
         }
         return false;
     }
@@ -81,8 +89,11 @@ trait TenantScoped
      */
     public function scopeAllCentros($query)
     {
-        if (Auth::check() && Auth::user()->hasRole('root')) {
-            return $query->withoutGlobalScope('centros_medicos');
+        if (Auth::check()) {
+            $user = Auth::user();
+            if (method_exists($user, 'hasRole') && $user->hasRole('root')) {
+                return $query->withoutGlobalScope('centros_medicos');
+            }
         }
         return $query;
     }
