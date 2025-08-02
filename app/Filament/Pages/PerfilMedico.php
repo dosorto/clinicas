@@ -147,8 +147,6 @@ class PerfilMedico extends Page implements HasForms
                     'tiene_recetario' => $recetario->tiene_recetario ?? true,
                     'centro_id' => $recetario->centro_id ?? session('current_centro_id') ?? $user->centro_id,
                     'logo' => $logo, // Mantener como string
-                    'encabezado_texto' => $recetario->encabezado_texto ?? 'RECETA MÉDICA',
-                    'pie_pagina' => $recetario->pie_pagina ?? 'Consulte a su médico antes de usar cualquier medicamento',
                     'color_primario' => $recetario->color_primario ?? '#2563eb',
                     'color_secundario' => $recetario->color_secundario ?? '#64748b',
                     'fuente_familia' => $recetario->fuente_familia ?? 'Arial',
@@ -169,8 +167,6 @@ class PerfilMedico extends Page implements HasForms
                     'tiene_recetario' => false,
                     'centro_id' => session('current_centro_id') ?? $user->centro_id,
                     'logo' => null,
-                    'encabezado_texto' => 'RECETA MÉDICA',
-                    'pie_pagina' => 'Consulte a su médico antes de usar cualquier medicamento',
                     'color_primario' => '#2563eb',
                     'color_secundario' => '#64748b',
                     'fuente_familia' => 'Arial',
@@ -189,8 +185,6 @@ class PerfilMedico extends Page implements HasForms
                 'tiene_recetario' => false,
                 'centro_id' => session('current_centro_id') ?? $user->centro_id ?? null,
                 'logo' => null,
-                'encabezado_texto' => 'RECETA MÉDICA',
-                'pie_pagina' => 'Consulte a su médico antes de usar cualquier medicamento',
                 'color_primario' => '#2563eb',
                 'color_secundario' => '#64748b',
                 'fuente_familia' => 'Arial',
@@ -264,7 +258,7 @@ class PerfilMedico extends Page implements HasForms
                 ->description('Active y configure la apariencia de su recetario médico')
                 ->schema([
                     Toggle::make('tiene_recetario')
-                        ->label('Activar Recetario')
+                        ->label('Personalizar Recetario')
                         ->helperText('Active esta opción para habilitar su recetario personalizado')
                         ->live()
                         ->columnSpanFull(),
@@ -370,11 +364,6 @@ class PerfilMedico extends Page implements HasForms
                 ->schema([
                     Grid::make(2)
                         ->schema([
-                            Toggle::make('mostrar_especialidades')
-                                ->label('Mostrar Especialidades')
-                                ->helperText('Incluir especialidades médicas')
-                                ->live(),
-                                
                             Toggle::make('mostrar_telefono')
                                 ->label('Mostrar Teléfono')
                                 ->helperText('Incluir número de teléfono')

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Receta;
+use App\Models\Consulta;
 
 class RecetaController extends Controller
 {
@@ -37,27 +38,28 @@ class RecetaController extends Controller
         return view('receta.imprimir', compact('receta', 'config'));
     }
 
-    public function imprimirPorConsulta(\App\Models\Consulta $consulta)
+        public function imprimirPorConsulta($consultaId)
     {
-        // Cargar todas las recetas de la consulta con sus relaciones
-        $recetas = $consulta->recetas()->with([
-            'paciente.persona',
-            'medico.persona',
-            'medico.especialidades',
-            'medico.centro',
-            'medico.recetario',
-            'consulta'
-        ])->get();
+        $consulta = Consulta::with('recetas.paciente.persona')->findOrFail($consultaId);
+        $medico = $consulta->medico;
+        $recetario = $medico->recetarios()->latest()->first();
 
-        if ($recetas->isEmpty()) {
-            abort(404, 'No hay recetas asociadas a esta consulta.');
+        // Construir la lista de recetas para la tabla, incluyendo paciente y persona
+        $recetasLista = [];
+        foreach ($consulta->recetas as $receta) {
+            $recetasLista[] = (object)[
+                'medicamento' => $receta->medicamentos,
+                'indicaciones' => $receta->indicaciones,
+                'paciente' => $receta->paciente,
+                'persona' => $receta->paciente->persona ?? null,
+            ];
         }
 
-        // Obtener la configuración del recetario del médico (usando la primera receta como referencia)
-        $primeraReceta = $recetas->first();
-        $recetario = $primeraReceta->medico->recetario ?? null;
+        // Usar la configuración del recetario más reciente
         $config = $recetario ? $recetario->configuracion : [];
 
-        return view('receta.imprimir-consulta', compact('recetas', 'consulta', 'config'));
+        // Usar la vista de impresión real y pasar todas las variables necesarias
+        $receta = null; // Para evitar error de variable indefinida en la vista
+        return view('receta.imprimir', compact('medico', 'recetario', 'recetasLista', 'config', 'receta'));
     }
 }
