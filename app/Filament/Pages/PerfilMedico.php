@@ -270,7 +270,7 @@ class PerfilMedico extends Page implements HasForms
                     Grid::make(2)
                         ->schema([
                             FileUpload::make('logo')
-                                ->label('Logo de la Clínica/Consultorio')
+                                ->label('Logo de la Clínica/Consultorio/Centro Médico')
                                 ->disk('public')
                                 ->directory('recetarios/logos')
                                 ->image()
