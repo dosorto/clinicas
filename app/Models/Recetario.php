@@ -14,6 +14,7 @@ class Recetario extends ModeloBase
 {
     /** @use HasFactory<\Database\Factories\RecetarioFactory> */
     use HasFactory;
+    use SoftDeletes;
     use TenantScoped; // Assuming you have a trait for recetario specific methods
 
     protected $table = 'recetarios';

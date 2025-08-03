@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Consultas\ConsultasResource\Pages;
 
 use App\Filament\Resources\Consultas\ConsultasResource;
+use App\Filament\Resources\Receta\RecetaResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
@@ -18,25 +19,36 @@ class EditConsultas extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Botón para crear nueva receta directamente
+            Actions\Action::make('crear_receta')
+                ->label(' Nueva Receta')
+                ->icon('heroicon-o-document-plus')
+                ->color('success')
+                ->url(function () {
+                    return \App\Filament\Resources\Receta\RecetaResource::getUrl('create-simple') .
+                           '?paciente_id=' . $this->record->paciente_id .
+                           '&consulta_id=' . $this->record->id .
+                           '&medico_id=' . $this->record->medico_id;
+                })
+                ->openUrlInNewTab(false),
+
             Actions\ViewAction::make()
-                ->label('Ver Consulta'),
+                ->label(' Ver Consulta')
+                ->color('info'),
 
             Actions\DeleteAction::make()
-                ->label('Eliminar')
+                ->label(' Eliminar')
                 ->requiresConfirmation()
                 ->modalHeading('Eliminar Consulta')
                 ->modalDescription('¿Estás seguro de que deseas eliminar esta consulta? Esta acción se puede deshacer.')
-                ->modalSubmitActionLabel('Sí, eliminar'),
+                ->modalSubmitActionLabel('Sí, eliminar')
+                ->color('danger'),
 
-            Actions\ForceDeleteAction::make()
-                ->label('Eliminar Permanentemente')
-                ->requiresConfirmation()
-                ->modalHeading('Eliminar Consulta Permanentemente')
-                ->modalDescription('¿Estás seguro de que deseas eliminar permanentemente esta consulta? Esta acción no se puede deshacer.')
-                ->modalSubmitActionLabel('Sí, eliminar permanentemente'),
-
-            Actions\RestoreAction::make()
-                ->label('Restaurar'),
+            Actions\Action::make('back')
+                ->label(' Volver')
+                ->url($this->getResource()::getUrl('index'))
+                ->color('gray')
+                ->icon('heroicon-o-arrow-left'),
         ];
     }
 
@@ -55,7 +67,7 @@ class EditConsultas extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-
+        // Lógica adicional antes de guardar
         return $data;
     }
 
@@ -64,19 +76,42 @@ class EditConsultas extends EditRecord
         // Lógica adicional después de guardar
         Log::info('Consulta actualizada', [
             'consulta_id' => $this->record->id,
-            'updated_by' => $this->record->id,
+            'updated_by' => \Illuminate\Support\Facades\Auth::id(),
             'changes' => $this->record->getChanges(),
+            'recetas_count' => $this->record->recetas()->count(),
         ]);
+
+        // Mostrar notificación adicional si se modificaron recetas
+        $recetasCount = $this->record->recetas()->count();
+        if ($recetasCount > 0) {
+            Notification::make()
+                ->success()
+                ->title('Recetas actualizadas')
+                ->body("Se gestionaron {$recetasCount} receta(s) asociada(s) a esta consulta.")
+                ->send();
+        }
     }
 
     protected function getFormActions(): array
     {
         return [
             $this->getSaveFormAction()
-                ->label('Guardar Cambios'),
+                ->label(' Guardar Cambios')
+                ->color('success')
+                ->icon('heroicon-o-check'),
 
             $this->getCancelFormAction()
-                ->label('Cancelar'),
+                ->label(' Cancelar')
+                ->color('gray')
+                ->icon('heroicon-o-x-mark')
+                ->url($this->getResource()::getUrl('view', ['record' => $this->record])),
+
+            // Botón adicional para ir a ver la consulta
+            Actions\Action::make('view_after_save')
+                ->label(' Ver Consulta')
+                ->color('info')
+                ->url($this->getResource()::getUrl('view', ['record' => $this->record]))
+                ->icon('heroicon-o-eye'),
         ];
     }
 

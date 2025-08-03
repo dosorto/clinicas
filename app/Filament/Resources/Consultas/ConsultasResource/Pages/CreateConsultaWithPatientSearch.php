@@ -224,7 +224,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->label('Medicamentos')
                                     ->required()
                                     ->rows(4)
-                                    ->placeholder('Ej: Paracetamol 500mg - 1 tableta cada 8 horas por 5 días\nAmoxicilina 500mg - 1 cápsula cada 12 horas por 7 días')
+                                    ->placeholder('Ej: Loratadina 500 mg')
                                     ->helperText('Liste todos los medicamentos con sus dosis y frecuencia')
                                     ->columnSpanFull(),
 
@@ -232,7 +232,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->label('Indicaciones')
                                     ->required()
                                     ->rows(3)
-                                    ->placeholder('Instrucciones especiales para el paciente: tomar con alimentos, evitar alcohol, etc.')
+                                    ->placeholder('Tomar una diaria, etc.')
                                     ->helperText('Proporcione instrucciones específicas para el paciente')
                                     ->columnSpanFull(),
                             ])
@@ -410,16 +410,16 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
             // Verificar si hay una cita pendiente desde la sesión
             if (request()->has('cita_id') || session()->has('cita_en_consulta')) {
                 $citaId = request()->get('cita_id') ?? session('cita_en_consulta');
-                
+
                 if ($citaId) {
                     $cita = \App\Models\Citas::find($citaId);
-                    
+
                     if ($cita) {
                         // Actualizar el estado de la cita a "Realizado" después de crear la consulta
                         // Utilizamos fill para asegurarnos de que el formato sea correcto
                         $cita->fill(['estado' => 'Realizado']);
                         $cita->save();
-                        
+
                         // Crear notificación adicional
                         Notification::make()
                             ->title('Cita completada')
@@ -427,7 +427,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                             ->success()
                             ->send();
                     }
-                    
+
                     // Limpiar la sesión
                     session()->forget('cita_en_consulta');
                 }

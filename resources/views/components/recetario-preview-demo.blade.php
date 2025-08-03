@@ -145,29 +145,41 @@
     </div>
 
 
-    <!-- Receta y Indicaciones en cuadrícula -->
-    <div class="receta-grid" style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 20px; border: 2px solid #e5e7eb; border-radius: 10px; padding: 0; background: #fff; margin-bottom: 30px; box-shadow: 0 2px 8px #0001; overflow: hidden;">
-        <!-- Prescripción -->
-        <div class="prescription-section" style="border-right: 1px solid #e5e7eb; padding: 25px 20px 25px 25px; min-height: 260px;">
-            <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 2px solid {{ $headerColor }}; padding-bottom: 8px; font-size: 18px;">
-                ℞ {{ $encabezadoTexto }}
-            </h4>
-            <div class="prescription-content" style="min-height: 180px; padding: 15px; border: 1px dashed #d1d5db; border-radius: 8px; background-color: #f9fafb; line-height: 1.8;">
-                <div style="color: #9ca3af; font-style: italic; text-align: center; padding: 40px 0;">
-                    [Aquí aparecerán los medicamentos y dosificación]
-                </div>
-            </div>
-        </div>
-
-        <!-- Indicaciones -->
-        <div class="instructions-section" style="padding: 25px 25px 25px 20px; min-height: 260px; background: #fef9c3;">
-            <h4 style="margin: 0 0 15px 0; color: {{ $headerColor }}; border-bottom: 1px solid {{ $headerColor }}; padding-bottom: 5px;">
-                Indicaciones Especiales
-            </h4>
-            <div style="padding: 10px 0 0 0; font-size: 14px; line-height: 1.6;">
-                {{ $textoAdicional ?: '[Aquí aparecerán las indicaciones especiales]' }}
-            </div>
-        </div>
+    <!-- Recetas e Indicaciones en una sola tabla -->
+    <div class="receta-cuadro-unico" style="margin-bottom: 30px; border: 2px solid #e5e7eb; border-radius: 10px; background: #fff; box-shadow: 0 2px 8px #0001; overflow: hidden;">
+        <h4 style="margin: 0; padding: 18px 25px 10px 25px; color: {{ $headerColor }}; border-bottom: 2px solid {{ $headerColor }}; font-size: 18px;">
+            ℞ {{ $encabezadoTexto }}
+        </h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+            <thead>
+                <tr style="background: {{ $headerColor }}; color: #fff;">
+                    <th style="padding: 10px; border-right: 1px solid #e5e7eb; width: 40px;">N°</th>
+                    <th style="padding: 10px; border-right: 1px solid #e5e7eb;">Medicamento</th>
+                    <th style="padding: 10px;">Observaciones / Indicaciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    // Simular lista de recetas para la demo
+                    $recetas = [
+                        (object)[ 'medicamento' => 'Paracetamol 500mg', 'indicaciones' => '1 cada 8 horas' ],
+                        (object)[ 'medicamento' => 'Amoxicilina 500mg', 'indicaciones' => '1 cada 12 horas' ],
+                        (object)[ 'medicamento' => 'Ibuprofeno 400mg', 'indicaciones' => '1 al dia' ],
+                    ];
+                    // Agregar una fila con indicaciones generales si hay texto adicional
+                    if ($textoAdicional) {
+                        $recetas[] = (object)[ 'medicamento' => '-', 'indicaciones' => $textoAdicional ];
+                    }
+                @endphp
+                @foreach($recetas as $i => $receta)
+                    <tr style="background: {{ $i % 2 == 0 ? '#f9fafb' : '#fff' }}; color: #333;">
+                        <td style="padding: 12px; border-right: 1px solid #e5e7eb; text-align: center;">{{ $i + 1 }}</td>
+                        <td style="padding: 12px; border-right: 1px solid #e5e7eb; text-align: center;">{{ $receta->medicamento }}</td>
+                        <td style="padding: 12px; text-align: center;">{{ $receta->indicaciones }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
     </div>
 
     <!-- Footer con Firma -->
