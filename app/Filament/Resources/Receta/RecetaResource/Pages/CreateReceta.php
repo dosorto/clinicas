@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Receta\RecetaResource\Pages;
 
 use App\Filament\Resources\Receta\RecetaResource;
+use App\Filament\Resources\Consultas\ConsultasResource;
 use App\Models\Pacientes;
 use App\Models\Consulta;
 use App\Models\Medico;
@@ -88,7 +89,7 @@ class CreateReceta extends CreateRecord
                 ->url(function () {
                     if (request()->has('consulta_id')) {
                         $consultaId = request()->get('consulta_id');
-                        return route('filament.admin.resources.consultas.view', ['record' => $consultaId]);
+                        return \App\Filament\Resources\Consultas\ConsultasResource::getUrl('view', ['record' => $consultaId]);
                     }
                     return null;
                 })
@@ -103,7 +104,7 @@ class CreateReceta extends CreateRecord
         // Si venimos de una consulta, regresar a la vista de esa consulta
         if (request()->has('consulta_id')) {
             $consultaId = request()->get('consulta_id');
-            return route('filament.admin.resources.consultas.view', ['record' => $consultaId]);
+            return \App\Filament\Resources\Consultas\ConsultasResource::getUrl('view', ['record' => $consultaId]);
         }
 
         return $this->getResource()::getUrl('index');
