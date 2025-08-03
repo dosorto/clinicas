@@ -17,7 +17,7 @@ class DetalleNominaResource extends Resource
     protected static ?string $model = DetalleNomina::class;
 
     protected static ?string $navigationGroup = 'Contabilidad Médica';
-    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static ?string $navigationLabel = 'Historial de Pagos';
     protected static ?string $modelLabel = 'Historial de Pago';
     protected static ?string $pluralModelLabel = 'Historial de Pagos';
@@ -107,22 +107,24 @@ class DetalleNominaResource extends Resource
                 TextColumn::make('salario_base')
                     ->label('Salario Base')
                     ->money('HNL')
+                    ->color('sky')
                     ->sortable(),
 
                 TextColumn::make('deducciones')
                     ->label('Deducciones')
                     ->money('HNL')
-                    ->color('danger'),
+                    ->color('rose'),
 
                 TextColumn::make('percepciones')
                     ->label('Percepciones')
                     ->money('HNL')
-                    ->color('success'),
+                    ->color('emerald'),
 
                 TextColumn::make('total_pagar')
                     ->label('Total a Pagar')
                     ->money('HNL')
-                    ->color('success')
+                    ->badge()
+                    ->color('emerald')
                     ->weight('bold'),
 
                 TextColumn::make('created_at')
@@ -155,7 +157,8 @@ class DetalleNominaResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                    ->icon('heroicon-o-eye'),
+                    ->icon('heroicon-o-eye')
+                    ->color('sky'),
             ])
             ->defaultSort('created_at', 'desc');
     }

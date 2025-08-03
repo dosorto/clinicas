@@ -62,8 +62,8 @@ class ContratoMedico extends ModeloBase
         return $this->belongsTo(Centros_Medico::class, 'centro_id');
     }
 
-    public function cargos(): HasMany
-    {
-        return $this->hasMany(CargoMedico::class, 'contrato_id');
-    }
+    // public function cargos(): HasMany
+    // {
+    //     return $this->hasMany(CargoMedico::class, 'contrato_id');
+    // }
 }

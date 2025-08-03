@@ -39,12 +39,15 @@ class NominaResource extends Resource
     {
         return $form
             ->schema([
-                Section::make('Información General')
+                Section::make('📋 Información General')
+                    ->description('Configura los datos básicos de la nómina')
+                    ->icon('heroicon-o-information-circle')
+                    ->collapsible()
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
                                 Forms\Components\TextInput::make('empresa')
-                    ->label('Centro Médico')
+                    ->label('🏥 Centro Médico')
                     ->default(function () {
                         $user = Auth::user();
                         if ($user && $user->centro) {
@@ -53,18 +56,20 @@ class NominaResource extends Resource
                         return '';
                     })
                     ->required()
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->prefixIcon('heroicon-o-building-office-2'),
 
                                 TextInput::make('año')
-                                    ->label('Año')
+                                    ->label('📅 Año')
                                     ->required()
                                     ->numeric()
                                     ->default(date('Y'))
                                     ->minValue(2020)
-                                    ->maxValue(2030),
+                                    ->maxValue(2030)
+                                    ->prefixIcon('heroicon-o-calendar'),
 
                                 Select::make('mes')
-                                    ->label('Mes')
+                                    ->label('📆 Mes')
                                     ->options([
                                         1 => 'Enero',
                                         2 => 'Febrero',
@@ -80,83 +85,124 @@ class NominaResource extends Resource
                                         12 => 'Diciembre',
                                     ])
                                     ->required()
-                                    ->default(date('n')),
+                                    ->default(date('n'))
+                                    ->native(false),
 
                                 Select::make('tipo_pago')
-                                    ->label('Tipo de Pago')
+                                    ->label('💰 Tipo de Pago')
                                     ->options([
                                         'mensual' => 'Mensual',
                                         'quincenal' => 'Quincenal',
                                         'semanal' => 'Semanal',
                                     ])
                                     ->required()
-                                    ->default('mensual'),
+                                    ->default('mensual')
+                                    ->native(false),
                             ]),
 
                         Textarea::make('descripcion')
-                            ->label('Descripción')
+                            ->label('📝 Descripción')
+                            ->placeholder('Describe los detalles de esta nómina...')
                             ->maxLength(1000)
+                            ->rows(3)
                             ->columnSpanFull(),
                     ]),
 
-                Section::make('Médicos en Nómina')
+                Section::make('👨‍⚕️ Médicos en Nómina')
+                    ->description('Selecciona los médicos y configura sus salarios')
+                    ->icon('heroicon-o-users')
+                    ->collapsible()
                     ->schema([
-                        Repeater::make('medicos_nomina')
-                            ->label('Seleccionar Médicos')
-                            ->relationship()
+                        Repeater::make('detalles')
+                            ->label('Médicos')
+                            ->relationship('detalles')
                             ->schema([
-                                Checkbox::make('seleccionado')
-                                    ->label('Incluir en nómina')
-                                    ->default(true),
-
                                 Select::make('medico_id')
-                                    ->label('Médico')
+                                    ->label('👨‍⚕️ Médico')
                                     ->relationship('medico', 'id')
                                     ->getOptionLabelFromRecordUsing(fn($record) => $record->persona->nombre_completo ?? 'Sin nombre')
                                     ->searchable()
                                     ->preload()
-                                    ->required(),
-
-                                TextInput::make('medico_nombre')
-                                    ->label('Nombre del Médico')
                                     ->required()
-                                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
-                                        if (!$state && $get('medico_id')) {
-                                            $medico = Medico::find($get('medico_id'));
+                                    ->native(false)
+                                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                        if ($state) {
+                                            $medico = \App\Models\Medico::find($state);
                                             if ($medico && $medico->persona) {
                                                 $set('medico_nombre', $medico->persona->nombre_completo);
+                                                // Obtener salario base del contrato si existe
+                                                $contrato = $medico->contratos()->first();
+                                                if ($contrato) {
+                                                    $set('salario_base', $contrato->salario_mensual);
+                                                }
                                             }
                                         }
                                     }),
 
+                                TextInput::make('medico_nombre')
+                                    ->label('📋 Nombre del Médico')
+                                    ->required()
+                                    ->prefixIcon('heroicon-o-user')
+                                    ->disabled(),
+
                                 TextInput::make('salario_base')
-                                    ->label('Salario Base')
+                                    ->label('💵 Salario Base')
                                     ->numeric()
                                     ->prefix('L.')
                                     ->required()
-                                    ->default(function (Forms\Get $get) {
-                                        if ($get('medico_id')) {
-                                            $medico = Medico::find($get('medico_id'));
-                                            return $medico?->contratos?->first()?->salario_mensual ?? 0;
-                                        }
-                                        return 0;
+                                    ->prefixIcon('heroicon-o-banknotes')
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                                        $salario = (float) $state;
+                                        $deducciones = (float) $get('deducciones');
+                                        $percepciones = (float) $get('percepciones');
+                                        $total = $salario - $deducciones + $percepciones;
+                                        $set('total_pagar', $total);
                                     }),
 
                                 TextInput::make('deducciones')
-                                    ->label('Deducciones')
+                                    ->label('⬇️ Deducciones')
                                     ->numeric()
                                     ->prefix('L.')
-                                    ->default(0),
+                                    ->default(0)
+                                    ->prefixIcon('heroicon-o-minus-circle')
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                                        $salario = (float) $get('salario_base');
+                                        $deducciones = (float) $state;
+                                        $percepciones = (float) $get('percepciones');
+                                        $total = $salario - $deducciones + $percepciones;
+                                        $set('total_pagar', $total);
+                                    }),
 
                                 TextInput::make('percepciones')
-                                    ->label('Percepciones')
+                                    ->label('⬆️ Percepciones')
                                     ->numeric()
                                     ->prefix('L.')
-                                    ->default(0),
+                                    ->default(0)
+                                    ->prefixIcon('heroicon-o-plus-circle')
+                                    ->live()
+                                    ->afterStateUpdated(function ($state, Forms\Set $set, Forms\Get $get) {
+                                        $salario = (float) $get('salario_base');
+                                        $deducciones = (float) $get('deducciones');
+                                        $percepciones = (float) $state;
+                                        $total = $salario - $deducciones + $percepciones;
+                                        $set('total_pagar', $total);
+                                    }),
+
+                                TextInput::make('total_pagar')
+                                    ->label('💰 Total a Pagar')
+                                    ->numeric()
+                                    ->prefix('L.')
+                                    ->disabled()
+                                    ->prefixIcon('heroicon-o-currency-dollar'),
                             ])
                             ->columns(3)
                             ->defaultItems(0)
-                            ->addActionLabel('Agregar Médico'),
+                            ->addActionLabel('➕ Agregar Médico')
+                            ->reorderableWithButtons()
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => $state['medico_nombre'] ?? 'Nuevo médico'),
                     ])
                     ->collapsed()
                     ->persistCollapsed(),
@@ -200,9 +246,9 @@ class NominaResource extends Resource
                     })
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'mensual' => 'success',
-                        'quincenal' => 'warning',
-                        'semanal' => 'info',
+                        'mensual' => 'emerald',
+                        'quincenal' => 'amber',
+                        'semanal' => 'blue',
                         default => 'gray',
                     }),
 
@@ -211,18 +257,21 @@ class NominaResource extends Resource
                     ->boolean()
                     ->trueIcon('heroicon-o-lock-closed')
                     ->falseIcon('heroicon-o-lock-open')
-                    ->trueColor('danger')
-                    ->falseColor('success'),
+                    ->trueColor('rose')
+                    ->falseColor('emerald'),
 
                 TextColumn::make('numero_medicos')
                     ->label('Médicos')
                     ->getStateUsing(fn ($record) => $record->numero_empleados)
-                    ->badge(),
+                    ->badge()
+                    ->color('sky'),
 
                 TextColumn::make('total_nomina')
                     ->label('Total')
                     ->getStateUsing(fn ($record) => 'L. ' . number_format($record->total_nomina, 2))
-                    ->color('success'),
+                    ->badge()
+                    ->color('emerald')
+                    ->weight('bold'),
 
                 TextColumn::make('created_at')
                     ->label('Creada')
@@ -263,21 +312,24 @@ class NominaResource extends Resource
             ])
             ->actions([
                 ViewAction::make()
-                    ->icon('heroicon-o-eye'),
+                    ->icon('heroicon-o-eye')
+                    ->color('sky'),
 
                 EditAction::make()
-                    ->icon('heroicon-o-pencil')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('amber')
                     ->visible(fn (Nomina $record): bool => !$record->cerrada),
 
                 Tables\Actions\Action::make('cerrar')
                     ->label('Cerrar')
                     ->icon('heroicon-o-lock-closed')
-                    ->color('warning')
+                    ->color('orange')
                     ->visible(fn (Nomina $record): bool => !$record->cerrada)
                     ->requiresConfirmation()
-                    ->modalHeading('Cerrar Nómina')
+                    ->modalHeading('🔒 Cerrar Nómina')
                     ->modalDescription('Una vez cerrada la nómina, no podrás editarla ni eliminarla. ¿Estás seguro?')
-                    ->modalSubmitActionLabel('Sí, cerrar nómina')
+                    ->modalSubmitActionLabel('✅ Sí, cerrar nómina')
+                    ->modalCancelActionLabel('❌ Cancelar')
                     ->action(function (Nomina $record) {
                         $record->cerrar();
                     }),
@@ -285,11 +337,12 @@ class NominaResource extends Resource
                 Tables\Actions\Action::make('generar_pdf')
                     ->label('PDF')
                     ->icon('heroicon-o-document-arrow-down')
-                    ->color('success')
+                    ->color('emerald')
                     ->url(fn (Nomina $record) => route('nomina.pdf', $record))
                     ->openUrlInNewTab(),
 
                 DeleteAction::make()
+                    ->color('rose')
                     ->visible(fn (Nomina $record): bool => !$record->cerrada),
             ])
             ->bulkActions([
