@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\Medico\MedicoResource\Pages;
 
 use App\Filament\Resources\Medico\MedicoResource;
+use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
-use Filament\Actions\Action;
 use Filament\Infolists\Infolist;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ImageEntry;
@@ -13,6 +13,7 @@ use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Split;
 use Filament\Support\Enums\FontWeight;
 use Illuminate\Support\Facades\Storage;
+use Filament\Infolists\Components\Actions\Action;
 
 class ViewMedico extends ViewRecord
 {
@@ -22,7 +23,6 @@ class ViewMedico extends ViewRecord
     {
         return $infolist
             ->schema([
-                // Sección de encabezado con foto y datos principales
                 Section::make()
                     ->schema([
                         Split::make([
@@ -32,19 +32,14 @@ class ViewMedico extends ViewRecord
                                         ->hiddenLabel()
                                         ->size(150)
                                         ->getStateUsing(function ($record) {
-                                            // Si existe persona y tiene foto, mostrarla directamente
                                             if ($record->persona && !empty($record->persona->foto)) {
-                                                // La foto se guarda en 'personas/fotos/' según tu configuración
                                                 return Storage::url($record->persona->foto);
                                             }
-                                            
-                                            // Generar avatar con iniciales si no hay foto
                                             $iniciales = 'DR';
                                             if ($record->persona) {
                                                 $iniciales = strtoupper(substr($record->persona->primer_nombre, 0, 1));
                                                 $iniciales .= strtoupper(substr($record->persona->primer_apellido, 0, 1));
                                             }
-                                            
                                             return "https://ui-avatars.com/api/?name={$iniciales}&size=150&background=3b82f6&color=ffffff&bold=true&format=svg";
                                         })
                                         ->extraAttributes([
@@ -66,7 +61,7 @@ class ViewMedico extends ViewRecord
                             
                             Grid::make(1)
                                 ->schema([
-                                    TextEntry::make('nombre_completo')
+                                    TextEntry::make('persona.nombre_completo')
                                         ->label('')
                                         ->getStateUsing(fn ($record) => 
                                             $record->persona->primer_nombre . ' ' . 
@@ -78,7 +73,7 @@ class ViewMedico extends ViewRecord
                                         ->size('xl')
                                         ->color('primary'),
                                     
-                                    TextEntry::make('especialidades_principales')
+                                    TextEntry::make('especialidades')
                                         ->label('Especialidades Médicas')
                                         ->getStateUsing(fn ($record) => 
                                             $record->especialidades->pluck('especialidad')->join(', ')
@@ -89,9 +84,8 @@ class ViewMedico extends ViewRecord
                                     
                                     TextEntry::make('numero_colegiacion')
                                         ->label('N° de Colegiación')
-                                        ->prefix('')
                                         ->weight(FontWeight::SemiBold)
-                                         ->badge()
+                                        ->badge()
                                         ->color('success'),
                                 ])
                                 ->columnSpan(2),
@@ -100,7 +94,6 @@ class ViewMedico extends ViewRecord
                     ])
                     ->columnSpanFull(),
 
-                // Información Personal
                 Section::make('Información Personal')
                     ->schema([
                         Grid::make(2)
@@ -145,9 +138,9 @@ class ViewMedico extends ViewRecord
                             ])
                     ])
                     ->collapsible()
+                    ->collapsed()
                     ->icon('heroicon-o-user-circle'),
 
-                // Información Profesional
                 Section::make('Información Profesional')
                     ->schema([
                         Grid::make(3)
@@ -179,29 +172,81 @@ class ViewMedico extends ViewRecord
                                     ->color('info'),
                             ])
                     ])
+                    ->collapsible()
+                    ->collapsed()
                     ->icon('heroicon-o-briefcase'),
 
-             /*   // Especialidades Médicas
-                Section::make('Especialidades Médicas')
+                Section::make('Información Contractual')
                     ->schema([
-                        TextEntry::make('especialidades.especialidad')
-                            ->label('')
-                            ->listWithLineBreaks()
-                            ->bulleted()
-                            ->limitList(10)
-                            ->expandableLimitedList()
-                            ->color('primary')
-                            ->weight(FontWeight::Medium)
-                    ])
-                    ->icon('heroicon-o-academic-cap')
-                    ->headerActions([
-                        \Filament\Infolists\Components\Actions\Action::make('total_especialidades')
-                            ->label(fn ($record) => 'Total: ' . $record->especialidades->count() . ' especialidades')
-                            ->disabled()
-                            ->color('gray')
-                    ]),*/
+                        Grid::make(2)
+                            ->schema([
+                                TextEntry::make('contratoActivo.fecha_inicio')
+                                    ->label('Fecha de Inicio')
+                                    ->date('d/m/Y')
+                                    ->icon('heroicon-o-calendar')
+                                    ->badge()
+                                    ->color('success'),
+                                
+                                TextEntry::make('contratoActivo.fecha_fin')
+                                    ->label('Fecha de Finalización')
+                                    ->date('d/m/Y')
+                                    ->icon('heroicon-o-calendar')
+                                    ->badge()
+                                    ->color('warning'),
+                                
+                                TextEntry::make('contratoActivo.salario_quincenal')
+                                    ->label('Salario Quincenal')
+                                    ->money('HNL')
+                                    ->icon('heroicon-o-banknotes')
+                                    ->badge()
+                                    ->color('success'),
+                                
+                                TextEntry::make('contratoActivo.salario_mensual')
+                                    ->label('Salario Mensual')
+                                    ->money('HNL')
+                                    ->icon('heroicon-o-currency-dollar')
+                                    ->badge()
+                                    ->color('success')
+                                    ->weight(FontWeight::Bold),
 
-                // Información del Sistema
+                                TextEntry::make('contratoActivo.porcentaje_servicio')
+                                    ->label('Porcentaje por Servicio')
+                                    ->icon('heroicon-o-calculator')
+                                    ->suffix('%')
+                                    ->badge()
+                                    ->color('primary'),
+
+                                TextEntry::make('contratoActivo.activo')
+                                    ->label('Estado del Contrato')
+                                    ->formatStateUsing(fn (bool $state): string => $state ? 'Activo' : 'Inactivo')
+                                    ->icon('heroicon-o-check-circle')
+                                    ->badge()
+                                    ->color(fn (bool $state): string => $state ? 'success' : 'danger'),
+                            ]),
+                    ])
+                    ->icon('heroicon-o-document-check')
+                    ->visible(fn ($record) => $record->contratoActivo !== null)
+                    ->collapsible()
+                    ->collapsed()
+                    ->headerActions([
+                        Action::make('ver_contrato')
+                            ->label('Ver Detalles Completos')
+                            ->icon('heroicon-o-document-magnifying-glass')
+                            ->color('primary')
+                            ->url(fn ($record) => route('filament.admin.resources.contabilidad-medica.contrato-medicos.view', [
+                                'record' => $record->contratoActivo->id
+                            ]))
+                            ->visible(fn ($record) => $record->contratoActivo !== null),
+                        Action::make('ver_historial_contratos')
+                            ->label('Ver Historial de Contratos')
+                            ->icon('heroicon-o-clock')
+                            ->color('gray')
+                            ->url(fn ($record) => route('filament.admin.resources.contabilidad-medica.contrato-medicos.index', [
+                                'tableFilters[medico_id][value]' => $record->id
+                            ]))
+                            ->visible(fn ($record) => $record->contratos()->count() > 1),
+                    ]),
+
                 Section::make('Información del Sistema')
                     ->schema([
                         Grid::make(2)
@@ -225,54 +270,10 @@ class ViewMedico extends ViewRecord
             ]);
     }
 
-    protected function mutateFormDataBeforeFill(array $data): array
-    {
-        // Cargar los datos de la persona relacionada para visualización
-        $persona = $this->record->persona;
-
-        if ($persona) {
-            $data['primer_nombre'] = $persona->primer_nombre;
-            $data['segundo_nombre'] = $persona->segundo_nombre;
-            $data['primer_apellido'] = $persona->primer_apellido;
-            $data['segundo_apellido'] = $persona->segundo_apellido;
-            $data['dni'] = $persona->dni;
-            $data['telefono'] = $persona->telefono;
-            $data['direccion'] = $persona->direccion;
-            $data['sexo'] = $persona->sexo;
-            $data['fecha_nacimiento'] = $persona->fecha_nacimiento;
-            $data['nacionalidad_id'] = $persona->nacionalidad_id;
-        }
-
-        return $data;
-    }
-
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('edit')
-                ->label('Editar Perfil')
-                ->icon('heroicon-o-pencil')
-                ->color('primary')
-                ->url(fn () => static::$resource::getUrl('edit', ['record' => $this->record])),
-            
-            Action::make('back')
-                ->label('Volver al Listado')
-                ->icon('heroicon-o-arrow-left')
-                ->color('gray')
-                ->url(static::$resource::getUrl('index')),
-        ];
-    }
-
-    public function getTitle(): string
-    {
-        $persona = $this->record->persona;
-        return 'Dr(a). ' . $persona->primer_nombre . ' ' . $persona->primer_apellido;
-    }
-
-    protected function getViewData(): array
-    {
-        return [
-            'record' => $this->record,
+            Actions\EditAction::make(),
         ];
     }
 }

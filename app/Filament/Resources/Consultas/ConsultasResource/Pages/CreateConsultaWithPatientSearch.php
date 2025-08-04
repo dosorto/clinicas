@@ -6,7 +6,6 @@ use App\Filament\Resources\Consultas\ConsultasResource;
 use App\Models\Pacientes;
 use App\Models\Medico;
 use App\Models\Consulta;
-use App\Models\Citas;
 use App\Models\Receta;
 use Filament\Actions;
 use Filament\Forms;
@@ -53,11 +52,8 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                     'centro_id' => Auth::check() ? Auth::user()->centro_id : null,
                 ]);
 
-                // Verificar si el paciente tiene citas para el mensaje
-                $citasCount = Citas::where('paciente_id', $paciente->id)->count();
-                $message = $citasCount > 0
-                    ? "Paciente precargado: {$paciente->persona->nombre_completo}. Se encontraron {$citasCount} cita(s) disponible(s)."
-                    : "Paciente precargado: {$paciente->persona->nombre_completo}. Este paciente no tiene citas programadas.";
+                // Verificar que el paciente fue encontrado
+                $message = "Paciente precargado: {$paciente->persona->nombre_completo}.";
 
                 // Mostrar notificación de paciente precargado
                 Notification::make()
@@ -137,87 +133,62 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                     ->default(fn () => Auth::check() ? Auth::user()->centro_id : null),
 
                 Forms\Components\Section::make('Información de la Consulta')
-                    ->schema(function () {
-                        $fields = [
-                            Forms\Components\Hidden::make('paciente_id')
-                                ->default(fn () => $this->selectedPatient?->id),
-                        ];
+                    ->schema([
+                        Forms\Components\Hidden::make('paciente_id')
+                            ->default(fn () => $this->selectedPatient?->id),
 
-                        // Solo mostrar el campo de cita si el paciente tiene citas
-                        if ($this->selectedPatient) {
-                            $citasCount = Citas::where('paciente_id', $this->selectedPatient->id)->count();
-
-                            if ($citasCount > 0) {
-                                $fields[] = Forms\Components\Select::make('cita_id')
-                                    ->label('Cita')
-                                    ->options(function () {
-                                        return Citas::where('paciente_id', $this->selectedPatient->id)
-                                            ->with(['paciente.persona', 'medico.persona'])
-                                            ->orderBy('fecha', 'desc')
-                                            ->orderBy('hora', 'desc')
-                                            ->get()
-                                            ->mapWithKeys(function ($cita) {
-                                                $medicoNombre = $cita->medico && $cita->medico->persona
-                                                    ? $cita->medico->persona->nombre_completo
-                                                    : 'Sin médico asignado';
-
-                                                $fechaFormateada = Carbon::parse($cita->fecha)->format('d/m/Y');
-                                                $horaFormateada = Carbon::parse($cita->hora)->format('H:i');
-
-                                                return [$cita->id => "Cita #{$cita->id} | {$fechaFormateada} a las {$horaFormateada} | Dr. {$medicoNombre}"];
-                                            })
-                                            ->toArray();
-                                    })
-                                    ->searchable()
-                                    ->preload()
-                                    ->nullable()
-                                    ->placeholder('Seleccionar cita del paciente (opcional)')
-                                    ->helperText('Se muestran las citas de ' . $this->selectedPatient->persona->nombre_completo . '. Puede crear la consulta sin seleccionar una cita.')
-                                    ->reactive()
-                                    ->afterStateUpdated(function ($state, callable $set) {
-                                        if ($state) {
-                                            $cita = Citas::with('medico')->find($state);
-                                            if ($cita && $cita->medico_id) {
-                                                $set('medico_id', $cita->medico_id);
-                                                Notification::make()
-                                                    ->title('Médico autocargado')
-                                                    ->body('Se ha seleccionado automáticamente el médico de la cita.')
-                                                    ->success()
-                                                    ->send();
-                                            }
-                                        }
-                                    })
-                                    ->columnSpan(2);
-                            } else {
-                                $fields[] = Forms\Components\Placeholder::make('no_citas')
-                                    ->label('Información')
-                                    ->content('Este paciente no tiene citas programadas. Puede crear la consulta seleccionando un médico directamente.')
-                                    ->columnSpanFull();
-                            }
-                        }
-
-                        $fields[] = Forms\Components\Select::make('medico_id')
+                        Forms\Components\Placeholder::make('medico_info')
                             ->label('Médico')
-                            ->options(function () {
-                                return Medico::with('persona')
-                                    ->get()
-                                    ->filter(function ($m) {
-                                        return $m->persona !== null;
-                                    })
-                                    ->mapWithKeys(function ($m) {
-                                        return [$m->id => $m->persona->nombre_completo];
-                                    })
-                                    ->toArray();
-                            })
-                            ->searchable()
-                            ->preload()
-                            ->required()
-                            ->helperText('Seleccione el médico que realizará la consulta')
-                            ->columnSpan(2);
+                            ->content(function () {
+                                $user = Auth::user();
 
-                        return $fields;
-                    })
-                    ->columns(4),
+                                // Primero intentar con la relación directa
+                                if ($user && $user->medico && $user->medico->persona) {
+                                    $nombre = $user->medico->persona->nombre_completo;
+                                    $dni = $user->medico->persona->dni ?? 'Sin DNI';
+                                    return "{$nombre} - DNI: {$dni}";
+                                }
+
+                                // Si no tiene relación directa, buscar por persona_id
+                                if ($user && $user->persona_id) {
+                                    $medico = Medico::withoutGlobalScopes()->where('persona_id', $user->persona_id)->with('persona')->first();
+                                    if ($medico && $medico->persona) {
+                                        $nombre = $medico->persona->nombre_completo;
+                                        $dni = $medico->persona->dni ?? 'Sin DNI';
+                                        return "{$nombre} - DNI: {$dni}";
+                                    }
+                                }
+
+                                // Si tiene persona pero no es médico, mostrar la información del usuario
+                                if ($user && $user->persona) {
+                                    $nombre = $user->persona->nombre_completo;
+                                    $dni = $user->persona->dni ?? 'Sin DNI';
+                                    return "{$nombre} - DNI: {$dni} (Usuario)";
+                                }
+
+                                return 'No hay médico asociado al usuario';
+                            }),
+
+                        Forms\Components\Hidden::make('medico_id')
+                            ->default(function () {
+                                $user = Auth::user();
+
+                                // Primero intentar con la relación directa
+                                if ($user && $user->medico) {
+                                    return $user->medico->id;
+                                }
+
+                                // Si no tiene relación directa, buscar por persona_id
+                                if ($user && $user->persona_id) {
+                                    $medico = Medico::withoutGlobalScopes()->where('persona_id', $user->persona_id)->first();
+                                    if ($medico) {
+                                        return $medico->id;
+                                    }
+                                }
+
+                                return null;
+                            }),
+                    ]),
 
                 Forms\Components\Section::make('Detalles Médicos')
                     ->schema([
@@ -253,7 +224,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->label('Medicamentos')
                                     ->required()
                                     ->rows(4)
-                                    ->placeholder('Ej: Paracetamol 500mg - 1 tableta cada 8 horas por 5 días\nAmoxicilina 500mg - 1 cápsula cada 12 horas por 7 días')
+                                    ->placeholder('Ej: Loratadina 500 mg')
                                     ->helperText('Liste todos los medicamentos con sus dosis y frecuencia')
                                     ->columnSpanFull(),
 
@@ -261,7 +232,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->label('Indicaciones')
                                     ->required()
                                     ->rows(3)
-                                    ->placeholder('Instrucciones especiales para el paciente: tomar con alimentos, evitar alcohol, etc.')
+                                    ->placeholder('Tomar una diaria, etc.')
                                     ->helperText('Proporcione instrucciones específicas para el paciente')
                                     ->columnSpanFull(),
                             ])
@@ -326,15 +297,23 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
             'centro_id' => Auth::check() ? Auth::user()->centro_id : null,
         ]);
 
-        // Forzar actualización del formulario para que se refresquen las opciones de citas
+        // Forzar actualización del formulario para que se refresquen las opciones
         $this->dispatch('refreshForm');
 
-        // Verificar si el paciente tiene citas
-        $citasCount = Citas::where('paciente_id', $this->selectedPatient->id)->count();
+        // Verificar información del médico para debugging
+        $user = Auth::user();
+        $medicoInfo = 'Sin médico';
 
-        $message = $citasCount > 0
-            ? "Ahora puede proceder a crear la consulta para {$this->selectedPatient->persona->nombre_completo}. Se encontraron {$citasCount} cita(s) disponible(s)."
-            : "Ahora puede proceder a crear la consulta para {$this->selectedPatient->persona->nombre_completo}. Este paciente no tiene citas programadas.";
+        if ($user && $user->medico) {
+            $medicoInfo = "Médico ID: {$user->medico->id}";
+        } elseif ($user && $user->persona_id) {
+            $medico = Medico::withoutGlobalScopes()->where('persona_id', $user->persona_id)->first();
+            if ($medico) {
+                $medicoInfo = "Médico encontrado por persona_id: {$medico->id}";
+            }
+        }
+
+        $message = "Ahora puede proceder a crear la consulta para {$this->selectedPatient->persona->nombre_completo}. ({$medicoInfo})";
 
         Notification::make()
             ->title('Paciente seleccionado')
@@ -363,6 +342,33 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
             $data['centro_id'] = Auth::user()->centro_id;
         }
 
+        // Verificar y obtener medico_id si está vacío
+        if (empty($data['medico_id'])) {
+            $user = Auth::user();
+
+            // Intentar obtener médico por relación directa
+            if ($user && $user->medico) {
+                $data['medico_id'] = $user->medico->id;
+            }
+            // Si no, buscar por persona_id
+            elseif ($user && $user->persona_id) {
+                $medico = Medico::withoutGlobalScopes()->where('persona_id', $user->persona_id)->first();
+                if ($medico) {
+                    $data['medico_id'] = $medico->id;
+                }
+            }
+        }
+
+        // Validar que tenemos un medico_id válido
+        if (empty($data['medico_id'])) {
+            Notification::make()
+                ->title('Error: No se pudo determinar el médico')
+                ->body('No se encontró un médico asociado al usuario actual. Contacte al administrador.')
+                ->danger()
+                ->send();
+            return;
+        }
+
         // Extraer las recetas del data para procesarlas por separado
         $recetas = $data['recetas'] ?? [];
         unset($data['recetas']); // Remover recetas del data de consulta
@@ -382,7 +388,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                             'indicaciones' => $recetaData['indicaciones'],
                             'paciente_id' => $this->selectedPatient->id,
                             'consulta_id' => $consulta->id,
-                            'medico_id' => $data['medico_id'] ?? null,
+                            'medico_id' => $data['medico_id'],
                             'centro_id' => $data['centro_id'] ?? null,
                         ]);
                         $recetasCreadas++;
@@ -401,7 +407,34 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                 ->success()
                 ->send();
 
-            $this->redirect($this->getResource()::getUrl('index'));
+            // Verificar si hay una cita pendiente desde la sesión
+            if (request()->has('cita_id') || session()->has('cita_en_consulta')) {
+                $citaId = request()->get('cita_id') ?? session('cita_en_consulta');
+
+                if ($citaId) {
+                    $cita = \App\Models\Citas::find($citaId);
+
+                    if ($cita) {
+                        // Actualizar el estado de la cita a "Realizado" después de crear la consulta
+                        // Utilizamos fill para asegurarnos de que el formato sea correcto
+                        $cita->fill(['estado' => 'Realizado']);
+                        $cita->save();
+
+                        // Crear notificación adicional
+                        Notification::make()
+                            ->title('Cita completada')
+                            ->body('La cita ha sido marcada como realizado')
+                            ->success()
+                            ->send();
+                    }
+
+                    // Limpiar la sesión
+                    session()->forget('cita_en_consulta');
+                }
+            }
+
+            // Redirigir a la vista previa de la consulta recién creada
+            $this->redirect($this->getResource()::getUrl('view', ['record' => $consulta->id]));
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error al crear la consulta')

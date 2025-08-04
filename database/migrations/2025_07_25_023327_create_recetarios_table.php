@@ -30,8 +30,6 @@ return new class extends Migration
             
             // Campos de diseño y personalización
             $table->string('logo')->nullable(); // Ruta del archivo de logo
-            $table->string('encabezado_texto')->nullable(); // Texto del encabezado personalizable
-            $table->string('pie_pagina')->nullable(); // Texto del pie de página
             $table->string('color_primario', 7)->default('#2563eb'); // Color principal (hex)
             $table->string('color_secundario', 7)->default('#64748b'); // Color secundario (hex)
             $table->string('fuente_familia')->default('Arial'); // Familia de fuente
@@ -40,9 +38,11 @@ return new class extends Migration
             $table->boolean('mostrar_especialidades')->default(true); // Mostrar especialidades del médico
             $table->boolean('mostrar_telefono')->default(true); // Mostrar teléfono
             $table->boolean('mostrar_direccion')->default(true); // Mostrar dirección
-            $table->text('texto_adicional')->nullable(); // Texto adicional personalizable
-            $table->string('formato_papel')->default('half'); // 'half' = media página, 'full' = página completa
-            $table->json('configuracion_avanzada')->nullable(); // JSON para configuraciones adicionales
+
+            //campos de edicion
+            $table->string('titulo')->nullable(); //  Dr, Dra, etc.
+            $table->string('nombre_mostrar')->nullable(); // Nombre a mostrar en el recetario
+            $table->string('telefono_mostrar')->nullable(); // Teléfono a mostrar en el recetario
         
             $table->timestamps();
             $table->softDeletes();

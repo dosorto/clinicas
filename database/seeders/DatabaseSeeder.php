@@ -78,11 +78,18 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Continuar con el resto de seeders
-        $this->call([
-         
-        ]);
-
-
+        // Crear un contrato para el médico root
+        \App\Models\ContabilidadMedica\ContratoMedico::firstOrCreate(
+            ['medico_id' => $medicoRoot->id],
+            [
+                'salario_mensual' => 25000.00,
+                'salario_quincenal' => 12500.00,
+                'porcentaje_servicio' => 10.00,
+                'fecha_inicio' => now(),
+                'activo' => true,
+                'centro_id' => $primerCentro ? $primerCentro->id : 1,
+                'created_by' => 1,
+            ]
+        );
     }
 }

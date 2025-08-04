@@ -16,6 +16,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
+
+
 class EnfermedadesPacienteResource extends Resource
 {
      protected static bool $shouldRegisterNavigation = false;

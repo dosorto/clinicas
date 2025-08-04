@@ -191,14 +191,14 @@ class CreateRecetaWithPatientSearch extends Page implements HasForms
                             ->label('Medicamentos')
                             ->required()
                             ->rows(4)
-                            ->placeholder('Ej: Paracetamol 500mg - 1 tableta cada 8 horas por 5 días')
+                            ->placeholder('Ej: Loratadina 500mg ')
                             ->columnSpanFull(),
 
                         Forms\Components\Textarea::make('indicaciones')
                             ->label('Indicaciones')
                             ->required()
                             ->rows(4)
-                            ->placeholder('Instrucciones especiales para el paciente...')
+                            ->placeholder('Tomar una diaria, etc.')
                             ->columnSpanFull(),
                     ]),
             ])

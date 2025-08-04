@@ -17,17 +17,17 @@ trait TenantScoped
     {
         // Asignar centro_id automáticamente al crear
         static::creating(function ($model) {
-            if (!$model->centro_id) {
-                $model->centro_id = static::getCurrentTenantId();
+            if (!isset($model->centro_id)) {
+                $model->centro_id = Auth::check() ? Auth::user()->centro_id : static::getCurrentTenantId();
             }
         });
 
         // Solo aplicar scope global si no es usuario root
         static::addGlobalScope('centros_medicos', function (Builder $builder) {
             if (!static::shouldBypassTenantScope()) {
-                $tenantId = static::getCurrentTenantId();
-                if ($tenantId) {
-                    $builder->where('centro_id', $tenantId);
+                $centroId = Auth::check() ? Auth::user()->centro_id : static::getCurrentTenantId();
+                if ($centroId) {
+                    $builder->where('centro_id', $centroId);
                 }
             }
         });
@@ -38,9 +38,17 @@ trait TenantScoped
      */
     protected static function shouldBypassTenantScope(): bool
     {
-        if (Auth::check() && Auth::user()->hasRole('root')) {
+        // Bypass en comandos de consola
+        if (app()->runningInConsole() && !app()->runningUnitTests()) {
+            return true;
+        }
+        
+        if (Auth::check()) {
+            $user = Auth::user();
             // Root puede ver todos los datos si no hay un centro específico seleccionado
-            return !session('current_centro_id');
+            if (method_exists($user, 'hasRole') && $user->hasRole('root')) {
+                return !session('current_centro_id');
+            }
         }
         return false;
     }
@@ -50,22 +58,22 @@ trait TenantScoped
      */
     protected static function getCurrentTenantId(): ?int
     {
-        // Primero verificar si hay un centro seleccionado en la sesión
+        // Si hay usuario autenticado, usar su centro_id primero
+        if (Auth::check()) {
+            return Auth::user()->centro_id;
+        }
+
+        // Como respaldo, verificar si hay un centro seleccionado en la sesión
         if ($centroId = session('current_centro_id')) {
             return $centroId;
         }
 
-        // Luego intentar obtener del tenant actual de Spatie
+        // Como último recurso, intentar obtener del tenant actual de Spatie
         if ($tenant = Tenant::current()) {
             return $tenant->centro_id;
         }
 
-        // Si hay usuario autenticado y no es root, usar su centro_id
-        if (Auth::check() && !Auth::user()->hasRole('root')) {
-            return Auth::user()->centro_id;
-        }
-
-        return null;
+        throw new \Exception('No se ha seleccionado un centro médico.');
     }
 
     /**
@@ -81,8 +89,11 @@ trait TenantScoped
      */
     public function scopeAllCentros($query)
     {
-        if (Auth::check() && Auth::user()->hasRole('root')) {
-            return $query->withoutGlobalScope('centros_medicos');
+        if (Auth::check()) {
+            $user = Auth::user();
+            if (method_exists($user, 'hasRole') && $user->hasRole('root')) {
+                return $query->withoutGlobalScope('centros_medicos');
+            }
         }
         return $query;
     }

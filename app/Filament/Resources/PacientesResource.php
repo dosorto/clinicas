@@ -335,6 +335,21 @@ class PacientesResource extends Resource
                     
                     Wizard\Step::make('Enfermedades')
                         ->schema([
+                            Forms\Components\Toggle::make('sin_enfermedades')
+                                ->label('No tengo enfermedades')
+                                ->helperText('Marque esta opción si el paciente no tiene enfermedades registradas')
+                                ->reactive()
+                                ->afterStateUpdated(function ($state, callable $set) {
+                                    if ($state) {
+                                        // Si marca "No tengo enfermedades", limpiar los datos de enfermedades
+                                        $set('enfermedades_data', []);
+                                    } else {
+                                        // Si desmarca, agregar una enfermedad vacía
+                                        $set('enfermedades_data', [['enfermedad_id' => null, 'ano_diagnostico' => date('Y'), 'tratamiento' => null]]);
+                                    }
+                                })
+                                ->columnSpanFull(),
+                            
                             Repeater::make('enfermedades_data')
                                 ->label('Enfermedades del Paciente')
                                 ->schema([
@@ -393,34 +408,40 @@ class PacientesResource extends Resource
                                         ->requiresConfirmation()
                                         ->modalDescription('¿Estás seguro de que deseas eliminar esta enfermedad?')
                                 )
-                                ->minItems(1)
-                                ->columnSpanFull()
+                                ->minItems(0)
+                                ->hidden(fn (callable $get) => $get('sin_enfermedades'))
+                                ->columnSpanFull(),
                         ])
                         ->afterValidation(function (callable $get) {
+                            $sinEnfermedades = $get('sin_enfermedades');
                             $enfermedadesData = $get('enfermedades_data');
-                            if (empty($enfermedadesData)) {
-                                Notification::make()
-                                    ->title('Error de validación')
-                                    ->body('Debe agregar al menos una enfermedad')
-                                    ->danger()
-                                    ->send();
-                                    
-                                throw new \Exception('Debe agregar al menos una enfermedad');
-                            }
                             
-                            $enfermedadesSeleccionadas = array_filter(
-                                array_column($enfermedadesData, 'enfermedad_id'),
-                                fn($id) => !is_null($id)
-                            );
-                            
-                            if (count($enfermedadesSeleccionadas) !== count(array_unique($enfermedadesSeleccionadas))) {
-                                Notification::make()
-                                    ->title('Enfermedades duplicadas')
-                                    ->body('No puede seleccionar la misma enfermedad más de una vez.')
-                                    ->danger()
-                                    ->send();
-                                    
-                                throw new \Exception('Enfermedades duplicadas detectadas');
+                            // Si no marcó "sin enfermedades" debe tener al menos una enfermedad
+                            if (!$sinEnfermedades) {
+                                if (empty($enfermedadesData)) {
+                                    Notification::make()
+                                        ->title('Error de validación')
+                                        ->body('Debe agregar al menos una enfermedad o marcar "No tengo enfermedades"')
+                                        ->danger()
+                                        ->send();
+                                        
+                                    throw new \Exception('Debe agregar al menos una enfermedad o marcar "No tengo enfermedades"');
+                                }
+                                
+                                $enfermedadesSeleccionadas = array_filter(
+                                    array_column($enfermedadesData, 'enfermedad_id'),
+                                    fn($id) => !is_null($id)
+                                );
+                                
+                                if (count($enfermedadesSeleccionadas) !== count(array_unique($enfermedadesSeleccionadas))) {
+                                    Notification::make()
+                                        ->title('Enfermedades duplicadas')
+                                        ->body('No puede seleccionar la misma enfermedad más de una vez.')
+                                        ->danger()
+                                        ->send();
+                                        
+                                    throw new \Exception('Enfermedades duplicadas detectadas');
+                                }
                             }
                         }),
                 ])
@@ -446,7 +467,8 @@ class PacientesResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['persona', 'enfermedades'])) // EAGER LOADING AÑADIDO
+            ->modifyQueryUsing(fn ($query) => $query->with(['persona', 'enfermedades'])->orderBy('created_at', 'desc')) // EAGER LOADING AÑADIDO + ORDENAMIENTO
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\ImageColumn::make('persona.fotografia')
                     ->label('Foto')

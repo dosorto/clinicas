@@ -14,6 +14,7 @@ class Recetario extends ModeloBase
 {
     /** @use HasFactory<\Database\Factories\RecetarioFactory> */
     use HasFactory;
+    use SoftDeletes;
     use TenantScoped; // Assuming you have a trait for recetario specific methods
 
     protected $table = 'recetarios';
@@ -29,8 +30,6 @@ class Recetario extends ModeloBase
         'fecha_vencimiento',
         'tiene_recetario',
         'logo',
-        'encabezado_texto',
-        'pie_pagina',
         'color_primario',
         'color_secundario',
         'fuente_familia',
@@ -39,9 +38,9 @@ class Recetario extends ModeloBase
         'mostrar_especialidades',
         'mostrar_telefono',
         'mostrar_direccion',
-        'texto_adicional',
-        'formato_papel',
-        'configuracion_avanzada',
+        'titulo',
+        'nombre_mostrar',
+        'telefono_mostrar',
         'created_by',
         'updated_by',
         'deleted_by',

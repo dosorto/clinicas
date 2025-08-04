@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Traits\TenantScoped; 
+use App\Models\Traits\TenantScoped;
 
 class Consulta extends ModeloBase
 {
@@ -23,7 +23,6 @@ class Consulta extends ModeloBase
         'observaciones',
         'paciente_id',
         'medico_id',
-        'cita_id',
         'centro_id',
     ];
 
@@ -32,19 +31,20 @@ class Consulta extends ModeloBase
         return $this->hasMany(Factura::class);
     }
     
+
+    public function paciente()
+    {
+        return $this->belongsTo(Pacientes::class, 'paciente_id');
+    }
+
+    public function medico()
+    {
+        return $this->belongsTo(Medico::class, 'medico_id');
+    }
+
     public function cita()
     {
         return $this->belongsTo(Citas::class, 'cita_id');
-    }
-
-    public function paciente(): BelongsTo
-    {
-        return $this->belongsTo(Pacientes::class, 'paciente_id'); // Verificar que el campo sea correcto
-    }
-
-    public function medico(): BelongsTo
-    {
-        return $this->belongsTo(Medico::class, 'medico_id'); // Verificar que el campo sea correcto
     }
     public function centro(): BelongsTo
     {
@@ -62,5 +62,9 @@ class Consulta extends ModeloBase
     {
         return $this->hasMany(FacturaDetalle::class, 'consulta_id')
                     ->whereNull('factura_id');
+    }
+    public function recetas()
+    {
+        return $this->hasMany(Receta::class, 'consulta_id');
     }
 }

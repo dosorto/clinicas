@@ -13,6 +13,7 @@
         "filament/tables": "^3.3",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
+        "saade/filament-fullcalendar": "^3.2",
         "spatie/laravel-multitenancy": "^4.0",
         "spatie/laravel-permission": "^6.20"
     },

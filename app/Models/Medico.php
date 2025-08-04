@@ -18,9 +18,10 @@ class Medico extends ModeloBase
 protected $table = 'medicos';
 
     protected $fillable = [
+        'user_id',
         'persona_id',
         'numero_colegiacion',
-        'horario_entrada',
+        'horario_entrada',  
         'horario_salida',
         'centro_id', // multi-tenant
     ];
@@ -29,6 +30,11 @@ protected $table = 'medicos';
     {
         return $this->belongsTo(Centros_Medico::class, 'centro_id');
     }
+    public function user()
+{
+    return $this->belongsTo(User::class, 'user_id');
+}
+
 
     public function centrosMedicos()
     {
@@ -57,7 +63,26 @@ protected $table = 'medicos';
 
     public function especialidades()
     {
-    return $this->belongsToMany(Especialidad::class, 'especialidad_medicos', 'medico_id', 'especialidad_id');
+        return $this->belongsToMany(Especialidad::class, 'especialidad_medicos', 'medico_id', 'especialidad_id');
     }
     
+    public function contratos()
+    {
+        return $this->hasMany(\App\Models\ContabilidadMedica\ContratoMedico::class, 'medico_id');
+    }
+
+    public function contratoActivo()
+    {
+        return $this->hasOne(\App\Models\ContabilidadMedica\ContratoMedico::class, 'medico_id')
+            ->where('activo', true)
+            ->whereNull('fecha_fin')
+            ->orWhere('fecha_fin', '>=', now())
+            ->latest('fecha_inicio');
+    }
+
+    public function contratosActivos()
+    {
+        return $this->hasMany(\App\Models\ContabilidadMedica\ContratoMedico::class, 'medico_id')
+            ->where('activo', true);
+    }
 }

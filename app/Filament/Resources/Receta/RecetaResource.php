@@ -42,7 +42,7 @@ class RecetaResource extends Resource
                 // El campo centro_id se asigna automáticamente y se oculta
                 Forms\Components\Hidden::make('centro_id')
                     ->default(fn () => \Illuminate\Support\Facades\Auth::check() ? \Illuminate\Support\Facades\Auth::user()->centro_id : null),
-                
+
                 Forms\Components\Section::make('Información de la Receta')
                     ->schema([
                         Forms\Components\DatePicker::make('fecha_receta')
@@ -60,7 +60,11 @@ class RecetaResource extends Resource
                                 return ['' => 'Seleccionar'] + \App\Models\Pacientes::with('persona')->get()->filter(function ($p) {
                                     return $p->persona !== null;
                                 })->mapWithKeys(function ($p) {
-                                    return [$p->id => $p->persona->nombre_completo];
+                                    $nombre = $p->persona->primer_nombre . ' ' .
+                                             ($p->persona->segundo_nombre ? $p->persona->segundo_nombre . ' ' : '') .
+                                             $p->persona->primer_apellido . ' ' .
+                                             ($p->persona->segundo_apellido ? $p->persona->segundo_apellido : '');
+                                    return [$p->id => trim($nombre)];
                                 })->toArray();
                             })
                             ->searchable()
@@ -70,10 +74,14 @@ class RecetaResource extends Resource
                         Forms\Components\Select::make('medico_id')
                             ->label('Médico')
                             ->options(function () {
-                                return ['' => 'Seleccionar'] + \App\Models\Medico::with('persona')->get()->filter(function ($m) {
+                                return ['' => 'Seleccionar'] + \App\Models\Medico::withoutGlobalScopes()->with('persona')->get()->filter(function ($m) {
                                     return $m->persona !== null;
                                 })->mapWithKeys(function ($m) {
-                                    return [$m->id => $m->persona->nombre_completo];
+                                    $nombre = $m->persona->primer_nombre . ' ' .
+                                             ($m->persona->segundo_nombre ? $m->persona->segundo_nombre . ' ' : '') .
+                                             $m->persona->primer_apellido . ' ' .
+                                             ($m->persona->segundo_apellido ? $m->persona->segundo_apellido : '');
+                                    return [$m->id => trim($nombre)];
                                 })->toArray();
                             })
                             ->searchable()
@@ -87,9 +95,15 @@ class RecetaResource extends Resource
                                     ->orderBy('created_at', 'desc')
                                     ->get()
                                     ->mapWithKeys(function ($consulta) {
-                                        $pacienteNombre = $consulta->paciente && $consulta->paciente->persona
-                                            ? $consulta->paciente->persona->nombre_completo
-                                            : 'Sin paciente';
+                                        if ($consulta->paciente && $consulta->paciente->persona) {
+                                            $pacienteNombre = $consulta->paciente->persona->primer_nombre . ' ' .
+                                                             ($consulta->paciente->persona->segundo_nombre ? $consulta->paciente->persona->segundo_nombre . ' ' : '') .
+                                                             $consulta->paciente->persona->primer_apellido . ' ' .
+                                                             ($consulta->paciente->persona->segundo_apellido ? $consulta->paciente->persona->segundo_apellido : '');
+                                            $pacienteNombre = trim($pacienteNombre);
+                                        } else {
+                                            $pacienteNombre = 'Sin paciente';
+                                        }
 
                                         $fechaFormateada = Carbon::parse($consulta->created_at)->format('d/m/Y');
 
@@ -132,15 +146,52 @@ class RecetaResource extends Resource
                     ->label('ID')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('paciente.persona.nombre_completo')
+                Tables\Columns\TextColumn::make('paciente_nombre')
                     ->label('Paciente')
-                    ->sortable()
-                    ->searchable(),
+                    ->state(function (Receta $record): string {
+                        if ($record->paciente && $record->paciente->persona) {
+                            return $record->paciente->persona->nombre_completo;
+                        }
+                        return 'N/A';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('paciente.persona', function (Builder $subQuery) use ($search) {
+                            $subQuery->where('primer_nombre', 'like', "%{$search}%")
+                                     ->orWhere('segundo_nombre', 'like', "%{$search}%")
+                                     ->orWhere('primer_apellido', 'like', "%{$search}%")
+                                     ->orWhere('segundo_apellido', 'like', "%{$search}%")
+                                     ->orWhere('dni', 'like', "%{$search}%");
+                        });
+                    })
+                    ->sortable(),
 
-                Tables\Columns\TextColumn::make('medico.persona.nombre_completo')
+                Tables\Columns\TextColumn::make('medico_nombre')
                     ->label('Médico')
-                    ->sortable()
-                    ->searchable(),
+                    ->state(function (Receta $record): string {
+                        if ($record->medico && $record->medico->persona) {
+                            return $record->medico->persona->nombre_completo;
+                        }
+
+                        // Si no se cargó la relación, intentar cargarla manualmente
+                        if ($record->medico_id) {
+                            $medico = \App\Models\Medico::withoutGlobalScopes()->with('persona')->find($record->medico_id);
+                            if ($medico && $medico->persona) {
+                                return $medico->persona->nombre_completo;
+                            }
+                        }
+
+                        return 'N/A';
+                    })
+                    ->searchable(query: function (Builder $query, string $search): Builder {
+                        return $query->whereHas('medico.persona', function (Builder $subQuery) use ($search) {
+                            $subQuery->where('primer_nombre', 'like', "%{$search}%")
+                                     ->orWhere('segundo_nombre', 'like', "%{$search}%")
+                                     ->orWhere('primer_apellido', 'like', "%{$search}%")
+                                     ->orWhere('segundo_apellido', 'like', "%{$search}%")
+                                     ->orWhere('dni', 'like', "%{$search}%");
+                        });
+                    })
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('consulta_id')
                     ->label('Consulta')
@@ -221,7 +272,7 @@ class RecetaResource extends Resource
                     ->label('Imprimir Receta')
                     ->icon('heroicon-o-printer')
                     ->color('success')
-                    ->url(fn (Receta $record): string => route('receta.imprimir', $record))
+                    ->url(fn (Receta $record): string => route('recetas.imprimir', $record))
                     ->openUrlInNewTab(),
                 Tables\Actions\DeleteAction::make(),
                 Tables\Actions\ForceDeleteAction::make(),
@@ -246,10 +297,31 @@ class RecetaResource extends Resource
                         Infolists\Components\TextEntry::make('fecha_receta')
                             ->label('Fecha de la Receta')
                             ->date('d/m/Y'),
-                        Infolists\Components\TextEntry::make('paciente.persona.nombre_completo')
-                            ->label('Paciente'),
-                        Infolists\Components\TextEntry::make('medico.persona.nombre_completo')
-                            ->label('Médico'),
+                        Infolists\Components\TextEntry::make('paciente_nombre')
+                            ->label('Paciente')
+                            ->state(function (Receta $record): string {
+                                if ($record->paciente && $record->paciente->persona) {
+                                    return $record->paciente->persona->nombre_completo;
+                                }
+                                return 'No disponible';
+                            }),
+                        Infolists\Components\TextEntry::make('medico_nombre')
+                            ->label('Médico')
+                            ->state(function (Receta $record): string {
+                                if ($record->medico && $record->medico->persona) {
+                                    return $record->medico->persona->nombre_completo;
+                                }
+
+                                // Si no se cargó la relación, intentar cargarla manualmente
+                                if ($record->medico_id) {
+                                    $medico = \App\Models\Medico::withoutGlobalScopes()->with('persona')->find($record->medico_id);
+                                    if ($medico && $medico->persona) {
+                                        return $medico->persona->nombre_completo;
+                                    }
+                                }
+
+                                return 'No disponible (Médico ID: ' . ($record->medico_id ?? 'null') . ')';
+                            }),
                         Infolists\Components\TextEntry::make('consulta_id')
                             ->label('Consulta')
                             ->formatStateUsing(fn ($state) => $state ? "Consulta #{$state}" : 'Sin consulta asociada'),
@@ -299,11 +371,34 @@ class RecetaResource extends Resource
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
+            ->with(['paciente.persona', 'medico.persona', 'consulta'])
             ->where('centro_id', \Filament\Facades\Filament::auth()->user()->centro_id)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        // Si el usuario es un médico, solo mostrar sus recetas
+        if ($user) {
+            // Primero intentar con la relación directa
+            if ($user->medico) {
+                $query->where('medico_id', $user->medico->id);
+            }
+            // Si no tiene relación directa, buscar por persona_id
+            elseif ($user->persona_id) {
+                $medico = \App\Models\Medico::withoutGlobalScopes()
+                    ->where('persona_id', $user->persona_id)
+                    ->first();
+                    
+                if ($medico) {
+                    $query->where('medico_id', $medico->id);
+                }
+            }
+        }
+
+        return $query;
     }
 
     public static function getNavigationBadge(): ?string

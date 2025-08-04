@@ -23,8 +23,9 @@ use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Actions\DeleteAction;
-
-
+use Filament\Tables\Actions\CreateAction;
+use App\Filament\Resources\Citas\CitasResource\Pages\CreateCitas;
+use Filament\Pages\Page;
 class CitasResource extends Resource
 {
     protected static ?string $model = Citas::class;
@@ -37,72 +38,64 @@ class CitasResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar';
 
-    public static function form(Form $form): Form
-    {
-        return $form
-            ->schema([
-                Select::make('medico_id')
-                    ->label('Médico')
-                    ->options(function () {
-                        $query = Medico::with('persona');
-                        
-                        // Si no es usuario root, filtrar por centro actual
-                        if (!auth()->user()?->hasRole('root')) {
-                            $query->where('centro_id', session('current_centro_id'));
-                        }
-                        
-                        return $query->get()
-                            ->mapWithKeys(fn($m) => [
-                                $m->id => "{$m->persona->primer_nombre} {$m->persona->primer_apellido}",
-                            ]);
-                    })
-                    ->searchable()
-                    ->required(),
+public static function form(Form $form): Form
+{
+    return $form
+        ->schema([
+            // Campo oculto con el ID del médico autenticado
+            Forms\Components\Hidden::make('medico_id')
+                ->default(fn () => auth()->user()?->medico?->id ?? null)
+                ->required(),
 
-                Select::make('paciente_id')
-                    ->label('Paciente')
-                    ->options(function () {
-                        $query = Pacientes::with('persona');
-                        
-                        // Si no es usuario root, filtrar por centro actual
-                        if (!auth()->user()?->hasRole('root')) {
-                            $query->where('centro_id', session('current_centro_id'));
-                        }
-                        
-                        return $query->get()
-                            ->mapWithKeys(fn($p) => [
-                                $p->id => "{$p->persona->primer_nombre} {$p->persona->primer_apellido}",
-                            ]);
-                    })
-                    ->searchable()
-                    ->required(),
+            // Opcional: Mostrar el nombre del médico en solo lectura
+            Forms\Components\Placeholder::make('medico_nombre')
+                ->label('Médico')
+                ->content(fn () => auth()->user()?->medico?->persona?->primer_nombre . ' ' . auth()->user()?->medico?->persona?->primer_apellido),
 
-                DatePicker::make('fecha')
-                    ->label('Fecha de la cita')
-                    ->required(),
+            Select::make('paciente_id')
+                ->label('Paciente')
+                ->options(function () {
+                    $query = Pacientes::with('persona');
+                    if (!auth()->user()?->hasRole('root')) {
+                        $query->where('centro_id', session('current_centro_id'));
+                    }
 
-                TimePicker::make('hora')
-                    ->label('Hora de la cita')
-                    ->required()
-                     ->seconds(false),
+                    return $query->get()
+                        ->mapWithKeys(fn($p) => [
+                            $p->id => "{$p->persona->primer_nombre} {$p->persona->primer_apellido}",
+                        ]);
+                })
+                ->searchable()
+                ->required(),
 
-                Textarea::make('motivo')
-                    ->label('Motivo de la cita')
-                    ->rows(3),
+            DatePicker::make('fecha')
+                ->label('Fecha de la cita')
+                ->required(),
 
-                Select::make('estado')
-                    ->label('Estado')
-                    ->default('Pendiente')
-                    ->disabled(fn ($record) => is_null($record)) // sólo bloqueado en create
-                    ->options([
-                        'Pendiente'  => 'Pendiente',
-                        'Confirmado' => 'Confirmado',
-                        'Cancelado'  => 'Cancelado',
-                        'Realizada'  => 'Realizada',
-                    ])
-                    ->required(),
-            ]);
-    }
+            TimePicker::make('hora')
+                ->label('Hora de la cita')
+                ->required()
+                ->seconds(false),
+
+            Textarea::make('motivo')
+                ->label('Motivo de la cita')
+                ->rows(3),
+
+            Select::make('estado')
+                ->label('Estado')
+                ->default('Pendiente')
+                ->disabled(fn ($record) => is_null($record)) // solo bloqueado en create
+                ->options([
+                    'Pendiente'  => 'Pendiente',
+                    'Confirmado' => 'Confirmado',
+                    'Cancelado'  => 'Cancelado',
+                    'Realizada'  => 'Realizada',
+                ])
+                ->visible(fn (Page $livewire) => !($livewire instanceof CreateCitas)) 
+                ->required(),
+        ]);
+}
+
 
     public static function table(Table $table): Table
     {
@@ -143,6 +136,7 @@ class CitasResource extends Resource
                         'Cancelado'  => 'danger',
                         'Realizada'  => 'success',
                     ])
+                    
                     ->extraAttributes(['class' => 'px-2 py-1 text-xs']) // badge más compacto
                     ->sortable(),
             ])

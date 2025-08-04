@@ -20,6 +20,7 @@ use Illuminate\Support\HtmlString;
 use App\Models\Medico;
 use App\Models\Recetario;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 class PerfilMedico extends Page implements HasForms
@@ -136,15 +137,16 @@ class PerfilMedico extends Page implements HasForms
             $recetario = $medico->recetarios()->latest()->first();
 
             if ($recetario) {
-                // Debug el logo que viene de la BD
-                \Illuminate\Support\Facades\Log::debug('Logo de BD: ' . print_r($recetario->logo, true));
+                // Procesar logo correctamente - debe venir como string desde la BD
+                $logo = $recetario->logo;
+                
+                // Debug para ver qué tenemos en la BD
+                \Log::info('Logo desde BD:', ['logo' => $logo, 'tipo' => gettype($logo)]);
                 
                 $this->recetarioData = [
                     'tiene_recetario' => $recetario->tiene_recetario ?? true,
                     'centro_id' => $recetario->centro_id ?? session('current_centro_id') ?? $user->centro_id,
-                    'logo' => is_array($recetario->logo) ? ($recetario->logo[0] ?? null) : $recetario->logo,
-                    'encabezado_texto' => $recetario->encabezado_texto ?? 'RECETA MÉDICA',
-                    'pie_pagina' => $recetario->pie_pagina ?? 'Consulte a su médico antes de usar cualquier medicamento',
+                    'logo' => $logo, // Mantener como string
                     'color_primario' => $recetario->color_primario ?? '#2563eb',
                     'color_secundario' => $recetario->color_secundario ?? '#64748b',
                     'fuente_familia' => $recetario->fuente_familia ?? 'Arial',
@@ -155,14 +157,16 @@ class PerfilMedico extends Page implements HasForms
                     'mostrar_direccion' => $recetario->mostrar_direccion ?? true,
                     'texto_adicional' => $recetario->texto_adicional ?? '',
                     'formato_papel' => $recetario->formato_papel ?? 'half',
+                    // Campos personalizados
+                    'titulo_medico' => $recetario->titulo ?? 'Dr.',
+                    'nombre_mostrar_medico' => $recetario->nombre_mostrar ?? ($medico->persona ? trim("{$medico->persona->primer_nombre} {$medico->persona->segundo_nombre} {$medico->persona->primer_apellido} {$medico->persona->segundo_apellido}") : ''),
+                    'telefonos_medico' => $recetario->telefono_mostrar ?? ($medico->persona->telefono ?? ''),
                 ];
             } else {
                 $this->recetarioData = [
                     'tiene_recetario' => false,
                     'centro_id' => session('current_centro_id') ?? $user->centro_id,
                     'logo' => null,
-                    'encabezado_texto' => 'RECETA MÉDICA',
-                    'pie_pagina' => 'Consulte a su médico antes de usar cualquier medicamento',
                     'color_primario' => '#2563eb',
                     'color_secundario' => '#64748b',
                     'fuente_familia' => 'Arial',
@@ -181,8 +185,6 @@ class PerfilMedico extends Page implements HasForms
                 'tiene_recetario' => false,
                 'centro_id' => session('current_centro_id') ?? $user->centro_id ?? null,
                 'logo' => null,
-                'encabezado_texto' => 'RECETA MÉDICA',
-                'pie_pagina' => 'Consulte a su médico antes de usar cualquier medicamento',
                 'color_primario' => '#2563eb',
                 'color_secundario' => '#64748b',
                 'fuente_familia' => 'Arial',
@@ -256,36 +258,68 @@ class PerfilMedico extends Page implements HasForms
                 ->description('Active y configure la apariencia de su recetario médico')
                 ->schema([
                     Toggle::make('tiene_recetario')
-                        ->label('Activar Recetario')
+                        ->label('Personalizar Recetario')
                         ->helperText('Active esta opción para habilitar su recetario personalizado')
                         ->live()
                         ->columnSpanFull(),
                 ]),
-                
+     
             Section::make('Diseño y Personalización')
                 ->description('Configure la apariencia visual de su recetario')
                 ->schema([
                     Grid::make(2)
                         ->schema([
                             FileUpload::make('logo')
-                                ->label('Logo de la Clínica/Consultorio')
+                                ->label('Logo de la Clínica/Consultorio/Centro Médico')
                                 ->disk('public')
                                 ->directory('recetarios/logos')
                                 ->image()
+                                ->imageEditor()
+                                ->imageEditorAspectRatios([
+                                    '16:9',
+                                    '4:3',
+                                    '1:1',
+                                    ])
                                 ->maxSize(2048)
-                                ->helperText('Imagen que aparecerá en el encabezado')
-                                ->disabled(fn() => !auth()->user()->can('uploadLogo', self::class))
-                                ->multiple(false) // Explícitamente lo configuramos como no múltiple
-                                ->live(),
-                                
+                                ->helperText('Imagen que aparecerá en el encabezado (máximo 2MB)')
+                                ->disabled(fn() => !$this->canUploadLogo())
+                                ->multiple(false)
+                                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/gif'])
+                                ->live()
+                                ->afterStateUpdated(function ($state) {
+                                    // Debug para ver qué llega cuando se sube
+                                \Log::info('Logo uploaded state:', ['state' => $state, 'tipo' => gettype($state)]);
+                                    }),
+
                             Toggle::make('mostrar_logo')
                                 ->label('Mostrar Logo')
                                 ->helperText('Mostrar u ocultar el logo en el recetario')
                                 ->live(),
-                        ]),
-                        
-                    
-                ])
+                                ]),
+
+                        Grid::make(2)
+                                ->schema([
+                                    TextInput::make('titulo_medico')
+                                        ->label('Título del Médico')
+                                        ->helperText('Ej: Dr., Dra., Lic., etc.')
+                                        ->live(),
+
+                                    TextInput::make('nombre_mostrar_medico')
+                                        ->label('Nombre a Mostrar del Médico')
+                                        ->helperText('Nombre completo que aparecerá en el recetario.')
+                                        ->live(),
+
+                                    TextInput::make('telefonos_medico')
+                                        ->label('Teléfonos del Médico')
+                                        ->placeholder('Ej: 1234-5678, 9876-5432')
+                                        ->helperText('Ingrese uno o más números de teléfono, separados por comas.')
+                                        ->live()
+                                        ->rules(['nullable', 'string']), // Removed 'tel' rule for more flexibility with commas
+
+                                ]),
+
+                                
+                    ])
                 ->visible(fn (callable $get) => $get('tiene_recetario'))
                 ->columns(1),
                 
@@ -319,18 +353,7 @@ class PerfilMedico extends Page implements HasForms
                                 ->helperText('Fuente principal del texto')
                                 ->live(),
                                 
-                            Select::make('fuente_tamano')
-                                ->label('Tamaño de Fuente')
-                                ->options([
-                                    10 => '10px',
-                                    11 => '11px',
-                                    12 => '12px',
-                                    14 => '14px',
-                                    16 => '16px',
-                                    18 => '18px',
-                                ])
-                                ->helperText('Tamaño base del texto')
-                                ->live(),
+                            
                         ]),
                 ])
                 ->visible(fn (callable $get) => $get('tiene_recetario'))
@@ -341,11 +364,6 @@ class PerfilMedico extends Page implements HasForms
                 ->schema([
                     Grid::make(2)
                         ->schema([
-                            Toggle::make('mostrar_especialidades')
-                                ->label('Mostrar Especialidades')
-                                ->helperText('Incluir especialidades médicas')
-                                ->live(),
-                                
                             Toggle::make('mostrar_telefono')
                                 ->label('Mostrar Teléfono')
                                 ->helperText('Incluir número de teléfono')
@@ -356,14 +374,7 @@ class PerfilMedico extends Page implements HasForms
                                 ->helperText('Incluir dirección del consultorio')
                                 ->live(),
                                 
-                            Select::make('formato_papel')
-                                ->label('Formato de Papel')
-                                ->options([
-                                    'half' => 'Media Página',
-                                    'full' => 'Página Completa',
-                                ])
-                                ->helperText('Tamaño del recetario')
-                                ->live(),
+                            
                         ]),
                 ])
                 ->visible(fn (callable $get) => $get('tiene_recetario'))
@@ -377,7 +388,7 @@ class PerfilMedico extends Page implements HasForms
                         ->dehydrated(false)
                         ->content(function (callable $get) {
                             // Verificar permisos para ver la vista previa
-                            if (!auth()->user()->can('viewPreview', self::class)) {
+                            if (!$this->canViewPreview()) {
                                 return new \Illuminate\Support\HtmlString(
                                     '<div style="text-align: center; padding: 40px; color: #666;">
                                         <p>No tiene permisos para ver la vista previa del recetario.</p>
@@ -386,14 +397,20 @@ class PerfilMedico extends Page implements HasForms
                             }
                             
                             $config = $get();
-                            // Debug: vamos a ver qué datos llegan
-                            // dd($config); // Descomenta para debug
+                            
+                            // Debug para ver la configuración completa
+                            \Log::info('Config para preview:', [
+                                'color_primario' => $config['color_primario'] ?? 'no definido',
+                                'color_secundario' => $config['color_secundario'] ?? 'no definido',
+                                'encabezado_texto' => $config['encabezado_texto'] ?? 'no definido'
+                            ]);
+                            
                             return new \Illuminate\Support\HtmlString(
                                 view('components.recetario-preview-demo', compact('config'))->render()
                             );
                         }),
                 ])
-                ->visible(fn (callable $get) => $get('tiene_recetario') && auth()->user()->can('viewPreview', self::class))
+                ->visible(fn (callable $get) => $get('tiene_recetario') && $this->canViewPreview())
                 ->collapsible()
                 ->collapsed(false),
                 
@@ -406,10 +423,10 @@ class PerfilMedico extends Page implements HasForms
                                 <button 
                                     type="button" 
                                     wire:click="saveRecetario"
-                                    class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                    style="background-color: #059669; color: white; border: 2px solid #047857; padding: 10px 20px; border-radius: 6px; font-weight: 500; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: inline-flex; align-items: center;"
                                 >
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    <svg style="width: 20px; height: 20px; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
                                     Guardar Configuración del Recetario
                                 </button>
@@ -447,30 +464,89 @@ class PerfilMedico extends Page implements HasForms
             $user = auth()->user();
             
             // Validar permisos usando la policy
-            if (!$user->can('updateRecetario', self::class)) {
-                $response = \Illuminate\Support\Facades\Gate::inspect('updateRecetario', self::class);
+            if (!$this->canUpdateRecetario()) {
                 Notification::make()
                     ->title('Acceso Denegado')
-                    ->body($response->message())
+                    ->body('No tiene permisos para actualizar el recetario.')
                     ->warning()
                     ->send();
                 return;
             }
             
+            // Validar el formulario primero
+            $this->getRecetarioForm()->getState();
+            
+
             $recetarioData = $this->recetarioData;
-            // Procesar el logo de forma segura: siempre string o null
-            if (!isset($recetarioData['logo']) || $recetarioData['logo'] === '') {
+
+            // Mapear campos personalizados a columnas de BD
+            if (isset($recetarioData['titulo_medico'])) {
+                $recetarioData['titulo'] = $recetarioData['titulo_medico'];
+                unset($recetarioData['titulo_medico']);
+            }
+            if (isset($recetarioData['nombre_mostrar_medico'])) {
+                $recetarioData['nombre_mostrar'] = $recetarioData['nombre_mostrar_medico'];
+                unset($recetarioData['nombre_mostrar_medico']);
+            }
+            if (isset($recetarioData['telefonos_medico'])) {
+                $recetarioData['telefono_mostrar'] = $recetarioData['telefonos_medico'];
+                unset($recetarioData['telefonos_medico']);
+            }
+
+            // Procesar el logo correctamente
+            if (isset($recetarioData['logo'])) {
+                $logo = $recetarioData['logo'];
+                // Debug completo del logo
+                \Log::info('Procesando logo:', [
+                    'logo_original' => $logo,
+                    'es_array' => is_array($logo),
+                    'tipo' => gettype($logo)
+                ]);
+                // Si es array (viene de FileUpload), tomar el primer elemento
+                if (is_array($logo) && !empty($logo)) {
+                    $logo = reset($logo);
+                }
+                // Si es string vacío, convertir a null
+                if (empty($logo)) {
+                    $logo = null;
+                }
+                // Verificar que el archivo existe antes de guardarlo
+                if ($logo && !Storage::disk('public')->exists($logo)) {
+                    \Log::warning('Archivo de logo no encontrado:', ['path' => $logo]);
+                    // No establecer logo si el archivo no existe
+                    $logo = null;
+                }
+                $recetarioData['logo'] = $logo;
+                \Log::info('Logo procesado final:', [
+                    'logo_final' => $logo,
+                    'existe_archivo' => $logo ? Storage::disk('public')->exists($logo) : false
+                ]);
+            } else {
                 $recetarioData['logo'] = null;
-            } elseif (is_array($recetarioData['logo'])) {
-                $recetarioData['logo'] = $recetarioData['logo'][0] ?? null;
             }
 
             $medico = $user->medico;
+            
+            if (!$medico) {
+                throw new Exception('No se encontró registro de médico asociado');
+            }
+            
             // Buscar o crear recetario
             $recetario = Recetario::firstOrNew(['medico_id' => $medico->id]);
-            // Actualizar datos (incluye logo como string o null)
+            
+            // Llenar con todos los datos
             $recetario->fill($recetarioData);
+            
+            // Guardar
             $recetario->save();
+            
+            // Verificar qué se guardó realmente
+            $recetario->refresh();
+            \Log::info('Recetario guardado en BD:', [
+                'id' => $recetario->id,
+                'logo_en_bd' => $recetario->logo,
+                'existe_archivo' => $recetario->logo ? Storage::disk('public')->exists($recetario->logo) : false
+            ]);
 
             Notification::make()
                 ->title('Configuración Guardada')
@@ -478,10 +554,12 @@ class PerfilMedico extends Page implements HasForms
                 ->success()
                 ->send();
 
-            // Recargar datos
+            // Recargar datos desde la BD
             $this->loadRecetarioData();
+            $this->getRecetarioForm()->fill($this->recetarioData);
 
         } catch (Exception $e) {
+            \Log::error('Error al guardar recetario: ' . $e->getMessage());
             Notification::make()
                 ->title('Error al Guardar')
                 ->body('Error: ' . $e->getMessage())
@@ -582,7 +660,7 @@ class PerfilMedico extends Page implements HasForms
         }
 
         // Usar la policy para determinar el acceso
-        return $user->can('view', self::class);
+        return $user->hasRole('medico') || $user->hasRole('root');
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -594,5 +672,24 @@ class PerfilMedico extends Page implements HasForms
     public function getPreviewData()
     {
         return $this->recetarioData;
+    }
+
+    // Métodos de permisos simplificados
+    public function canUploadLogo(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->hasRole('medico') || $user->hasRole('root'));
+    }
+
+    public function canViewPreview(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->hasRole('medico') || $user->hasRole('root'));
+    }
+
+    public function canUpdateRecetario(): bool
+    {
+        $user = auth()->user();
+        return $user && ($user->hasRole('medico') || $user->hasRole('root'));
     }
 }
