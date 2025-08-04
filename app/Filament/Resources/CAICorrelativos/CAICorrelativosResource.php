@@ -36,15 +36,22 @@ class CAICorrelativosResource extends Resource
                     ->badge()
                     ->color('primary'),
 
+                TextColumn::make('numero_correlativo')
+                    ->label('Correlativo')
+                    ->formatStateUsing(fn (int $state): string => str_pad($state, 9, '0', STR_PAD_LEFT))
+                    ->badge()
+                    ->color('success'),
+
                 TextColumn::make('autorizacion.cai_codigo')
                     ->label('CAI')
                     ->searchable()
                     ->limit(18)
-                    ->tooltip(fn ($record) => $record->autorizacion->cai_codigo),
+                    ->tooltip(fn ($record) => $record->autorizacion?->cai_codigo ?? 'N/A'),
 
                 TextColumn::make('fecha_emision')
                     ->dateTime('d/m/Y H:i')
-                    ->label('Emitido'),
+                    ->label('Emitido')
+                    ->sortable(),
 
                 TextColumn::make('usuario.name')
                     ->label('Usuario')
@@ -65,9 +72,8 @@ class CAICorrelativosResource extends Resource
                 Tables\Actions\ViewAction::make(),
             ])
             ->defaultSort('fecha_emision', 'desc')
-
             ->emptyStateHeading('Sin correlativos aún')
-            ->emptyStateDescription('Crea tu primera factura para que aparezca aquí.')
+            ->emptyStateDescription('Crea tu primera factura con CAI para que aparezca aquí.')
             ->emptyStateIcon('heroicon-o-document-plus');
     }
 

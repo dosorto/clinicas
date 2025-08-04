@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('factura_id')->nullable()->constrained('facturas');
             $table->foreignId('servicio_id')->constrained('servicios');
             $table->foreignId('consulta_id')->nullable()->constrained('consultas');
+            $table->unique(['consulta_id', 'servicio_id'], 'unique_consulta_servicio_temp');
             $table->integer('cantidad');
             $table->foreignId('descuento_id')->nullable()->constrained('descuentos');
             $table->decimal('subtotal', 12, 2);

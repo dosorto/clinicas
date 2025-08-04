@@ -60,27 +60,36 @@ class CAIAutorizacionesResource extends Resource
                     
                 Forms\Components\Section::make('Configuración de Rangos')
                     ->schema([
-                        TextInput::make('cantidad')
-                            ->disabled()
-                            ->dehydrated()
-                            ->extraInputAttributes(['class'=>'text-gray-400'])
-                            ->default(fn (Forms\Get $get) =>
-                                max(0, (int)$get('rango_final') - (int)$get('rango_inicial') + 1)
-                            ),
-                            
                         TextInput::make('rango_inicial')
                             ->required()
                             ->numeric()
                             ->minValue(1)
                             ->placeholder('000000001')
-                            ->helperText('Número inicial del rango'),
+                            ->helperText('Número inicial del rango')
+                            ->live()
+                            ->afterStateUpdated(fn (callable $set, callable $get) =>
+                                $set('cantidad', max(0, (int)$get('rango_final') - (int)$get('rango_inicial') + 1))
+                            ),
                             
                         TextInput::make('rango_final')
                             ->required()
                             ->numeric()
                             ->minValue(1)
                             ->placeholder('000001000')
-                            ->helperText('Número final del rango'),
+                            ->helperText('Número final del rango')
+                            ->live()
+                            ->afterStateUpdated(fn (callable $set, callable $get) =>
+                                $set('cantidad', max(0, (int)$get('rango_final') - (int)$get('rango_inicial') + 1))
+                            ),
+                            
+                        TextInput::make('cantidad')
+                            ->disabled()
+                            ->dehydrated()
+                            ->extraInputAttributes(['class'=>'text-gray-400'])
+                            ->default(fn (Forms\Get $get) =>
+                                max(0, (int)$get('rango_final') - (int)$get('rango_inicial') + 1)
+                            )
+                            ->helperText('Calculado automáticamente: (rango_final - rango_inicial + 1)'),
                             
                         TextInput::make('numero_actual')
                             ->disabled()

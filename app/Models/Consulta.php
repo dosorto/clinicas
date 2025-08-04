@@ -32,20 +32,24 @@ class Consulta extends ModeloBase
         return $this->hasMany(Factura::class);
     }
     
-    public function paciente()
-    {
-        return $this->belongsTo(Pacientes::class, 'paciente_id');
-    }
-    public function medico()
-    {
-        return $this->belongsTo(Medico::class, 'medico_id');
-    }
-    
     public function cita()
     {
         return $this->belongsTo(Citas::class, 'cita_id');
     }
-    
+
+    public function paciente(): BelongsTo
+    {
+        return $this->belongsTo(Pacientes::class, 'paciente_id'); // Verificar que el campo sea correcto
+    }
+
+    public function medico(): BelongsTo
+    {
+        return $this->belongsTo(Medico::class, 'medico_id'); // Verificar que el campo sea correcto
+    }
+    public function centro(): BelongsTo
+    {
+        return $this->belongsTo(Centros_Medico::class, 'centro_id');
+    }
     // AGREGAR ESTA RELACIÓN:
     public function servicios(): HasMany
     {

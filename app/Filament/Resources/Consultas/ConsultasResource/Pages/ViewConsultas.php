@@ -6,7 +6,7 @@ use App\Filament\Resources\Consultas\ConsultasResource;
 use App\Filament\Resources\Facturas\FacturasResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
-use App\Filament\Resources\Consultas\Widgets\FacturacionStatusWidget;
+use App\Filament\Resources\Consultas\Widgets\FacturacionStatus;
 
 
 class ViewConsultas extends ViewRecord
@@ -31,11 +31,15 @@ class ViewConsultas extends ViewRecord
                 ->label('Crear Factura')
                 ->icon('heroicon-o-receipt-percent')
                 ->color('success')
-                ->url(fn ($record) =>    // ← ESTA ES LA LÍNEA QUE CAMBIAMOS
-                    FacturasResource::getUrl('create', [
+                ->url(function ($record) {
+                    $subtotal = $this->getServiciosSubtotal($record);
+                    $impuestoTotal = $this->getServiciosImpuesto($record);
+                    return FacturasResource::getUrl('create', [
                         'consulta_id' => $record->id,
-                    ])
-                )
+                        'subtotal' => $subtotal,
+                        'impuesto_total' => $impuestoTotal
+                    ]);
+                })
                 ->visible(fn ($record) => ! $record->facturas()->exists()),
 
             // ---- BOTÓN VER FACTURA ---------------------------------
@@ -62,9 +66,23 @@ class ViewConsultas extends ViewRecord
     {
         return [
             // Widget personalizado para mostrar el estado de facturación
-            \App\Filament\Resources\Consultas\Widgets\FacturacionStatusWidget::class,
+            \App\Filament\Resources\Consultas\Widgets\FacturacionStatus::class,
             
         ];
+    }
+
+    private function getServiciosSubtotal($record): float
+    {
+        return \App\Models\FacturaDetalle::where('consulta_id', $record->id)
+            ->whereNull('factura_id')
+            ->sum('subtotal');
+    }
+
+    private function getServiciosImpuesto($record): float
+    {
+        return \App\Models\FacturaDetalle::where('consulta_id', $record->id)
+            ->whereNull('factura_id')
+            ->sum('impuesto_monto');
     }
 
 }

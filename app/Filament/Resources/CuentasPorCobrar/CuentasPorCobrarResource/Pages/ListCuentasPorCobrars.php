@@ -13,7 +13,20 @@ class ListCuentasPorCobrars extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('pagar_cuenta')
+                ->label('Procesar Pago')
+                ->icon('heroicon-o-currency-dollar')
+                ->color('success')
+                ->url(static::getResource()::getUrl('pagar'))
+                ->tooltip('Buscar factura y procesar pago'),
             Actions\CreateAction::make(),
+        ];
+    }
+    
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            \App\Filament\Widgets\CuentasPorCobrarStatsWidget::class,
         ];
     }
 }

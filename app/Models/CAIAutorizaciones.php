@@ -49,16 +49,14 @@ class CAIAutorizaciones extends ModeloBase
         return $this->hasMany(Cai_Correlativos::class, 'autorizacion_id');
     }
 
-    // Métodos auxiliares
-    public function esValida(): bool
-    {
-        return $this->estado === 'ACTIVA' 
-            && $this->fecha_limite >= now()->toDateString()
-            && $this->numero_actual <= $this->rango_final;
-    }
-
     public function numerosDisponibles(): int
     {
+        // Si numero_actual es null, significa que no se ha usado ninguno
+        if (is_null($this->numero_actual)) {
+            return $this->cantidad;
+        }
+        
+        // Los números disponibles son desde numero_actual hasta rango_final (inclusive)
         return max(0, $this->rango_final - $this->numero_actual + 1);
     }
 
@@ -66,22 +64,15 @@ class CAIAutorizaciones extends ModeloBase
     {
         if ($this->cantidad <= 0) return 0;
         
-        $utilizados = $this->numero_actual - $this->rango_inicial + 1;
+        // Si numero_actual es null, no se ha usado ninguno
+        if (is_null($this->numero_actual)) {
+            return 0;
+        }
+        
+        // Los números utilizados son desde rango_inicial hasta numero_actual - 1
+        // porque numero_actual apunta al SIGUIENTE número a usar
+        $utilizados = $this->numero_actual - $this->rango_inicial;
         return ($utilizados / $this->cantidad) * 100;
-    }
-
-    public function obtenerSiguienteNumero(): ?int
-    {
-        if (!$this->esValida()) {
-            return null;
-        }
-
-        if ($this->numero_actual > $this->rango_final) {
-            $this->update(['estado' => 'AGOTADA']);
-            return null;
-        }
-
-        return $this->numero_actual;
     }
 
     public function incrementarNumero(): bool
@@ -103,6 +94,40 @@ class CAIAutorizaciones extends ModeloBase
         }
 
         return true;
+    }
+
+    // Agregar estos métodos al modelo CAIAutorizaciones existente
+
+    public function obtenerSiguienteNumero(): ?int
+    {
+        if (!$this->esValida()) {
+            return null;
+        }
+
+        return $this->numero_actual;
+    }
+
+    public function consumirNumero(): bool
+    {
+        if (!$this->esValida()) {
+            return false;
+        }
+
+        $this->increment('numero_actual');
+        
+        // Verificar si se agotó
+        if ($this->numero_actual > $this->rango_final) {
+            $this->update(['estado' => 'AGOTADA']);
+        }
+
+        return true;
+    }
+
+    public function esValida(): bool
+    {
+        return $this->estado === 'ACTIVA' 
+            && $this->fecha_limite >= now()->toDateString()
+            && $this->numero_actual <= $this->rango_final;
     }
 
     protected static function booted(): void

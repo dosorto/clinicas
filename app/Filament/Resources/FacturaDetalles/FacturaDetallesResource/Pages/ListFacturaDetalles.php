@@ -13,7 +13,7 @@ class ListFacturaDetalles extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            // Sin botón de crear - los detalles se crean automáticamente con las facturas
         ];
     }
 }

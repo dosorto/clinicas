@@ -130,22 +130,45 @@ class ManageServiciosConsulta extends Page implements HasTable
                     $serviciosData = $data['servicios_data'] ?? [];
                     
                     $serviciosCreados = 0;
+                    $serviciosDuplicados = 0;
                     
                     foreach ($serviciosData as $servicioData) {
                         if (!empty($servicioData['servicio_id'])) {
-                            $servicio = Servicio::find($servicioData['servicio_id']);
+                            // VERIFICAR SI YA EXISTE EL SERVICIO PARA ESTA CONSULTA
+                            $existeDetalle = FacturaDetalle::where('consulta_id', $this->record->id)
+                                ->where('servicio_id', $servicioData['servicio_id'])
+                                ->whereNull('factura_id')
+                                ->exists();
+                            
+                            if ($existeDetalle) {
+                                $serviciosDuplicados++;
+                                continue; // Saltar este servicio
+                            }
+                            
+                            $servicio = Servicio::with('impuesto')->find($servicioData['servicio_id']);
                             if ($servicio) {
                                 $cantidad = (int) ($servicioData['cantidad'] ?? 1);
-                                $total_linea = $servicio->precio_unitario * $cantidad;
+                                $subtotal = $servicio->precio_unitario * $cantidad;
+                                
+                                // Calcular impuesto
+                                $impuesto_monto = 0;
+                                if ($servicio->es_exonerado !== 'SI' && $servicio->impuesto) {
+                                    $impuesto_monto = ($subtotal * $servicio->impuesto->porcentaje) / 100;
+                                }
+                                
+                                $total_linea = $subtotal + $impuesto_monto;
                                 
                                 FacturaDetalle::create([
                                     'consulta_id' => $this->record->id,
                                     'servicio_id' => $servicioData['servicio_id'],
                                     'cantidad' => $cantidad,
-                                    'subtotal' => $total_linea,
-                                    'total_linea' => $total_linea,
+                                    'subtotal' => $subtotal,
+                                    'impuesto_id' => $servicio->impuesto?->id,
+                                    'impuesto_monto' => $impuesto_monto,
                                     'descuento_monto' => 0,
-                                    'impuesto_monto' => 0,
+                                    'total_linea' => $total_linea,
+                                    'centro_id' => $this->record->centro_id, // Extraer de la consulta
+                                    'created_by' => auth()->id(), // Usuario actual
                                 ]);
                                 
                                 $serviciosCreados++;
@@ -153,9 +176,14 @@ class ManageServiciosConsulta extends Page implements HasTable
                         }
                     }
                     
+                    $mensaje = "{$serviciosCreados} servicio(s) agregado(s) a la consulta.";
+                    if ($serviciosDuplicados > 0) {
+                        $mensaje .= " {$serviciosDuplicados} servicio(s) se omitieron por estar duplicados.";
+                    }
+                    
                     Notification::make()
-                        ->title('Servicios agregados exitosamente')
-                        ->body("{$serviciosCreados} servicio(s) agregado(s) a la consulta.")
+                        ->title('Servicios procesados')
+                        ->body($mensaje)
                         ->success()
                         ->send();
                         
@@ -171,10 +199,13 @@ class ManageServiciosConsulta extends Page implements HasTable
                 ->icon('heroicon-o-arrow-right')
                 ->color('primary')
                 ->url(function () {
-                    $subtotal = $this->getServiciosTotal();
+                    $subtotal = $this->getServiciosSubtotal();
+                    $impuestoTotal = $this->getServiciosImpuesto();
+                    
                     return FacturasResource::getUrl('create', [
                         'consulta_id' => $this->record->id,
-                        'subtotal' => $subtotal
+                        'subtotal' => $subtotal,
+                        'impuesto_total' => $impuestoTotal
                     ]);
                 })
                 ->visible(function () {
@@ -243,15 +274,43 @@ class ManageServiciosConsulta extends Page implements HasTable
                         $servicio = Servicio::find($data['servicio_id']);
                         if ($servicio) {
                             $cantidad = (int) ($data['cantidad'] ?? 1);
-                            $total = $servicio->precio_unitario * $cantidad;
+                            $subtotal = $servicio->precio_unitario * $cantidad;
                             
-                            $data['subtotal'] = $total;
-                            $data['total_linea'] = $total;
+                            // Calcular impuesto
+                            $impuesto_monto = 0;
+                            if ($servicio->es_exonerado !== 'SI' && $servicio->impuesto) {
+                                $impuesto_monto = ($subtotal * $servicio->impuesto->porcentaje) / 100;
+                            }
+                            
+                            $total_linea = $subtotal + $impuesto_monto;
+                            
+                            $data['subtotal'] = $subtotal;
+                            $data['impuesto_id'] = $servicio->impuesto?->id;
+                            $data['impuesto_monto'] = $impuesto_monto;
                             $data['descuento_monto'] = 0;
-                            $data['impuesto_monto'] = 0;
+                            $data['total_linea'] = $total_linea;
                         }
                         
                         return $data;
+                    })
+                    ->before(function (array $data, $record) {
+                        // Verificar que no se está cambiando a un servicio que ya existe
+                        $existeOtroDetalle = FacturaDetalle::where('consulta_id', $this->record->id)
+                            ->where('servicio_id', $data['servicio_id'])
+                            ->where('id', '!=', $record->id) // Excluir el registro actual
+                            ->whereNull('factura_id')
+                            ->exists();
+                        
+                        if ($existeOtroDetalle) {
+                            Notification::make()
+                                ->title('Servicio duplicado')
+                                ->body('Este servicio ya está agregado a la consulta.')
+                                ->danger()
+                                ->send();
+                            
+                            // Cancelar la edición
+                            $this->halt();
+                        }
                     })
                     ->after(function () {
                         Notification::make()
@@ -301,6 +360,20 @@ class ManageServiciosConsulta extends Page implements HasTable
         return \App\Models\FacturaDetalle::where('consulta_id', $this->record->id)
             ->whereNull('factura_id')          // ← solo los que aún no tienen factura
             ->sum('total_linea');              // campo DECIMAL(12,2)
+    }
+
+    public function getServiciosSubtotal(): float
+    {
+        return \App\Models\FacturaDetalle::where('consulta_id', $this->record->id)
+            ->whereNull('factura_id')
+            ->sum('subtotal');
+    }
+
+    public function getServiciosImpuesto(): float
+    {
+        return \App\Models\FacturaDetalle::where('consulta_id', $this->record->id)
+            ->whereNull('factura_id')
+            ->sum('impuesto_monto');
     }
 
     /* Si también muestras la cantidad de líneas */

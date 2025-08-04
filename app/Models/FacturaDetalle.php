@@ -40,6 +40,31 @@ class FacturaDetalle extends Model
         'impuesto_monto' => 'decimal:2',
     ];
 
+    /**
+     * Accessor para calcular el precio unitario
+     */
+    public function getPrecioUnitarioAttribute(): float
+    {
+        if ($this->cantidad && $this->cantidad > 0) {
+            return round($this->subtotal / $this->cantidad, 2);
+        }
+        
+        // Si no hay cantidad o es 0, intentar obtener del servicio
+        if ($this->servicio && $this->servicio->precio_unitario) {
+            return $this->servicio->precio_unitario;
+        }
+        
+        return 0.00;
+    }
+
+    /**
+     * Accessor para obtener el total con impuestos
+     */
+    public function getTotalAttribute(): float
+    {
+        return $this->total_linea ?? 0.00;
+    }
+
     public function factura(): BelongsTo
     {
         return $this->belongsTo(Factura::class);
@@ -55,6 +80,11 @@ class FacturaDetalle extends Model
         return $this->belongsTo(Consulta::class);
     }
 
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
+
     protected static function booted(): void
     {
         parent::booted();
@@ -67,5 +97,57 @@ class FacturaDetalle extends Model
                 }
             }
         });
+    }
+
+    /**
+     * Crear detalles de factura desde examenes de una consulta
+     */
+    public static function crearDesdeConsulta(int $consultaId, int $facturaId): void
+    {
+        $consulta = \App\Models\Consulta::with(['examenes'])->find($consultaId);
+        
+        if ($consulta && $consulta->examenes) {
+            foreach ($consulta->examenes as $examen) {
+                // Buscar el servicio correspondiente
+                $servicio = null;
+                
+                if ($examen instanceof \App\Models\Servicio) {
+                    $servicio = $examen;
+                } else {
+                    // Si es un examen, buscar el servicio relacionado
+                    $servicio = \App\Models\Servicio::find($examen->servicio_id ?? $examen->id);
+                }
+                
+                if ($servicio) {
+                    // Calcular totales
+                    $cantidad = 1;
+                    $precio = $servicio->precio_unitario;
+                    $subtotal = $precio * $cantidad;
+                    
+                    // Calcular impuesto si aplica
+                    $impuestoMonto = 0;
+                    if ($servicio->impuesto_id && !$servicio->es_exonerado) {
+                        $impuesto = $servicio->impuesto;
+                        if ($impuesto) {
+                            $impuestoMonto = ($subtotal * $impuesto->porcentaje) / 100;
+                        }
+                    }
+                    
+                    $totalLinea = $subtotal + $impuestoMonto;
+                    
+                    self::create([
+                        'factura_id' => $facturaId,
+                        'servicio_id' => $servicio->id,
+                        'consulta_id' => $consultaId,
+                        'cantidad' => $cantidad,
+                        'subtotal' => $subtotal,
+                        'impuesto_id' => $servicio->impuesto_id,
+                        'impuesto_monto' => $impuestoMonto,
+                        'descuento_monto' => 0,
+                        'total_linea' => $totalLinea,
+                    ]);
+                }
+            }
+        }
     }
 }

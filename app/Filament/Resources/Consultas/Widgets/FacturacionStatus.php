@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Consultas\Widgets;
 
 use Filament\Widgets\Widget;
 
-class FacturacionStatusWidget extends Widget
+class FacturacionStatus extends Widget
 {
     protected static string $view = 'filament.resources.consultas.widgets.facturacion-status';
 

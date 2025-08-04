@@ -23,6 +23,7 @@ return new class extends Migration
             $table->decimal('descuento_total', 12, 2)->default(0);
             $table->decimal('impuesto_total', 12, 2)->default(0);
             $table->decimal('total', 12, 2);
+            $table->boolean('usa_cai')->default(true);
             $table->enum('estado', ['PENDIENTE','PAGADA','ANULADA','PARCIAL'])->default('PENDIENTE');
             $table->text('observaciones')->nullable();
             $table->foreignId('cai_autorizacion_id')->nullable()->constrained('cai_autorizaciones');

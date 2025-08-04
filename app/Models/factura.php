@@ -5,14 +5,15 @@ namespace App\Models;
 use App\Services\CaiNumerador;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany};
+use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, HasOne};
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class Factura extends Model
 {
     use HasFactory, SoftDeletes;
 
-    /* ─────────────────────────  ATRIBUTOS  ───────────────────────── */
     protected $fillable = [
         'paciente_id',
         'cita_id',
@@ -28,124 +29,304 @@ class Factura extends Model
         'cai_autorizacion_id',
         'centro_id',
         'descuento_id',
-        'tipo_pago_id',
         'cai_correlativo_id',
+        'usa_cai',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
-    protected $dates = ['fecha_emision','created_at','updated_at','deleted_at'];
-
     protected $casts = [
-        'fecha_emision'   => 'date',
-        'subtotal'        => 'decimal:2',
+        'fecha_emision' => 'date',
+        'subtotal' => 'decimal:2',
         'descuento_total' => 'decimal:2',
-        'impuesto_total'  => 'decimal:2',
-        'total'           => 'decimal:2',
+        'impuesto_total' => 'decimal:2',
+        'total' => 'decimal:2',
+        'usa_cai' => 'boolean',
     ];
 
-    /* ────────────────────────  RELACIONES  ─────────────────────── */
-    public function paciente() : BelongsTo { return $this->belongsTo(Pacientes::class); }
-    public function descuento(): BelongsTo { return $this->belongsTo(Descuento::class); }
-    public function cita()     : BelongsTo { return $this->belongsTo(Citas::class); }
-    public function consulta() : BelongsTo { return $this->belongsTo(Consulta::class); }
-    public function medico()   : BelongsTo { return $this->belongsTo(Medico::class); }
-    public function centro()   : BelongsTo { return $this->belongsTo(Centros_Medico::class,'centro_id'); }
-    public function detalles() : HasMany   { return $this->hasMany(FacturaDetalle::class); }
-    public function pagos()    : HasMany   { return $this->hasMany(Pagos_Factura::class); }
+    // Relaciones
     public function caiCorrelativo(): BelongsTo
     {
-        return $this->belongsTo(CAI_Correlativos::class,'cai_correlativo_id');
+        return $this->belongsTo(CAI_Correlativos::class, 'cai_correlativo_id');
     }
-
-    /* Nº de factura virtual */
-    public function getNumeroFacturaAttribute(): ?string
+    
+    public function caiAutorizacion(): BelongsTo
     {
-        return $this->caiCorrelativo?->numero_factura;
+        return $this->belongsTo(CAIAutorizaciones::class, 'cai_autorizacion_id');
+    }
+    
+    public function paciente(): BelongsTo 
+    { 
+        return $this->belongsTo(Pacientes::class); 
+    }
+    
+    public function descuento(): BelongsTo 
+    { 
+        return $this->belongsTo(Descuento::class); 
+    }
+    
+    public function cita(): BelongsTo 
+    { 
+        return $this->belongsTo(Citas::class); 
+    }
+    
+    public function consulta(): BelongsTo 
+    { 
+        return $this->belongsTo(Consulta::class); 
+    }
+    
+    public function medico(): BelongsTo
+    {
+        return $this->belongsTo(Medico::class);
     }
 
-    /* ─────────────────────────  EVENTOS  ───────────────────────── */
+    public function centro(): BelongsTo
+    {
+        return $this->belongsTo(Centros_Medico::class, 'centro_id');
+    }
+
+    public function detalles(): HasMany
+    {
+        return $this->hasMany(FacturaDetalle::class);
+    }
+
+    public function pagos(): HasMany
+    {
+        return $this->hasMany(Pagos_Factura::class);
+    }
+
+    public function cuentasPorCobrar(): HasOne
+    {
+        return $this->hasOne(CuentasPorCobrar::class);
+    }
+
+    public function createdByUser(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
+
+    // Accessor para número de factura
+    public function getNumeroFacturaAttribute(): string
+    {
+        if ($this->usa_cai && $this->caiCorrelativo) {
+            return $this->caiCorrelativo->numero_factura;
+        }
+        
+        // Para facturas sin CAI, generar número simple
+        return $this->generarNumeroSinCAI();
+    }
+
+    // Accessor para código CAI
+    public function getCodigoCaiAttribute(): ?string
+    {
+        return $this->usa_cai && $this->caiAutorizacion 
+            ? $this->caiAutorizacion->cai_codigo 
+            : null;
+    }
+
+    public function generarNumeroSinCAI(): string
+    {
+        $year = $this->fecha_emision ? $this->fecha_emision->year : now()->year;
+        $month = $this->fecha_emision ? str_pad($this->fecha_emision->month, 2, '0', STR_PAD_LEFT) : str_pad(now()->month, 2, '0', STR_PAD_LEFT);
+        $facturaId = $this->id ?? 0;
+        return "PROV-{$this->centro_id}-{$year}-{$month}-" . str_pad($facturaId, 6, '0', STR_PAD_LEFT);
+    }
+
     protected static function booted(): void
     {
         parent::booted();
 
         static::creating(function (self $factura) {
+            // Establecer centro y auditoría
+            if (Auth::check()) {
+                $factura->centro_id ??= Auth::user()->centro_id;
+                $factura->created_by ??= Auth::id();
+            }
 
-            if (! empty($factura->usa_cai)) {       // Usa CAI
-                /* lógica existente de correlativo */
+            // Si usa CAI, generar correlativo
+            if ($factura->usa_cai) {
+                try {
+                    Log::info('Generando CAI para factura', [
+                        'factura_id' => $factura->id,
+                        'centro_id' => $factura->centro_id
+                    ]);
+                    
+                    $cai = CaiNumerador::obtenerCAIDisponible($factura->centro_id);
+                    
+                    if (!$cai) {
+                        throw new \Exception('No hay CAI disponible para este centro');
+                    }
+
+                    Log::info('CAI encontrado', ['cai_id' => $cai->id, 'cai_codigo' => $cai->cai_codigo]);
+
+                    $correlativo = CaiNumerador::generar(
+                        caiId: $cai->id,
+                        usuarioId: Auth::id() ?? 1,
+                        centroId: $factura->centro_id
+                    );
+
+                    Log::info('Correlativo generado', ['correlativo_id' => $correlativo->id]);
+
+                    $factura->cai_correlativo_id = $correlativo->id;
+                    $factura->cai_autorizacion_id = $cai->id;
+                    
+                } catch (\Exception $e) {
+                    // Si falla, convertir a factura sin CAI
+                    Log::error('Error generando CAI', ['error' => $e->getMessage()]);
+                    $factura->usa_cai = false;
+                    $factura->cai_correlativo_id = null;
+                    $factura->cai_autorizacion_id = null;
+                    
+                    // Opcional: registrar el error o notificar
+                    Log::warning("No se pudo generar CAI para factura: " . $e->getMessage());
+                }
             } else {
-                $factura->cai_correlativo_id  = null;
-                $factura->cai_autorizacion_id = null;
+                Log::info('Factura creada sin CAI', ['factura_id' => $factura->id]);
             }
+        });
 
-            // centro y auditoría
-            if (auth()->check()) {
-                $factura->centro_id  ??= auth()->user()->centro_id;
-                $factura->created_by ??= auth()->id();
-            }
-
-            // CAI activo
-            $cai = CAIAutorizaciones::query()
-                ->where('centro_id', $factura->centro_id)
-                ->where('estado', 'ACTIVA')
-                ->whereDate('fecha_limite', '>=', now())
-                ->orderBy('id')
-                ->firstOrFail();
-
-            $corr = CaiNumerador::generar(
-                caiId     : $cai->id,
-                usuarioId : auth()->id(),
-                centroId  : $factura->centro_id,
-            );
-
-            $factura->cai_correlativo_id  = $corr->id;
-            $factura->cai_autorizacion_id = $cai->id;
-
-            static::created(function ($pago) {
-                $factura = $pago->factura;
-                if ($factura) $factura->actualizarEstadoPago();
-            });
+        static::created(function (self $factura) {
+            // NO crear cuenta por cobrar automáticamente
+            // Se creará después cuando sea necesario (si queda saldo pendiente)
         });
     }
 
-    /* ─────────────────────  MÉTODOS DE PAGO  ───────────────────── */
+    // Métodos de pago
     public function montoPagado(): float
     {
-        return $this->pagos()->where('estado','CONFIRMADO')->sum('monto_recibido');
+        return $this->pagos()
+            ->whereNull('deleted_at')
+            ->sum('monto_recibido');
     }
 
     public function saldoPendiente(): float
     {
-        return (float) $this->total - $this->montoPagado();
-    }
-
-    public function afterCommit(): void
-    {
-        // Al crear factura se abre cuenta por cobrar si total > 0
-        if ($this->wasRecentlyCreated && $this->total > 0) {
-            Cuentas_Por_Cobrar::create([
-                'factura_id'    => $this->id,
-                'paciente_id'   => $this->paciente_id,
-                'saldo_pendiente'=> $this->total,
-                'fecha_vencimiento'=> now()->addDays(30),
-                'centro_id'     => $this->centro_id,
-                'estado_cuentas_por_cobrar' => 'ABIERTA',
-                'created_by'    => $this->created_by,
-            ]);
-        }
+        return $this->total - $this->montoPagado();
     }
 
     public function actualizarEstadoPago(): void
     {
-        $pagado = $this->montoPagado();
-
-        $this->estado = match (true) {
-            $pagado == 0            => 'PENDIENTE',
-            $pagado >= $this->total => 'PAGADA',
-            default                 => 'PARCIAL',
-        };
-
+        $montoPagado = $this->montoPagado();
+        
+        // Calcular el total real con descuento aplicado
+        $totalConDescuento = $this->subtotal + $this->impuesto_total - $this->descuento_total;
+        $saldoPendiente = max(0, $totalConDescuento - $montoPagado);
+        
+        // Actualizar estado de la factura
+        if ($montoPagado == 0) {
+            $this->estado = 'PENDIENTE';
+        } elseif ($montoPagado >= $totalConDescuento) {
+            $this->estado = 'PAGADA';
+        } else {
+            $this->estado = 'PARCIAL';
+        }
+        
         $this->save();
+        
+        // CREAR o ACTUALIZAR cuenta por cobrar SOLO si hay saldo pendiente
+        if ($saldoPendiente > 0) {
+            // Buscar cuenta por cobrar existente
+            $this->load('cuentasPorCobrar');
+            $cuentaPorCobrar = $this->cuentasPorCobrar;
+            
+            if (!$cuentaPorCobrar) {
+                // Si no existe, buscar manualmente
+                $cuentaPorCobrar = CuentasPorCobrar::where('factura_id', $this->id)->first();
+            }
+            
+            if ($cuentaPorCobrar) {
+                // Actualizar cuenta existente
+                $estadoCuenta = ($montoPagado > 0) ? 'PARCIAL' : 'PENDIENTE';
+                
+                $cuentaPorCobrar->update([
+                    'saldo_pendiente' => $saldoPendiente,
+                    'estado_cuentas_por_cobrar' => $estadoCuenta,
+                    'updated_by' => auth()->id(),
+                ]);
+            } else {
+                // Crear nueva cuenta por cobrar solo si hay saldo pendiente
+                $estadoCuenta = ($montoPagado > 0) ? 'PARCIAL' : 'PENDIENTE';
+                
+                CuentasPorCobrar::create([
+                    'factura_id' => $this->id,
+                    'saldo_pendiente' => $saldoPendiente,
+                    'fecha_vencimiento' => now()->addDays(30),
+                    'centro_id' => $this->centro_id,
+                    'estado_cuentas_por_cobrar' => $estadoCuenta,
+                    'created_by' => auth()->id() ?? $this->created_by,
+                ]);
+            }
+        } else {
+            // Si no hay saldo pendiente, marcar cuenta existente como PAGADA o eliminarla
+            $this->load('cuentasPorCobrar');
+            $cuentaPorCobrar = $this->cuentasPorCobrar;
+            
+            if (!$cuentaPorCobrar) {
+                $cuentaPorCobrar = CuentasPorCobrar::where('factura_id', $this->id)->first();
+            }
+            
+            if ($cuentaPorCobrar) {
+                $cuentaPorCobrar->update([
+                    'saldo_pendiente' => 0,
+                    'estado_cuentas_por_cobrar' => 'PAGADA',
+                    'updated_by' => auth()->id(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Generar PDF de la factura
+     */
+    public function generarPdf()
+    {
+        return app(\App\Http\Controllers\FacturaPdfController::class)->generarPdf($this);
+    }
+
+    /**
+     * Obtener el total pagado de la factura
+     */
+    public function getTotalPagadoAttribute(): float
+    {
+        return $this->pagos->sum('monto_recibido');
+    }
+
+    /**
+     * Obtener el saldo pendiente de la factura
+     */
+    public function getSaldoPendienteAttribute(): float
+    {
+        return $this->total - $this->total_pagado;
+    }
+
+    /**
+     * Verificar si la factura está completamente pagada
+     */
+    public function estaPagada(): bool
+    {
+        return $this->saldo_pendiente <= 0;
+    }
+
+    /**
+     * Verificar si la factura tiene pagos parciales
+     */
+    public function tienePagosParciales(): bool
+    {
+        return $this->total_pagado > 0 && $this->saldo_pendiente > 0;
+    }
+
+    /**
+     * Obtener el estado de pago legible
+     */
+    public function getEstadoPagoAttribute(): string
+    {
+        if ($this->estaPagada()) {
+            return 'PAGADA';
+        } elseif ($this->tienePagosParciales()) {
+            return 'PARCIAL';
+        } else {
+            return 'PENDIENTE';
+        }
     }
 }

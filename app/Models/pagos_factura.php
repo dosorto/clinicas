@@ -29,10 +29,39 @@ class Pagos_Factura extends Model
     protected $dates = ['fecha_pago','created_at','updated_at','deleted_at'];
 
     /* ─────────────  R E L A C I O N E S  ───────────── */
-    public function factura()   : BelongsTo { return $this->belongsTo(Factura::class); }
     public function paciente()  : BelongsTo { return $this->belongsTo(Pacientes::class); }
+
+    public function centro(): BelongsTo
+    {
+        return $this->belongsTo(Centros_Medico::class, 'centro_id');
+    }
+
+    public function factura(): BelongsTo
+    {
+        return $this->belongsTo(Factura::class);
+    }
+
     public function tipoPago(): BelongsTo
     {
         return $this->belongsTo(TipoPago::class, 'tipo_pago_id');
     }
+
+    protected static function booted(): void
+    {
+        parent::booted();
+
+        // Actualizar estado de factura cuando se crea/actualiza/elimina un pago
+        static::created(function (self $pago) {
+            $pago->factura?->actualizarEstadoPago();
+        });
+
+        static::updated(function (self $pago) {
+            $pago->factura?->actualizarEstadoPago();
+        });
+
+               static::deleted(function (self $pago) {
+            $pago->factura?->actualizarEstadoPago();
+        });
+    }
+
 }
