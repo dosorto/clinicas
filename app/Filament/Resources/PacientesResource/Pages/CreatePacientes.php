@@ -9,6 +9,7 @@ use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions;
 
 class CreatePacientes extends CreateRecord
 {
@@ -19,8 +20,10 @@ class CreatePacientes extends CreateRecord
         DB::beginTransaction();
 
         try {
-            // Validar duplicados de enfermedades antes de crear
-            if (isset($data['enfermedades_data']) && is_array($data['enfermedades_data'])) {
+            // Validar duplicados de enfermedades antes de crear (solo si no marcó "sin enfermedades")
+            $sinEnfermedades = $data['sin_enfermedades'] ?? false;
+            
+            if (!$sinEnfermedades && isset($data['enfermedades_data']) && is_array($data['enfermedades_data'])) {
                 $enfermedadesSeleccionadas = array_filter(
                     array_column($data['enfermedades_data'], 'enfermedad_id'),
                     fn($id) => !is_null($id)
@@ -68,8 +71,10 @@ class CreatePacientes extends CreateRecord
                 'updated_by' => Auth::id(),
             ]);
 
-            // 4. Agregar enfermedades sin duplicados
-            if (isset($data['enfermedades_data']) && is_array($data['enfermedades_data'])) {
+            // 4. Agregar enfermedades solo si no marcó "sin_enfermedades"
+            $sinEnfermedades = $data['sin_enfermedades'] ?? false;
+            
+            if (!$sinEnfermedades && isset($data['enfermedades_data']) && is_array($data['enfermedades_data'])) {
                 $enfermedadesSeleccionadas = [];
                 
                 foreach ($data['enfermedades_data'] as $enfermedadData) {
@@ -129,5 +134,15 @@ class CreatePacientes extends CreateRecord
     protected function getCreatedNotificationTitle(): ?string
     {
         return 'Paciente creado exitosamente';
+    }
+
+
+
+    protected function getFormSchema(): array
+    {
+        return [
+            // ...existing code...
+            // ...existing code...
+        ];
     }
 }

@@ -18,6 +18,9 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Centros_Medico::class => \App\Policies\CentrosMedicoPolicy::class,
         \App\Models\Enfermedades__Paciente::class => \App\Policies\EnfermedadesPacientePolicy::class,
         \App\Filament\Pages\PerfilMedico::class => \App\Policies\PerfilMedicoPolicy::class,
+        \App\Models\ContabilidadMedica\ContratoMedico::class => \App\Policies\ContratoMedicoPolicy::class,
+        \App\Models\ContabilidadMedica\Nomina::class => \App\Policies\NominaPolicy::class,
+        \App\Models\ContabilidadMedica\DetalleNomina::class => \App\Policies\DetalleNominaPolicy::class,
     ];
 
     /**

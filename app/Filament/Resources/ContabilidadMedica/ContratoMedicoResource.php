@@ -12,8 +12,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use App\Filament\Resources\ContabilidadMedica\ContratoMedicoResource\RelationManagers\CargosRelationManager;
-use App\Filament\Resources\ContabilidadMedica\ContratoMedicoResource\RelationManagers\DetallesRelationManager;
 
 
 class ContratoMedicoResource extends Resource
@@ -25,12 +23,12 @@ class ContratoMedicoResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('centro_id', auth()->user()->centro_id)->count();
+        return static::getModel()::where('centro_id', \Illuminate\Support\Facades\Auth::user()->centro_id)->count();
     }
 
     public static function form(Form $form): Form
     {
-        $centro_id = auth()->user()->centro_id;
+        $centro_id = \Illuminate\Support\Facades\Auth::user()->centro_id;
         
         return $form
             ->schema([
@@ -76,7 +74,7 @@ class ContratoMedicoResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $centro_id = auth()->user()->centro_id;
+        $centro_id = \Illuminate\Support\Facades\Auth::user()->centro_id;
         
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query
@@ -132,7 +130,7 @@ class ContratoMedicoResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\CargosRelationManager::class,
+            //
         ];
     }
 
@@ -150,7 +148,7 @@ class ContratoMedicoResource extends Resource
     {
         $query = parent::getEloquentQuery();
         
-        return $query->where('centro_id', auth()->user()->centro_id)
+        return $query->where('centro_id', \Illuminate\Support\Facades\Auth::user()->centro_id)
                     ->latest('id');
     }
 }

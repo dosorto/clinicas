@@ -18,6 +18,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Althinect\FilamentSpatieRolesPermissions\FilamentSpatieRolesPermissionsPlugin;
+use App\Filament\Pages\CustomProfile;
 
 
 class AdminPanelProvider extends PanelProvider
@@ -29,11 +30,22 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->profile()
+            ->profile(CustomProfile::class)
             //->plugin(FilamentSpatieRolesPermissionsPlugin::make())
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Emerald,
+                'gray' => Color::Slate,
+                'success' => Color::Green,
+                'warning' => Color::Amber,
+                'danger' => Color::Red,
+                'info' => Color::Blue,
             ])
+            ->darkMode(true)
+            ->sidebarCollapsibleOnDesktop()
+            ->sidebarWidth('16rem')
+            ->maxContentWidth('full')
+            ->topNavigation(false)
+            ->breadcrumbs(true)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
