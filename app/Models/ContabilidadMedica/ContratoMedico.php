@@ -40,6 +40,7 @@ class ContratoMedico extends ModeloBase
         'fecha_inicio',
         'fecha_fin',
         'activo',
+        'observaciones',
         'centro_id',
     ];
 

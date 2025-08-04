@@ -265,10 +265,13 @@ class MedicoResource extends Resource
                         ->schema([
                             Forms\Components\TextInput::make('salario_quincenal')
                                 ->label('Salario Quincenal')
-                                ->required()
+                                ->required(fn ($operation) => $operation === 'create')
                                 ->numeric()
                                 ->prefix('L')
                                 ->placeholder('0.00')
+                                ->extraAttributes([
+                                    'title' => 'Monto que recibirá el médico cada quincena (15 días)'
+                                ])
                                 ->live(onBlur: true)
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     if ($state) {
@@ -278,10 +281,13 @@ class MedicoResource extends Resource
 
                             Forms\Components\TextInput::make('salario_mensual')
                                 ->label('Salario Mensual')
-                                ->required()
+                                ->required(fn ($operation) => $operation === 'create')
                                 ->numeric()
                                 ->prefix('L')
                                 ->placeholder('0.00')
+                                ->extraAttributes([
+                                    'title' => 'Salario completo mensual (calculado automáticamente)'
+                                ])
                                 ->disabled()
                                 ->dehydrated(),
                         ]),
@@ -296,7 +302,10 @@ class MedicoResource extends Resource
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(100)
-                                ->required()
+                                ->required(fn ($operation) => $operation === 'create')
+                                ->extraAttributes([
+                                    'title' => 'Porcentaje de comisión que recibe por servicios médicos realizados'
+                                ])
                                 ->live(onBlur: true)
                                 ->afterStateUpdated(function ($state, callable $set) {
                                     if ($state === '' || $state === null) {
@@ -308,7 +317,7 @@ class MedicoResource extends Resource
 
                             Forms\Components\DatePicker::make('fecha_inicio')
                                 ->label('Fecha de Inicio')
-                                ->required()
+                                ->required(fn ($operation) => $operation === 'create')
                                 ->native(false)
                                 ->displayFormat('d/m/Y')
                                 ->default(now()),
@@ -355,9 +364,17 @@ class MedicoResource extends Resource
                         ->description('Determine si este médico necesita acceso al sistema')
                         ->schema([
                             Forms\Components\Toggle::make('crear_usuario')
-                                ->label('Crear usuario de acceso para este médico')
-                                ->helperText('Active esta opción si el médico necesita acceder al sistema')
-                                ->default(true)
+                                ->label(fn ($operation) => 
+                                    $operation === 'edit' 
+                                        ? 'Gestionar usuario de acceso'
+                                        : 'Crear usuario de acceso para este médico'
+                                )
+                                ->helperText(fn ($operation) => 
+                                    $operation === 'edit' 
+                                        ? 'Active para modificar o crear datos de usuario del sistema'
+                                        : 'Active esta opción si el médico necesita acceder al sistema'
+                                )
+                                ->default(fn ($operation) => $operation === 'create' ? true : false)
                                 ->live()
                                 ->inline(false)
                                 ->dehydrated(),
@@ -370,43 +387,80 @@ class MedicoResource extends Resource
                                 ->schema([
                                     Forms\Components\TextInput::make('username')
                                         ->label('Nombre de usuario')
-                                        ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                        ->required(fn (Forms\Get $get, $operation) => 
+                                            $get('crear_usuario') && $operation === 'create'
+                                        )
                                         ->maxLength(255)
                                         ->placeholder('Ej: juan.perez')
-                                        ->helperText('Usado para iniciar sesión en el sistema')
-                                        ->live(debounce: 500)
-                                        ->afterStateUpdated(function ($state, callable $set) {
-                                            // Auto-generar email basado en username si está vacío
-                                            $set('user_email', strtolower($state) . '@clinica.com');
+                                        ->helperText(fn ($operation) => 
+                                            $operation === 'edit' 
+                                                ? 'Déjalo igual si no quieres cambiar el acceso'
+                                                : 'Usado para iniciar sesión en el sistema'
+                                        )
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function ($state, callable $set, $operation) {
+                                            // Auto-generar email basado en username si está vacío y es creación
+                                            if ($operation === 'create' && $state) {
+                                                $set('user_email', strtolower($state) . '@clinica.com');
+                                            }
                                         })
+                                        ->reactive()
                                         ->rules([
                                             'regex:/^[a-zA-Z0-9._-]+$/',
-                                            function () {
-                                                return function (string $attribute, $value, \Closure $fail) {
-                                                    if (\App\Models\User::where('name', $value)->exists()) {
-                                                        $fail('Este nombre de usuario ya está en uso.');
+                                            function ($operation) {
+                                                return function (string $attribute, $value, \Closure $fail) use ($operation) {
+                                                    // Solo validar si hay valor
+                                                    if (empty($value)) {
+                                                        return;
                                                     }
+                                                    
+                                                    if ($operation === 'create') {
+                                                        // En creación, verificar duplicados
+                                                        if (\App\Models\User::where('name', $value)->exists()) {
+                                                            $fail('Este nombre de usuario ya está en uso.');
+                                                        }
+                                                    }
+                                                    // En edición, no validar aquí - se validará en el backend
                                                 };
                                             },
                                         ])
+                                        ->validationAttribute('nombre de usuario')
                                         ->dehydrated(),
 
                                     Forms\Components\TextInput::make('user_email')
                                         ->label('Email corporativo')
                                         ->email()
-                                        ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                        ->required(fn (Forms\Get $get, $operation) => 
+                                            $get('crear_usuario') && $operation === 'create'
+                                        )
                                         ->maxLength(255)
                                         ->placeholder('Ej: juan.perez@clinica.com')
-                                        ->helperText('Email para notificaciones y recuperación de contraseña')
+                                        ->helperText(fn ($operation) => 
+                                            $operation === 'edit' 
+                                                ? 'Email para notificaciones - déjalo igual si no quieres cambiar'
+                                                : 'Email para notificaciones y recuperación de contraseña'
+                                        )
+                                        ->reactive()
                                         ->rules([
-                                            function () {
-                                                return function (string $attribute, $value, \Closure $fail) {
-                                                    if (\App\Models\User::where('email', $value)->exists()) {
-                                                        $fail('Este email ya está en uso.');
+                                            'email',
+                                            function ($operation) {
+                                                return function (string $attribute, $value, \Closure $fail) use ($operation) {
+                                                    // Solo validar si hay valor
+                                                    if (empty($value)) {
+                                                        return;
                                                     }
+                                                    
+                                                    if ($operation === 'create') {
+                                                        // En creación, verificar duplicados
+                                                        if (\App\Models\User::where('email', $value)->exists()) {
+                                                            $fail('Este email ya está en uso.');
+                                                        }
+                                                    }
+                                                    // En edición, no validar aquí - se validará en el backend
                                                 };
                                             },
                                         ])
+                                        ->validationAttribute('email corporativo')
                                         ->dehydrated(),
                                 ]),
 
@@ -415,21 +469,41 @@ class MedicoResource extends Resource
                                     Forms\Components\TextInput::make('user_password')
                                         ->label('Contraseña')
                                         ->password()
-                                        ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                        ->required(fn (Forms\Get $get, $operation) => 
+                                            $get('crear_usuario') && $operation === 'create'
+                                        )
                                         ->minLength(8)
                                         ->maxLength(255)
-                                        ->placeholder('Mínimo 8 caracteres')
-                                        ->helperText('Contraseña inicial del médico (puede cambiarla después)')
+                                        ->placeholder(fn ($operation) => 
+                                            $operation === 'edit' 
+                                                ? 'Dejar vacío para mantener la contraseña actual'
+                                                : 'Mínimo 8 caracteres'
+                                        )
+                                        ->helperText(fn ($operation) => 
+                                            $operation === 'edit' 
+                                                ? 'Solo complete si desea cambiar la contraseña'
+                                                : 'Contraseña inicial del médico (puede cambiarla después)'
+                                        )
                                         ->dehydrated(),
 
                                     Forms\Components\TextInput::make('user_password_confirmation')
                                         ->label('Confirmar contraseña')
                                         ->password()
-                                        ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                        ->required(fn (Forms\Get $get, $operation) => 
+                                            $get('crear_usuario') && $operation === 'create' && $get('user_password')
+                                        )
                                         ->same('user_password')
-                                        ->placeholder('Repita la contraseña')
-                                        ->helperText('Debe coincidir con la contraseña anterior')
-                                        ->dehydrated(false), // No enviar al servidor
+                                        ->placeholder(fn ($operation) => 
+                                            $operation === 'edit' 
+                                                ? 'Confirme solo si cambió la contraseña'
+                                                : 'Repita la contraseña'
+                                        )
+                                        ->helperText(fn ($operation) => 
+                                            $operation === 'edit' 
+                                                ? 'Solo necesario si cambió la contraseña arriba'
+                                                : 'Debe coincidir con la contraseña anterior'
+                                        )
+                                        ->dehydrated(false),
                                 ]),
 
                             Forms\Components\Select::make('user_role')
@@ -440,7 +514,9 @@ class MedicoResource extends Resource
                                     'recepcionista' => 'Recepcionista - Gestión de citas y pacientes',
                                 ])
                                 ->default('medico')
-                                ->required(fn (Forms\Get $get) => $get('crear_usuario'))
+                                ->required(fn (Forms\Get $get, $operation) => 
+                                    $get('crear_usuario') && $operation === 'create'
+                                )
                                 ->helperText('Define los permisos del usuario en el sistema')
                                 ->dehydrated(),
 
@@ -817,6 +893,12 @@ class MedicoResource extends Resource
 
             // Crear usuario si se ha solicitado
             if (isset($data['crear_usuario']) && $data['crear_usuario']) {
+                
+                // Validar que se proporcionaron todos los datos requeridos
+                if (empty($data['username']) || empty($data['user_email']) || empty($data['user_password'])) {
+                    throw new \Exception("Para crear el usuario debe proporcionar: nombre de usuario, email y contraseña.");
+                }
+                
                 try {
                     $user = \App\Models\User::create([
                         'name' => $data['username'],
@@ -828,7 +910,7 @@ class MedicoResource extends Resource
                     ]);
 
                     // Asignar rol
-                    $user->assignRole($data['user_role']);
+                    $user->assignRole($data['user_role'] ?? 'medico');
 
                     Notification::make()
                         ->title('✅ Usuario creado exitosamente')
@@ -837,11 +919,7 @@ class MedicoResource extends Resource
                         ->persistent()
                         ->send();
                 } catch (\Exception $e) {
-                    Notification::make()
-                        ->title('❌ Error al crear usuario')
-                        ->body("Error: " . $e->getMessage())
-                        ->danger()
-                        ->send();
+                    throw new \Exception("Error al crear el usuario: " . $e->getMessage());
                 }
             }
 
