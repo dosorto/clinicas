@@ -3,88 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nómina del mes de {{ $mesNombre }} {{ $nomina->año }}</title>
+    <title>{{ $tituloNomina }}</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'DejaVu Sans', Arial, sans-serif;
             margin: 0;
             padding: 20px;
-            font-size: 12px;
+            font-size: 10px;
+            line-height: 1.2;
+            color: #000000;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 10px;
         }
         .company-name {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .company-info {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        .title {
             font-size: 18px;
             font-weight: bold;
-            margin: 20px 0;
+            margin-bottom: 3px;
+            color: #000000;
+        }
+        .company-info {
+            font-size: 10px;
+            color: #333333;
+            margin-bottom: 5px;
+        }
+        .title {
+            font-size: 14px;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #000000;
+            text-align: center;
         }
         .info-section {
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
         .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+            border: 1px solid #000000;
         }
         .info-table td {
-            padding: 8px;
-            border: 1px solid #ddd;
-            font-size: 12px;
+            padding: 6px 8px;
+            border: 1px solid #000000;
+            font-size: 9px;
+            vertical-align: middle;
         }
         .info-table .label {
-            background-color: #f8f9fa;
+            background-color: #f0f0f0;
+            color: #000000;
             font-weight: bold;
-            width: 30%;
+            width: 25%;
+            text-align: center;
+        }
+        .info-table .value {
+            background-color: #ffffff;
+            color: #000000;
         }
         .employees-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 10px;
+            border: 1px solid #000000;
         }
         .employees-table th,
         .employees-table td {
-            border: 1px solid #333;
-            padding: 8px;
-            text-align: left;
-            font-size: 11px;
+            border: 1px solid #000000;
+            padding: 6px 4px;
+            font-size: 9px;
+            vertical-align: middle;
         }
         .employees-table th {
-            background-color: #f8f9fa;
+            background-color: #e0e0e0;
+            color: #000000;
             font-weight: bold;
             text-align: center;
+            font-size: 9px;
         }
         .employees-table .number-cell {
             text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
         }
-        .total-row {
-            background-color: #e9ecef;
-            font-weight: bold;
+        .employees-table .name-cell {
+            font-weight: 600;
+            color: #1f2937;
         }
-        .footer {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
+        .employees-table tbody tr:nth-child(even) {
+            background-color: #f7fafc;
         }
-        .status {
-            color: #d32f2f;
-            font-weight: bold;
+        .employees-table tbody tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        .number-cell {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        .name-cell {
+            font-weight: 600;
+            color: #2d3748;
+            text-align: left;
+        }
+        .currency {
+            color: #38a169;
+            font-weight: 600;
         }
         .signatures {
             margin-top: 50px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             width: 100%;
         }
         .signature-table {
@@ -95,13 +125,52 @@
             width: 33.33%;
             text-align: center;
             padding: 40px 10px 10px 10px;
-            border-bottom: 1px solid #333;
-            font-size: 11px;
+            border-bottom: 2px solid #4a5568;
+            font-size: 10px;
+            color: #4a5568;
         }
         .signature-label {
             margin-top: 10px;
-            font-weight: bold;
+            font-weight: 600;
             font-size: 10px;
+            color: #2d3748;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 9px;
+            color: #718096;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 15px;
+        }
+        .status {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+        .status.cerrada {
+            color: #e53e3e;
+            background-color: #fed7d7;
+            border: 1px solid #feb2b2;
+        }
+        .status.abierta {
+            color: #38a169;
+            background-color: #c6f6d5;
+            border: 1px solid #9ae6b4;
+        }
+        .quincenal-badge {
+            background-color: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 9px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .period-highlight {
+            font-weight: 600;
+            color: #2c5282;
         }
     </style>
 </head>
@@ -110,22 +179,31 @@
         <div class="company-name">{{ $nomina->empresa }}</div>
         <div class="company-info">Colonia Palmira, Tegucigalpa</div>
         <div class="company-info">Teléfono: 2233-4455</div>
-        <div class="title">Nómina del mes de {{ $mesNombre }} {{ $nomina->año }}</div>
+        <div class="title">{{ $tituloNomina }}</div>
     </div>
 
     <div class="info-section">
         <table class="info-table">
             <tr>
                 <td class="label">Fecha de generación</td>
-                <td>{{ $fechaGeneracion }}</td>
+                <td class="value">{{ $fechaGeneracion }}</td>
                 <td class="label">Período</td>
-                <td>{{ $mesNombre }} {{ $nomina->año }}</td>
+                <td class="value">{{ $periodo }}</td>
             </tr>
             <tr>
                 <td class="label">Tipo de Pago</td>
-                <td>{{ ucfirst($nomina->tipo_pago) }}</td>
+                <td class="value">
+                    {{ ucfirst($nomina->tipo_pago) }}
+                    @if($nomina->tipo_pago === 'quincenal' && $nomina->quincena)
+                        - {{ $nomina->quincena == 1 ? 'Primera Quincena' : 'Segunda Quincena' }}
+                    @endif
+                </td>
                 <td class="label">Estado</td>
-                <td class="status">{{ $nomina->cerrada ? 'Cerrada' : 'Abierta' }}</td>
+                <td class="value">
+                    <span class="status {{ $nomina->cerrada ? 'cerrada' : 'abierta' }}">
+                        {{ $nomina->cerrada ? 'Cerrada' : 'Abierta' }}
+                    </span>
+                </td>
             </tr>
         </table>
     </div>
@@ -135,33 +213,27 @@
     <table class="employees-table">
         <thead>
             <tr>
-                <th>Médico</th>
-                <th>Salario</th>
-                <th>Deducciones</th>
-                <th>Percepciones</th>
-                <th>Total</th>
+                <th style="width: 35%;">Médico</th>
+                <th style="width: 18%;">
+                    @if($nomina->tipo_pago === 'quincenal')
+                        Salario Quincenal
+                    @else
+                        Salario Mensual
+                    @endif
+                </th>
+                <th style="width: 15%;">Deducciones</th>
+                <th style="width: 15%;">Percepciones</th>
+                <th style="width: 17%;">Total a Pagar</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($empleados as $medico)
+            @foreach($detalles as $detalle)
             <tr>
-                <td>{{ $medico['nombre'] }}</td>
-                <td class="number-cell">L. {{ number_format($medico['salario'], 2) }}</td>
-                <td class="number-cell">
-                    @if($medico['deducciones'] > 0)
-                        Total: L. {{ number_format($medico['deducciones'], 2) }}
-                    @else
-                        Total: L. 0.00
-                    @endif
-                </td>
-                <td class="number-cell">
-                    @if($medico['percepciones'] > 0)
-                        Total: L. {{ number_format($medico['percepciones'], 2) }}
-                    @else
-                        Total: L. 0.00
-                    @endif
-                </td>
-                <td class="number-cell">L. {{ number_format($medico['total'], 2) }}</td>
+                <td class="name-cell">{{ $detalle->medico->persona->nombre_completo }}</td>
+                <td class="number-cell">L. {{ number_format($detalle->salario_base, 2) }}</td>
+                <td class="number-cell">L. {{ number_format($detalle->deducciones, 2) }}</td>
+                <td class="number-cell">L. {{ number_format($detalle->percepciones, 2) }}</td>
+                <td class="number-cell">L. {{ number_format($detalle->total_pagar, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -190,8 +262,13 @@
     </div>
 
     <div class="footer">
-        <p>Reporte generado el {{ $fechaGeneracion }}</p>
-        <p>Sistema de Gestión de Clínicas Médicas</p>
+        <p><strong>Reporte generado el {{ $fechaGeneracion }}</strong></p>
+        <p>Sistema de Gestión de Clínicas Médicas - {{ $nomina->empresa }}</p>
+        @if($nomina->tipo_pago === 'quincenal')
+            <p style="font-style: italic; color: #7c3aed;">
+                Nómina {{ $nomina->quincena == 1 ? 'de la primera quincena' : 'de la segunda quincena' }} del mes de {{ $mesNombre }}
+            </p>
+        @endif
     </div>
 </body>
 </html>

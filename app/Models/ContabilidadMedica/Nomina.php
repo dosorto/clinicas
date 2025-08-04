@@ -24,6 +24,7 @@ class Nomina extends ModeloBase
         'año',
         'mes',
         'tipo_pago',
+        'quincena',
         'descripcion',
         'cerrada',
         'estado',

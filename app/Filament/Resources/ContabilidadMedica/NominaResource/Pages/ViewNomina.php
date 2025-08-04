@@ -78,15 +78,23 @@ class ViewNomina extends ViewRecord
 
                         TextEntry::make('tipo_pago')
                             ->label('Tipo de Pago')
-                            ->formatStateUsing(function ($state) {
-                                return match($state) {
+                            ->formatStateUsing(function ($state, $record) {
+                                $texto = match($state) {
                                     'mensual' => 'Mensual',
                                     'quincenal' => 'Quincenal',
                                     'semanal' => 'Semanal',
                                     default => ucfirst($state)
                                 };
+                                
+                                if ($state === 'quincenal' && $record->quincena) {
+                                    $quincenaTexto = $record->quincena == 1 ? 'Primera Quincena' : 'Segunda Quincena';
+                                    $texto .= ' - ' . $quincenaTexto;
+                                }
+                                
+                                return $texto;
                             })
-                            ->badge(),
+                            ->badge()
+                            ->color(fn ($record) => $record->tipo_pago === 'quincenal' ? 'warning' : 'primary'),
 
                         TextEntry::make('descripcion')
                             ->label('Descripción')
@@ -127,29 +135,30 @@ class ViewNomina extends ViewRecord
         ];
         $mesNombre = $meses[$nomina->mes] ?? '';
         
-        // Preparar datos para el PDF
-        $empleados = [];
-        $totalNomina = 0;
-
-        foreach ($nomina->detalles as $detalle) {
-            $empleados[] = [
-                'nombre' => $detalle->medico_nombre,
-                'salario' => $detalle->salario_base,
-                'deducciones' => $detalle->deducciones,
-                'percepciones' => $detalle->percepciones,
-                'total' => $detalle->total_pagar,
-            ];
-            $totalNomina += $detalle->total_pagar;
+        // Determinar el período completo basado en el tipo de pago
+        $periodo = $mesNombre . ' ' . $nomina->año;
+        $tituloNomina = 'Nómina del mes de ' . $mesNombre . ' ' . $nomina->año;
+        $nombreArchivo = "nomina_{$mesNombre}_{$nomina->año}";
+        
+        if ($nomina->tipo_pago === 'quincenal' && $nomina->quincena) {
+            $quincenaTexto = $nomina->quincena == 1 ? 'Primera Quincena' : 'Segunda Quincena';
+            $periodo = $quincenaTexto . ' de ' . $mesNombre . ' ' . $nomina->año;
+            $tituloNomina = 'Nómina ' . $quincenaTexto . ' de ' . $mesNombre . ' ' . $nomina->año;
+            $nombreArchivo = "nomina_" . ($nomina->quincena == 1 ? 'primera' : 'segunda') . "_quincena_{$mesNombre}_{$nomina->año}";
         }
+        
+        // Calcular total de la nómina
+        $totalNomina = $nomina->detalles->sum('total_pagar');
         
         // Generar HTML para el PDF
         $html = view('pdf.nomina-medica', [
             'nomina' => $nomina,
             'mesNombre' => $mesNombre,
-            'empleados' => $empleados,
+            'periodo' => $periodo,
+            'tituloNomina' => $tituloNomina,
+            'detalles' => $nomina->detalles,
             'totalNomina' => $totalNomina,
-            'fechaGeneracion' => now()->format('d/m/Y H:i:s'),
-            'centroMedico' => $nomina->empresa, // Ya contiene el nombre del centro
+            'fechaGeneracion' => now()->format('d/m/Y H:i'),
         ])->render();
         
         // Usar dompdf para generar el PDF
@@ -159,6 +168,6 @@ class ViewNomina extends ViewRecord
         
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->output();
-        }, "nomina_{$mesNombre}_{$nomina->año}.pdf");
+        }, "{$nombreArchivo}.pdf");
     }
 }

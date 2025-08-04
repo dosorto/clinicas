@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('año');
             $table->integer('mes');
             $table->enum('tipo_pago', ['mensual', 'quincenal', 'semanal'])->default('mensual');
+            $table->integer('quincena')->nullable(); // 1 = primera quincena, 2 = segunda quincena
             $table->text('descripcion')->nullable();
             $table->boolean('cerrada')->default(false);
             $table->enum('estado', ['abierta', 'cerrada'])->default('abierta');

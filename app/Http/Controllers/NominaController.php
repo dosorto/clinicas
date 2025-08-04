@@ -147,12 +147,33 @@ class NominaController extends Controller
         // Cargar relaciones necesarias
         $nomina->load(['detalles.medico.persona']);
 
+        // Obtener el nombre del mes
+        $meses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
+        ];
+        $mesNombre = $meses[$nomina->mes] ?? '';
+        
+        // Determinar el período completo basado en el tipo de pago
+        $periodo = $mesNombre . ' ' . $nomina->año;
+        $tituloNomina = 'Nómina del mes de ' . $mesNombre . ' ' . $nomina->año;
+        $nombreArchivo = "nomina_{$mesNombre}_{$nomina->año}";
+        
+        if ($nomina->tipo_pago === 'quincenal' && $nomina->quincena) {
+            $quincenaTexto = $nomina->quincena == 1 ? 'Primera Quincena' : 'Segunda Quincena';
+            $periodo = $quincenaTexto . ' de ' . $mesNombre . ' ' . $nomina->año;
+            $tituloNomina = 'Nómina ' . $quincenaTexto . ' de ' . $mesNombre . ' ' . $nomina->año;
+            $nombreArchivo = "nomina_" . ($nomina->quincena == 1 ? 'primera' : 'segunda') . "_quincena_{$mesNombre}_{$nomina->año}";
+        }
+
         $data = [
             'nomina' => $nomina,
             'detalles' => $nomina->detalles,
+            'mesNombre' => $mesNombre,
+            'periodo' => $periodo,
+            'tituloNomina' => $tituloNomina,
             'fechaGeneracion' => Carbon::now()->format('d/m/Y H:i'),
-            'centroMedico' => $nomina->empresa, // Ya contiene el nombre del centro
-            'mesNombre' => $nomina->nombre_mes, // Usar el accessor del modelo
             'totalNomina' => $nomina->detalles->sum('total_pagar'),
             'numeroEmpleados' => $nomina->detalles->count(),
         ];
@@ -166,8 +187,6 @@ class NominaController extends Controller
         $pdf->setOption('margin-bottom', 10);
         $pdf->setOption('margin-left', 10);
         
-        $filename = 'nomina_' . str_replace(' ', '_', $nomina->empresa) . '_' . $nomina->nombre_mes . '_' . $nomina->año . '.pdf';
-        
-        return $pdf->download($filename);
+        return $pdf->download("{$nombreArchivo}.pdf");
     }
 }

@@ -36,7 +36,9 @@ class CreateNomina extends CreateRecord
         $user = Auth::user();
         $centroId = $user ? $user->centro_id : null;
         
-        $query = Medico::with(['persona', 'contratos']);
+        // Usar la relación optimizada para obtener solo médicos con contratos activos
+        $query = Medico::with(['persona', 'contratoActivo'])
+            ->whereHas('contratosActivos'); // Solo médicos con contratos activos
         
         // Filtrar por centro médico del usuario si existe
         if ($centroId) {
@@ -49,7 +51,7 @@ class CreateNomina extends CreateRecord
                 return $medico->persona && $medico->persona->nombre_completo;
             })
             ->map(function ($medico) {
-                $contrato = $medico->contratos()->where('activo', true)->first();
+                $contrato = $medico->contratoActivo;
                 $salario = $contrato ? $contrato->salario_mensual : 0;
                 
                 return [
@@ -110,7 +112,20 @@ class CreateNomina extends CreateRecord
                                         'semanal' => 'Semanal',
                                     ])
                                     ->required()
-                                    ->default('mensual'),
+                                    ->default('mensual')
+                                    ->live()
+                                    ->afterStateUpdated(function ($state) {
+                                        $this->actualizarSalariosSegunTipo($state);
+                                    }),
+
+                                Select::make('quincena')
+                                    ->label('Quincena')
+                                    ->options([
+                                        1 => 'Primera Quincena',
+                                        2 => 'Segunda Quincena',
+                                    ])
+                                    ->required()
+                                    ->visible(fn($get) => $get('tipo_pago') === 'quincenal'),
                             ]),
 
                         Textarea::make('descripcion')
@@ -133,6 +148,29 @@ class CreateNomina extends CreateRecord
     {
         foreach ($this->medicosSeleccionados as $index => $medico) {
             $this->medicosSeleccionados[$index]['seleccionado'] = false;
+        }
+    }
+
+    public function actualizarSalariosSegunTipo($tipoPago): void
+    {
+        foreach ($this->medicosSeleccionados as $index => $medico) {
+            $contrato = Medico::find($medico['id'])->contratoActivo;
+            $salarioMensual = $contrato ? $contrato->salario_mensual : 0;
+            
+            switch ($tipoPago) {
+                case 'quincenal':
+                    $salarioCalculado = $salarioMensual / 2;
+                    break;
+                case 'semanal':
+                    $salarioCalculado = $salarioMensual / 4;
+                    break;
+                default: // mensual
+                    $salarioCalculado = $salarioMensual;
+                    break;
+            }
+            
+            $this->medicosSeleccionados[$index]['salario_base'] = $salarioCalculado;
+            $this->medicosSeleccionados[$index]['total'] = $salarioCalculado + $medico['percepciones'] - $medico['deducciones'];
         }
     }
 
