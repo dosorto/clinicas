@@ -371,12 +371,34 @@ class RecetaResource extends Resource
 
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->with(['paciente.persona', 'medico.persona', 'consulta'])
             ->where('centro_id', \Filament\Facades\Filament::auth()->user()->centro_id)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        // Si el usuario es un médico, solo mostrar sus recetas
+        if ($user) {
+            // Primero intentar con la relación directa
+            if ($user->medico) {
+                $query->where('medico_id', $user->medico->id);
+            }
+            // Si no tiene relación directa, buscar por persona_id
+            elseif ($user->persona_id) {
+                $medico = \App\Models\Medico::withoutGlobalScopes()
+                    ->where('persona_id', $user->persona_id)
+                    ->first();
+                    
+                if ($medico) {
+                    $query->where('medico_id', $medico->id);
+                }
+            }
+        }
+
+        return $query;
     }
 
     public static function getNavigationBadge(): ?string

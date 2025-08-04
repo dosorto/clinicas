@@ -455,67 +455,35 @@ class ConsultasResource extends Resource
 
                 Infolists\Components\Section::make('Recetas Médicas')
                     ->schema([
-                        Infolists\Components\Grid::make(1)
-                            ->schema([
-                                Infolists\Components\RepeatableEntry::make('recetas')
-                                    ->label('')
-                                    ->schema([
-                                        Infolists\Components\Section::make()
-                                            ->schema([
-                                                Infolists\Components\Grid::make(1)
-                                                    ->schema([
-                                                        Infolists\Components\TextEntry::make('fecha_receta')
-                                                            ->label('📅 Fecha de Receta')
-                                                            ->date('d/m/Y')
-                                                            ->color('primary')
-                                                            ->weight('semibold')
-                                                            ->placeholder('Sin fecha registrada')
-                                                            ->extraAttributes([
-                                                                'style' => 'margin-bottom: 8px;'
-                                                            ]),
-                                                    ]),
-
-                                                Infolists\Components\Grid::make(2)
-                                                    ->schema([
-                                                        Infolists\Components\TextEntry::make('medicamentos')
-                                                            ->label('💊 Medicamentos')
-                                                            ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin medicamentos especificados')
-                                                            ->weight('medium')
-                                                            ->color('success')
-                                                            ->extraAttributes([
-                                                                'style' => 'white-space: pre-line; word-wrap: break-word; line-height: 1.5;'
-                                                            ]),
-
-                                                        Infolists\Components\TextEntry::make('indicaciones')
-                                                            ->label('📋 Indicaciones')
-                                                            ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin indicaciones especificadas')
-                                                            ->color('info')
-                                                            ->extraAttributes([
-                                                                'style' => 'white-space: pre-line; word-wrap: break-word; line-height: 1.5;'
-                                                            ]),
-                                                    ]),
-                                            ])
-                                            ->extraAttributes([
-                                                'style' => 'border: 2px solid; border-radius: 12px; padding: 20px; margin-bottom: 16px; background: linear-gradient(to right, rgba(59, 130, 246, 0.05), rgba(16, 185, 129, 0.05));',
-                                                'class' => 'border-blue-200 dark:border-blue-600 shadow-sm hover:shadow-md transition-shadow duration-200'
-                                            ])
-                                            ->headerActions([])
-                                            ->compact(false),
-                                    ])
-                                    ->columnSpanFull()
-                                    ->visible(fn (Consulta $record): bool => $record->recetas()->exists()),
-
-                                Infolists\Components\TextEntry::make('no_recetas')
-                                    ->label('')
-                                    ->state('📝 No hay recetas médicas asociadas a esta consulta')
-                                    ->color('gray')
-                                    ->weight('medium')
-                                    ->extraAttributes([
-                                        'style' => 'text-align: center; padding: 30px; border: 2px dashed; border-radius: 12px;',
-                                        'class' => 'bg-gray-50 border-gray-300 dark:bg-gray-700 dark:border-gray-600'
-                                    ])
-                                    ->visible(fn (Consulta $record): bool => !$record->recetas()->exists()),
-                            ]),
+                        Infolists\Components\Split::make([
+                            Infolists\Components\Tabs::make('Recetas')
+                                ->tabs([
+                                    Infolists\Components\Tabs\Tab::make('recetas_tab')
+                                        ->label('Recetas Médicas')
+                                        ->schema([
+                                            Infolists\Components\RepeatableEntry::make('recetas')
+                                                ->label('')
+                                                ->schema([
+                                                    Infolists\Components\TextEntry::make('fecha_receta')
+                                                        ->label('Fecha')
+                                                        ->date(),
+                                                    Infolists\Components\TextEntry::make('medicamentos')
+                                                        ->label('Medicamentos')
+                                                        ->extraAttributes([
+                                                            'class' => 'prose max-w-none text-success-600 dark:text-success-400',
+                                                        ]),
+                                                    Infolists\Components\TextEntry::make('indicaciones')
+                                                        ->label('Indicaciones')
+                                                        ->extraAttributes([
+                                                            'class' => 'prose max-w-none text-info-600 dark:text-info-400',
+                                                        ]),
+                                                ])
+                                                ->columns(3),
+                                        ]),
+                                ])
+                                ->contained(false),
+                        ])
+                            ->from('md'),
                     ])
                     ->description('Lista de todas las recetas médicas emitidas durante esta consulta')
                     ->collapsible()
@@ -561,12 +529,34 @@ class ConsultasResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->with(['paciente.persona', 'medico.persona', 'recetas'])
             ->where('centro_id', \Filament\Facades\Filament::auth()->user()->centro_id)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        // Si el usuario es un médico, solo mostrar sus consultas
+        if ($user) {
+            // Primero intentar con la relación directa
+            if ($user->medico) {
+                $query->where('medico_id', $user->medico->id);
+            }
+            // Si no tiene relación directa, buscar por persona_id
+            elseif ($user->persona_id) {
+                $medico = \App\Models\Medico::withoutGlobalScopes()
+                    ->where('persona_id', $user->persona_id)
+                    ->first();
+                    
+                if ($medico) {
+                    $query->where('medico_id', $medico->id);
+                }
+            }
+        }
+
+        return $query;
     }
 
     public static function getNavigationBadge(): ?string

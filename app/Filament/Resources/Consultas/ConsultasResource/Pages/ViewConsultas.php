@@ -215,112 +215,54 @@ class ViewConsultas extends ViewRecord
                 // Sección de recetas asociadas
                 Infolists\Components\Section::make('Recetas Médicas')
                     ->schema([
-                        Infolists\Components\RepeatableEntry::make('recetas')
+                        Infolists\Components\TextEntry::make('recetas')
                             ->label('')
-                            ->schema([
-                                Infolists\Components\Section::make()
-                                    ->schema([
-                                        Infolists\Components\Grid::make(3)
-                                            ->schema([
-                                                Infolists\Components\TextEntry::make('fecha_receta')
-                                                    ->label(' Fecha')
-                                                    ->date('d/m/Y')
-                                                    ->color('primary')
-                                                    ->weight('semibold')
-                                                    ->placeholder('Sin fecha registrada'),
-
-                                                Infolists\Components\TextEntry::make('id')
-                                                    ->label('Receta #')
-                                                    ->formatStateUsing(fn ($state) => "RECETA #{$state}")
-                                                    ->color('warning')
-                                                    ->weight('bold'),
-
-                                                Infolists\Components\Actions::make([
-                                                    Infolists\Components\Actions\Action::make('imprimir')
-                                                        ->label('Imprimir')
-                                                        ->icon('heroicon-o-printer')
-                                                        ->color('success')
-                                                        ->size('sm')
-                                                        ->url(fn (Receta $record): string => route('recetas.imprimir', $record))
-                                                        ->openUrlInNewTab(true),
-                                                ]),
-                                            ]),
-
-                                        // Separador visual
-                                        Infolists\Components\TextEntry::make('separator')
-                                            ->label('')
-                                            ->state('')
-                                            ->extraAttributes([
-                                                'style' => 'height: 1px; border-top: 1px solid; margin: 15px 0;',
-                                                'class' => 'border-gray-300 dark:border-gray-600'
-                                            ])
-                                            ->columnSpanFull(),
-
-                                        Infolists\Components\Grid::make(2)
-                                            ->schema([
-                                                Infolists\Components\TextEntry::make('medicamentos')
-                                                    ->label('💊 Medicamentos')
-                                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin medicamentos especificados')
-                                                    ->weight('medium')
-                                                    ->color('success')
-                                                    ->extraAttributes(function ($state): array {
-                                                        $content = $state ?: 'Sin medicamentos especificados';
-                                                        $lineCount = substr_count($content, "\n") + 1;
-
-                                                        // Calcular altura dinámica
-                                                        $minHeight = 50;
-                                                        $lineHeight = 22;
-                                                        $maxHeight = 150;
-
-                                                        $estimatedHeight = max($minHeight, min($maxHeight, $lineCount * $lineHeight + 20));
-                                                        $needsScroll = ($lineCount * $lineHeight + 20) > $maxHeight;
-
-                                                        return [
-                                                            'style' => "white-space: pre-line; word-wrap: break-word; line-height: 1.5; " .
-                                                                      ($needsScroll ? "max-height: {$maxHeight}px; overflow-y: auto;" : "min-height: {$estimatedHeight}px;") .
-                                                                      " padding: 10px; border-radius: 6px; border: 1px solid;",
-                                                            'class' => 'bg-green-50 border-green-200 dark:bg-green-900 dark:border-green-600'
-                                                        ];
-                                                    })
-                                                    ->copyable(),
-
-                                                Infolists\Components\TextEntry::make('indicaciones')
-                                                    ->label('📋 Indicaciones')
-                                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin indicaciones especificadas')
-                                                    ->color('info')
-                                                    ->extraAttributes(function ($state): array {
-                                                        $content = $state ?: 'Sin indicaciones especificadas';
-                                                        $lineCount = substr_count($content, "\n") + 1;
-
-                                                        // Calcular altura dinámica
-                                                        $minHeight = 50;
-                                                        $lineHeight = 22;
-                                                        $maxHeight = 150;
-
-                                                        $estimatedHeight = max($minHeight, min($maxHeight, $lineCount * $lineHeight + 20));
-                                                        $needsScroll = ($lineCount * $lineHeight + 20) > $maxHeight;
-
-                                                        return [
-                                                            'style' => "white-space: pre-line; word-wrap: break-word; line-height: 1.5; " .
-                                                                      ($needsScroll ? "max-height: {$maxHeight}px; overflow-y: auto;" : "min-height: {$estimatedHeight}px;") .
-                                                                      " padding: 10px; border-radius: 6px; border: 1px solid;",
-                                                            'class' => 'bg-blue-50 border-blue-200 dark:bg-blue-900 dark:border-blue-600'
-                                                        ];
-                                                    })
-                                                    ->copyable(),
-                                            ]),
-                                    ])
-                                    ->extraAttributes([
-                                        'style' => 'border: 2px solid; border-radius: 12px; padding: 20px; margin-bottom: 16px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));',
-                                        'class' => 'border-indigo-200 dark:border-indigo-600 shadow-lg hover:shadow-xl transition-all duration-300'
-                                    ])
-                                    ->headerActions([])
-                                    ->compact(false),
-                            ])
-                            ->columnSpanFull()
-                            ->visible(function (Consulta $record): bool {
-                                return $record->recetas()->exists();
-                            }),
+                            ->state(function (Consulta $record): string {
+                                if (!$record->recetas()->exists()) {
+                                    return '<div class="flex items-center justify-center p-6 space-y-4">
+                                        <div class="text-center">
+                                            <div class="text-4xl mb-4">📝</div>
+                                            <p class="text-gray-500 dark:text-gray-400">No hay recetas médicas asociadas a esta consulta</p>
+                                        </div>
+                                    </div>';
+                                }
+                                $html = '<div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead>
+                                        <tr class="bg-gray-50 dark:bg-gray-800">
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Fecha</th>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Medicamentos</th>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Indicaciones</th>
+                                            <th class="px-4 py-2 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">';
+                                foreach ($record->recetas as $index => $receta) {
+                                    $fecha = \Carbon\Carbon::parse($receta->fecha_receta)->format('d/m/Y');
+                                    $recetaNum = $index + 1;
+                                    $html .= '<tr class="hover:bg-blue-100 dark:hover:bg-blue-900">
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">' . $recetaNum . '</td>
+                                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">' . $fecha . '</td>
+                                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line">' . nl2br(e($receta->medicamentos)) . '</td>
+                                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line">' . nl2br(e($receta->indicaciones)) . '</td>
+                                        <td class="px-4 py-3 text-center text-sm font-medium">
+                                            <div class="flex justify-center space-x-2">
+                                                <a href="' . route('recetas.imprimir', $receta) . '" target="_blank" class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors" title="Imprimir">
+                                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                                    Imprimir
+                                                </a>
+                                                <a href="' . \App\Filament\Resources\Receta\RecetaResource::getUrl('edit', ['record' => $receta->id]) . '" class="inline-flex items-center px-2 py-1 bg-yellow-400 hover:bg-yellow-500 text-gray-900 rounded transition-colors" title="Editar">
+                                                    ✏️ Editar
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>';
+                                }
+                                $html .= '</tbody></table></div>';
+                                return $html;
+                            })
+                            ->html()
+                            ->columnSpanFull(),
 
                         // Mensaje cuando no hay recetas
                         Infolists\Components\TextEntry::make('no_recetas')
