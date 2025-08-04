@@ -814,14 +814,8 @@ class MedicoResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // Obtener centro_id del usuario autenticado
-        $centro_id = Auth::user()?->centro_id;
-        
-        // Solo filtrar si hay un centro_id y si no está comentada la condición
-        // como en el código original
-        /*if ($centro_id) {
-            $query->where('centro_id', $centro_id);
-        }*/
+        // Ordenar por fecha de creación descendente
+        $query->orderBy('created_at', 'desc');
 
         return $query;
     }

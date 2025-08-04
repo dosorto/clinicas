@@ -33,6 +33,9 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'ver enfermedades_pacientes']);
         Permission::create(['name' => 'ver recetas']);
         Permission::create(['name' => 'ver consultas']);
+        Permission::create(['name' => 'ver contratomedico']);
+        Permission::create(['name' => 'ver nomina']);
+        Permission::create(['name' => 'ver detallenomina']);
 
 
 
@@ -50,6 +53,9 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'crear enfermedades_pacientes']);
         Permission::create(['name' => 'crear recetas']);
         Permission::create(['name' => 'crear consultas']);
+        Permission::create(['name' => 'crear contratomedico']);
+        Permission::create(['name' => 'crear nomina']);
+        Permission::create(['name' => 'crear detallenomina']);
 
         // ACTUALIZAR
         Permission::create(['name' => 'actualizar personas']);
@@ -65,6 +71,9 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'actualizar enfermedades_pacientes']);
         Permission::create(['name' => 'actualizar recetas']);
         Permission::create(['name' => 'actualizar consultas']);
+        Permission::create(['name' => 'actualizar contratomedico']);
+        Permission::create(['name' => 'actualizar nomina']);
+        Permission::create(['name' => 'actualizar detallenomina']);
 
         // BORRAR
         Permission::create(['name' => 'borrar personas']);
@@ -80,30 +89,33 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'borrar enfermedades_pacientes']);
         Permission::create(['name' => 'borrar recetas']);
         Permission::create(['name' => 'borrar consultas']);
+        Permission::create(['name' => 'borrar contratomedico']);
+        Permission::create(['name' => 'borrar nomina']);
+        Permission::create(['name' => 'borrar detallenomina']);
 
         // Crear roles y asignar permisos
         $roleAdmin = Role::create(['name' => 'root']);
         $roleAdmin->givePermissionTo([
             // VER
-            'ver personas', 'ver nacionalidad', 'ver usuario', 'ver pacientes', 'ver medicocentromedico', 'ver enfermedades', 'ver centromedico', 'ver especialidad', 'ver especialidadmedicos', 'ver medicos', 'ver enfermedades_pacientes', 'ver recetas', 'ver consultas',
+            'ver personas', 'ver nacionalidad', 'ver usuario', 'ver pacientes', 'ver medicocentromedico', 'ver enfermedades', 'ver centromedico', 'ver especialidad', 'ver especialidadmedicos', 'ver medicos', 'ver enfermedades_pacientes', 'ver recetas', 'ver consultas', 'ver contratomedico', 'ver nomina', 'ver detallenomina',
             // CREAR
-            'crear personas', 'crear nacionalidad', 'crear usuario', 'crear pacientes', 'crear medicocentromedico', 'crear centromedico', 'crear enfermedades', 'crear especialidad', 'crear especialidadmedicos', 'crear medicos', 'crear enfermedades_pacientes', 'crear recetas', 'crear consultas',
+            'crear personas', 'crear nacionalidad', 'crear usuario', 'crear pacientes', 'crear medicocentromedico', 'crear centromedico', 'crear enfermedades', 'crear especialidad', 'crear especialidadmedicos', 'crear medicos', 'crear enfermedades_pacientes', 'crear recetas', 'crear consultas', 'crear contratomedico', 'crear nomina', 'crear detallenomina',
             // ACTUALIZAR
-            'actualizar personas', 'actualizar nacionalidad', 'actualizar usuario', 'actualizar pacientes', 'actualizar medicocentromedico', 'actualizar centromedico', 'actualizar enfermedades', 'actualizar especialidad', 'actualizar especialidadmedicos', 'actualizar medicos', 'actualizar enfermedades_pacientes', 'actualizar recetas', 'actualizar consultas',
+            'actualizar personas', 'actualizar nacionalidad', 'actualizar usuario', 'actualizar pacientes', 'actualizar medicocentromedico', 'actualizar centromedico', 'actualizar enfermedades', 'actualizar especialidad', 'actualizar especialidadmedicos', 'actualizar medicos', 'actualizar enfermedades_pacientes', 'actualizar recetas', 'actualizar consultas', 'actualizar contratomedico', 'actualizar nomina', 'actualizar detallenomina',
             // BORRAR
-            'borrar personas', 'borrar nacionalidad', 'borrar usuario', 'borrar pacientes', 'borrar centromedico', 'borrar medicocentromedico', 'borrar enfermedades', 'borrar especialidad', 'borrar especialidadmedicos', 'borrar medicos', 'borrar enfermedades_pacientes', 'borrar recetas', 'borrar consultas', 'borrar medicocentromedico', 'borrar centromedico',
+            'borrar personas', 'borrar nacionalidad', 'borrar usuario', 'borrar pacientes', 'borrar centromedico', 'borrar medicocentromedico', 'borrar enfermedades', 'borrar especialidad', 'borrar especialidadmedicos', 'borrar medicos', 'borrar enfermedades_pacientes', 'borrar recetas', 'borrar consultas', 'borrar medicocentromedico', 'borrar centromedico', 'borrar contratomedico', 'borrar nomina', 'borrar detallenomina',
         ]);
 
         $roleAdminCentro = Role::create(['name' => 'administrador']);
         $roleAdminCentro->givePermissionTo([
             // VER
-            'ver medicos', 'ver pacientes', 'ver usuario', 'ver enfermedades', 'ver especialidad', 'ver recetas', 'ver consultas',
+            'ver medicos', 'ver pacientes', 'ver usuario', 'ver enfermedades', 'ver especialidad', 'ver recetas', 'ver consultas', 'ver contratomedico', 'ver nomina', 'ver detallenomina',
             // CREAR
-            'crear medicos', 'crear pacientes', 'crear usuario', 'crear recetas', 'crear consultas',
+            'crear medicos', 'crear pacientes', 'crear usuario', 'crear recetas', 'crear consultas', 'crear contratomedico', 'crear nomina', 'crear detallenomina',
             // ACTUALIZAR
-            'actualizar medicos', 'actualizar pacientes', 'actualizar usuario', 'actualizar recetas', 'actualizar consultas',
+            'actualizar medicos', 'actualizar pacientes', 'actualizar usuario', 'actualizar recetas', 'actualizar consultas', 'actualizar contratomedico', 'actualizar nomina', 'actualizar detallenomina',
             // BORRAR
-            'borrar medicos', 'borrar pacientes', 'borrar usuario', 'borrar recetas', 'borrar consultas'
+            'borrar medicos', 'borrar pacientes', 'borrar usuario', 'borrar recetas', 'borrar consultas', 'borrar contratomedico', 'borrar nomina', 'borrar detallenomina'
         ]);
 
        

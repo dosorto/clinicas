@@ -53,13 +53,13 @@
                         </div>
 
                         {{-- Botones de acción --}}
-                        <div class="flex space-x-6">
+                        <div class="flex space-x-2">
                             <button 
                                 type="button"
                                 wire:click="toggleSeleccionTodos"
-                                class="inline-flex items-center px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                class="btn-seleccionar-todos inline-flex items-center font-bold transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                             >
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 Seleccionar Todos
@@ -68,9 +68,9 @@
                             <button 
                                 type="button"
                                 wire:click="deseleccionarTodos"
-                                class="inline-flex items-center px-5 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                                class="btn-deseleccionar-todos inline-flex items-center font-bold transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                             >
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 Deseleccionar Todos
@@ -238,41 +238,41 @@
                     {{-- Resumen de totales mejorado --}}
                     <div class="flex items-center space-x-8">
                         <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Médicos Seleccionados</p>
-                                <p class="text-xl font-bold text-blue-600 dark:text-blue-400" x-data="{ count: {{ collect($medicosSeleccionados)->where('seleccionado', true)->count() }} }" x-text="count" wire:poll.500ms="$refresh"></p>
+                                <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Médicos Seleccionados</p>
+                                <p class="text-lg font-bold text-blue-600 dark:text-blue-400" x-data="{ count: {{ collect($medicosSeleccionados)->where('seleccionado', true)->count() }} }" x-text="count" wire:poll.500ms="$refresh"></p>
                             </div>
                         </div>
                         
-                        <div class="w-px h-12 bg-gray-300 dark:bg-gray-600"></div>
+                        <div class="w-px h-10 bg-gray-300 dark:bg-gray-600"></div>
                         
                         <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total a Pagar</p>
-                                <p class="text-xl font-bold text-green-600 dark:text-green-400">
+                                <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Total a Pagar</p>
+                                <p class="text-lg font-bold text-green-600 dark:text-green-400">
                                     L. {{ number_format(collect($medicosSeleccionados)->where('seleccionado', true)->sum('total'), 2) }}
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Botones de acción --}}
-                    <div class="flex space-x-3">
+                    {{-- Botones principales mejorados --}}
+                    <div class="flex space-x-2">
                         <a 
                             href="{{ $this->getResource()::getUrl('index') }}"
-                            class="inline-flex items-center px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                            class="btn-cancelar-principal inline-flex items-center font-bold transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                         >
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
                             Cancelar
@@ -280,9 +280,9 @@
                         
                         <button 
                             type="submit"
-                            class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-lg transition-all duration-200 shadow-xl hover:shadow-2xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                            class="btn-guardar-principal inline-flex items-center font-bold transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                         >
-                            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                             GUARDAR {{ isset($record) ? 'CAMBIOS' : 'NÓMINA' }}
@@ -332,6 +332,78 @@
         tr:hover input[type="number"]:not(:disabled) {
             border-color: #3b82f6;
             box-shadow: 0 0 0 1px #3b82f6;
+        }
+
+        /* Ajustes para botones compactos y agradables */
+        .btn-seleccionar-todos {
+            background: linear-gradient(to right, #34d399, #10b981); /* Verde claro */
+            color: #ffffff;
+            border: none;
+            padding: 0.4rem 0.8rem; /* Compacto */
+            font-size: 0.75rem; /* Texto más pequeño */
+            border-radius: 0.375rem; /* Bordes redondeados */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-seleccionar-todos:hover {
+            background: linear-gradient(to right, #10b981, #059669);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-deseleccionar-todos {
+            background: linear-gradient(to right, #f87171, #ef4444); /* Rojo claro */
+            color: #ffffff;
+            border: none;
+            padding: 0.4rem 0.8rem; /* Compacto */
+            font-size: 0.75rem; /* Texto más pequeño */
+            border-radius: 0.375rem; /* Bordes redondeados */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-deseleccionar-todos:hover {
+            background: linear-gradient(to right, #ef4444, #dc2626);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-cancelar {
+            background: linear-gradient(to right, #9ca3af, #6b7280); /* Gris claro */
+            color: #ffffff;
+            border: none;
+            padding: 0.4rem 0.8rem; /* Compacto */
+            font-size: 0.75rem; /* Texto más pequeño */
+            border-radius: 0.375rem; /* Bordes redondeados */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-cancelar:hover {
+            background: linear-gradient(to right, #6b7280, #4b5563);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Ajustes para botones principales */
+        .btn-cancelar-principal {
+            background: linear-gradient(to right, #9ca3af, #6b7280); /* Gris claro */
+            color: #ffffff;
+            border: none;
+            padding: 0.4rem 0.8rem; /* Más compacto */
+            font-size: 0.75rem; /* Texto más pequeño */
+            border-radius: 0.25rem; /* Bordes más redondeados */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .btn-cancelar-principal:hover {
+            background: linear-gradient(to right, #6b7280, #4b5563);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-guardar-principal {
+            background: linear-gradient(to right, #34d399, #10b981); /* Verde claro */
+            color: #ffffff;
+            border: none;
+            padding: 0.4rem 0.8rem; /* Más compacto */
+            font-size: 0.75rem; /* Texto más pequeño */
+            border-radius: 0.25rem; /* Bordes más redondeados */
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .btn-guardar-principal:hover {
+            background: linear-gradient(to right, #10b981, #059669);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
         }
     </style>
 
