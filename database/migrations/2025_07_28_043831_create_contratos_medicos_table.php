@@ -22,6 +22,7 @@ return new class extends Migration
             $table->date('fecha_inicio');
             $table->date('fecha_fin')->nullable();
             $table->enum('activo', ['SI', 'NO']);
+            $table->text('observaciones')->nullable();
             $table->unsignedBigInteger('centro_id')->nullable();
             $table->foreign('centro_id')->references('id')->on('centros_medicos');
             

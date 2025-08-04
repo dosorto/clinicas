@@ -6,6 +6,7 @@ use App\Filament\Resources\Consultas\ConsultasResource\Pages;
 use App\Models\Consulta;
 use App\Models\Pacientes;
 use App\Models\Medico;
+use App\Models\Receta;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -130,6 +131,78 @@ class ConsultasResource extends Resource
                             ->columnSpanFull()
                             ->autosize(),
                     ]),
+
+                Forms\Components\Section::make('Recetas Médicas')
+                    ->schema([
+                        Forms\Components\Repeater::make('recetas')
+                            ->relationship('recetas')
+                            ->schema([
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\DatePicker::make('fecha_receta')
+                                            ->label('Fecha de Receta')
+                                            ->default(now())
+                                            ->required()
+                                            ->displayFormat('d/m/Y')
+                                            ->native(false),
+
+                                        Forms\Components\Placeholder::make('receta_info')
+                                            ->label('Información')
+                                            ->content(function ($get) {
+                                                $fecha = $get('fecha_receta');
+                                                if ($fecha) {
+                                                    return 'Receta del ' . \Carbon\Carbon::parse($fecha)->format('d/m/Y');
+                                                }
+                                                return 'Nueva receta';
+                                            })
+                                            ->extraAttributes(['class' => 'text-sm text-gray-600']),
+                                    ]),
+
+                                Forms\Components\Textarea::make('medicamentos')
+                                    ->label('💊 Medicamentos')
+                                    ->required()
+                                    ->rows(4)
+                                    ->maxLength(65535)
+                                    ->columnSpanFull()
+                                    ->autosize()
+                                    ->placeholder('Ej: Paracetamol 500mg - 1 tableta cada 8 horas por 3 días')
+                                    ->helperText('Incluya nombre, dosis, frecuencia y duración de cada medicamento'),
+
+                                Forms\Components\Textarea::make('indicaciones')
+                                    ->label('📋 Indicaciones')
+                                    ->required()
+                                    ->rows(4)
+                                    ->maxLength(65535)
+                                    ->columnSpanFull()
+                                    ->autosize()
+                                    ->placeholder('Ej: Tomar con alimentos, evitar alcohol, regresar en 7 días')
+                                    ->helperText('Instrucciones especiales, precauciones y seguimiento'),
+                            ])
+                            ->itemLabel(fn (array $state): ?string =>
+                                !empty($state['fecha_receta'])
+                                    ? 'Receta del ' . \Carbon\Carbon::parse($state['fecha_receta'])->format('d/m/Y')
+                                    : 'Nueva receta'
+                            )
+                            ->collapsible()
+                            ->collapsed(false)
+                            ->columnSpanFull()
+                            ->minItems(0)
+                            ->maxItems(10)
+                            ->defaultItems(0)
+                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data): array {
+                                $data['centro_id'] = \Illuminate\Support\Facades\Auth::user()->centro_id ?? null;
+                                return $data;
+                            })
+                            ->mutateRelationshipDataBeforeSaveUsing(function (array $data): array {
+                                $data['centro_id'] = \Illuminate\Support\Facades\Auth::user()->centro_id ?? null;
+                                return $data;
+                            }),
+                    ])
+                    ->description('Gestione las recetas médicas asociadas a esta consulta')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->visible(fn (string $operation): bool => $operation === 'edit'),
             ]);
     }
 
@@ -378,7 +451,46 @@ class ConsultasResource extends Resource
                             ])
                             ->collapsible()
                             ->collapsed(false),
-                    ]),                // Sección de información del sistema ocultada por solicitud del usuario
+                    ]),
+
+                Infolists\Components\Section::make('Recetas Médicas')
+                    ->schema([
+                        Infolists\Components\Split::make([
+                            Infolists\Components\Tabs::make('Recetas')
+                                ->tabs([
+                                    Infolists\Components\Tabs\Tab::make('recetas_tab')
+                                        ->label('Recetas Médicas')
+                                        ->schema([
+                                            Infolists\Components\RepeatableEntry::make('recetas')
+                                                ->label('')
+                                                ->schema([
+                                                    Infolists\Components\TextEntry::make('fecha_receta')
+                                                        ->label('Fecha')
+                                                        ->date(),
+                                                    Infolists\Components\TextEntry::make('medicamentos')
+                                                        ->label('Medicamentos')
+                                                        ->extraAttributes([
+                                                            'class' => 'prose max-w-none text-success-600 dark:text-success-400',
+                                                        ]),
+                                                    Infolists\Components\TextEntry::make('indicaciones')
+                                                        ->label('Indicaciones')
+                                                        ->extraAttributes([
+                                                            'class' => 'prose max-w-none text-info-600 dark:text-info-400',
+                                                        ]),
+                                                ])
+                                                ->columns(3),
+                                        ]),
+                                ])
+                                ->contained(false),
+                        ])
+                            ->from('md'),
+                    ])
+                    ->description('Lista de todas las recetas médicas emitidas durante esta consulta')
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->icon('heroicon-o-clipboard-document-list'),
+
+                // Sección de información del sistema ocultada por solicitud del usuario
                 // Infolists\Components\Section::make('Información de Sistema')
                 //     ->schema([
                 //         Infolists\Components\Grid::make(2)
@@ -417,12 +529,34 @@ class ConsultasResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->with(['paciente.persona', 'medico.persona'])
+        $query = parent::getEloquentQuery()
+            ->with(['paciente.persona', 'medico.persona', 'recetas'])
             ->where('centro_id', \Filament\Facades\Filament::auth()->user()->centro_id)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
+
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        // Si el usuario es un médico, solo mostrar sus consultas
+        if ($user) {
+            // Primero intentar con la relación directa
+            if ($user->medico) {
+                $query->where('medico_id', $user->medico->id);
+            }
+            // Si no tiene relación directa, buscar por persona_id
+            elseif ($user->persona_id) {
+                $medico = \App\Models\Medico::withoutGlobalScopes()
+                    ->where('persona_id', $user->persona_id)
+                    ->first();
+                    
+                if ($medico) {
+                    $query->where('medico_id', $medico->id);
+                }
+            }
+        }
+
+        return $query;
     }
 
     public static function getNavigationBadge(): ?string

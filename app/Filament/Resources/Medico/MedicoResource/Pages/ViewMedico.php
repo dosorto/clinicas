@@ -223,23 +223,6 @@ class ViewMedico extends ViewRecord
                                     ->badge()
                                     ->color(fn (bool $state): string => $state ? 'success' : 'danger'),
                             ]),
-
-                        Section::make('Historial de Cargos')
-                            ->schema([
-                                TextEntry::make('contratoActivo.cargos')
-                                    ->label('')
-                                    ->listWithLineBreaks()
-                                    ->bulleted()
-                                    ->formatStateUsing(function ($state) {
-                                        return collect($state)->map(function ($cargo) {
-                                            $monto = number_format($cargo['monto'], 2, '.', ',');
-                                            $fecha = date('d/m/Y', strtotime($cargo['fecha']));
-                                            return "L. {$monto} - {$cargo['descripcion']} ({$fecha})";
-                                        });
-                                    })
-                            ])
-                            ->collapsible()
-                            ->collapsed()
                     ])
                     ->icon('heroicon-o-document-check')
                     ->visible(fn ($record) => $record->contratoActivo !== null)

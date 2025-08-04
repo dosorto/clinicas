@@ -37,89 +37,77 @@ class ViewPacientes extends ViewRecord
 
         return $infolist
             ->schema([
-                // Header con foto y datos básicos
                 Infolists\Components\Section::make()
                     ->schema([
-                        Infolists\Components\Split::make([
-                            Infolists\Components\Grid::make(1)
-                                ->schema([
-                                    Infolists\Components\ImageEntry::make('persona.fotografia')
-                                        ->label('')
-                                        ->circular()
-                                        ->size(180)
-                                        ->getStateUsing(function ($record) {
-                                            if ($record->persona->foto ?? $record->persona->fotografia) {
-                                                return asset('storage/' . ($record->persona->foto ?? $record->persona->fotografia));
-                                            }
-                                            return PacientesResource::generateAvatar(
-                                                $record->persona->primer_nombre,
-                                                $record->persona->primer_apellido
-                                            );
-                                        }),
-                                ])
-                                ->columnSpan(1),
+                        Infolists\Components\Grid::make(2)
+                            ->schema([
+                                Infolists\Components\ImageEntry::make('persona.fotografia')
+                                    ->label('')
+                                    ->circular()
+                                    ->size(180)
+                                    ->getStateUsing(function ($record) {
+                                        if ($record->persona->foto ?? $record->persona->fotografia) {
+                                            return asset('storage/' . ($record->persona->foto ?? $record->persona->fotografia));
+                                        }
+                                        return PacientesResource::generateAvatar(
+                                            $record->persona->primer_nombre,
+                                            $record->persona->primer_apellido
+                                        );
+                                    }),
 
-                            Infolists\Components\Grid::make(1)
-                                ->schema([
-                                    Infolists\Components\TextEntry::make('nombre_completo')
-                                        ->label('')
-                                        ->getStateUsing(function ($record) {
-                                            return trim("{$record->persona->primer_nombre} {$record->persona->segundo_nombre} {$record->persona->primer_apellido} {$record->persona->segundo_apellido}");
-                                        })
-                                        ->weight(FontWeight::Bold)
-                                        ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
-                                        ->color('primary'),
+                                Infolists\Components\Grid::make(2)
+                                    ->schema([
+                                        Infolists\Components\TextEntry::make('nombre_completo')
+                                            ->label('Nombre Completo')
+                                            ->getStateUsing(function ($record) {
+                                                return trim("{$record->persona->primer_nombre} {$record->persona->segundo_nombre} {$record->persona->primer_apellido} {$record->persona->segundo_apellido}");
+                                            })
+                                            ->weight(FontWeight::Bold)
+                                            ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
+                                            ->color('primary'),
 
-                                    Infolists\Components\TextEntry::make('persona.dni')
-                                        ->label('DNI/Cédula')
-                                        ->icon('heroicon-m-identification')
-                                        ->iconPosition(IconPosition::Before)
-                                        ->copyable()
-                                        ->copyMessage('DNI copiado')
-                                        ->weight(FontWeight::Medium),
+                                        Infolists\Components\TextEntry::make('persona.dni')
+                                            ->label('DNI/Cédula')
+                                            ->icon('heroicon-m-identification')
+                                            ->iconPosition(IconPosition::Before)
+                                            ->copyable()
+                                            ->copyMessage('DNI copiado')
+                                            ->weight(FontWeight::Medium),
 
-                                    Infolists\Components\TextEntry::make('grupo_sanguineo')
-                                        ->label('Grupo Sanguíneo')
-                                        ->icon('heroicon-m-heart')
-                                        ->iconPosition(IconPosition::Before)
-                                        ->badge()
-                                        ->color('danger')
-                                        ->size(Infolists\Components\TextEntry\TextEntrySize::Medium),
+                                        Infolists\Components\TextEntry::make('grupo_sanguineo')
+                                            ->label('Grupo Sanguíneo')
+                                            ->icon('heroicon-m-heart')
+                                            ->iconPosition(IconPosition::Before)
+                                            ->badge()
+                                            ->color('danger')
+                                            ->size(Infolists\Components\TextEntry\TextEntrySize::Medium),
 
-                                    Infolists\Components\TextEntry::make('edad')
-                                        ->label('Edad')
-                                        ->icon('heroicon-m-calendar-days')
-                                        ->iconPosition(IconPosition::Before)
-                                        ->getStateUsing(function ($record) {
-                                            if ($record->persona->fecha_nacimiento) {
-                                                $edad = Carbon::parse($record->persona->fecha_nacimiento)->age;
-                                                return $edad . ' años';
-                                            }
-                                            return 'No especificada';
-                                        })
-                                        ->weight(FontWeight::Medium),
+                                        Infolists\Components\TextEntry::make('edad')
+                                            ->label('Edad')
+                                            ->icon('heroicon-m-calendar-days')
+                                            ->iconPosition(IconPosition::Before)
+                                            ->getStateUsing(function ($record) {
+                                                if ($record->persona->fecha_nacimiento) {
+                                                    $edad = Carbon::parse($record->persona->fecha_nacimiento)->age;
+                                                    return $edad . ' años';
+                                                }
+                                                return 'No especificada';
+                                            }),
 
-                                    Infolists\Components\TextEntry::make('persona.sexo')
-                                        ->label('Sexo')
-                                        ->icon('heroicon-m-user')
-                                        ->iconPosition(IconPosition::Before)
-                                        ->formatStateUsing(fn ($state) => $state === 'M' ? 'Masculino' : 'Femenino')
-                                        ->badge()
-                                        ->color(fn ($state) => $state === 'M' ? 'info' : 'warning'),
-                                ])
-                                ->columnSpan(2),
-                        ])
-                        ->from('md'),
-                    ])
-                    ->headerActions([
-                        Infolists\Components\Actions\Action::make('edit')
-                            ->label('Editar Paciente')
-                            ->icon('heroicon-m-pencil')
-                            ->url(fn ($record) => static::getResource()::getUrl('edit', ['record' => $record])),
+                                        Infolists\Components\TextEntry::make('persona.sexo')
+                                            ->label('Sexo')
+                                            ->icon('heroicon-m-user')
+                                            ->iconPosition(IconPosition::Before)
+                                            ->formatStateUsing(fn ($state) => $state === 'M' ? 'Masculino' : 'Femenino')
+                                            ->badge()
+                                            ->color(fn ($state) => $state === 'M' ? 'info' : 'warning'),
+                                    ])
+                                    ->columnSpan(1),
+                            ]),
                     ])
                     ->compact(),
 
-                // Datos Personales Completos
+                // Datos Personales
                 Infolists\Components\Section::make('Datos Personales')
                     ->schema([
                         Infolists\Components\Grid::make(2)
@@ -129,20 +117,8 @@ class ViewPacientes extends ViewRecord
                                     ->icon('heroicon-m-user')
                                     ->iconPosition(IconPosition::Before),
 
-                                Infolists\Components\TextEntry::make('persona.segundo_nombre')
-                                    ->label('Segundo Nombre')
-                                    ->placeholder('No registrado')
-                                    ->icon('heroicon-m-user')
-                                    ->iconPosition(IconPosition::Before),
-
                                 Infolists\Components\TextEntry::make('persona.primer_apellido')
                                     ->label('Primer Apellido')
-                                    ->icon('heroicon-m-user')
-                                    ->iconPosition(IconPosition::Before),
-
-                                Infolists\Components\TextEntry::make('persona.segundo_apellido')
-                                    ->label('Segundo Apellido')
-                                    ->placeholder('No registrado')
                                     ->icon('heroicon-m-user')
                                     ->iconPosition(IconPosition::Before),
 
@@ -170,8 +146,7 @@ class ViewPacientes extends ViewRecord
                                 Infolists\Components\TextEntry::make('persona.direccion')
                                     ->label('Dirección')
                                     ->icon('heroicon-m-map-pin')
-                                    ->iconPosition(IconPosition::Before)
-                                    ->columnSpanFull(),
+                                    ->iconPosition(IconPosition::Before),
                             ]),
                     ])
                     ->icon('heroicon-m-user-circle')
@@ -359,9 +334,11 @@ class ViewPacientes extends ViewRecord
                         'paciente_id' => $this->record->id
                     ]);
                 }),
+
             Actions\EditAction::make()
                 ->label('Editar Paciente')
-                ->icon('heroicon-m-pencil'),
+                ->icon('heroicon-m-pencil')
+                ->color('primary'),
         ];
     }
 
