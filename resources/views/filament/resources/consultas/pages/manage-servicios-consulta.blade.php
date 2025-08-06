@@ -2,15 +2,12 @@
 {{-- filepath: c:\xampp\htdocs\Laravel\ProyectoClinica\clinicas\resources\views\filament\resources\consultas\pages\manage-servicios-consulta.blade.php --}}
 
 <x-filament-panels::page>
-    {{-- 1️⃣ tu tabla --}}
-    {{ $this->table }}
-
-    {{-- 2️⃣ panel de resumen --}}
+    {{-- 1️⃣ Panel de resumen ARRIBA --}}
     @php($subtotal = $this->getServiciosTotal())
     @php($cantidad = $this->getCantidadServicios())
 
     @if ($subtotal > 0)
-        <x-filament::section class="mt-6">
+        <x-filament::section>
             <x-slot name="heading">
                 Resumen de Servicios
             </x-slot>
@@ -43,7 +40,7 @@
             </div>
         </x-filament::section>
     @else
-        <x-filament::section class="mt-6">
+        <x-filament::section>
             <div class="text-center py-8">
                 <div class="text-gray-400 text-6xl mb-4">
                     📋
@@ -57,4 +54,9 @@
             </div>
         </x-filament::section>
     @endif
+
+    {{-- 2️⃣ Tabla de servicios ABAJO --}}
+    <div class="mt-6">
+        {{ $this->table }}
+    </div>
 </x-filament-panels::page>
