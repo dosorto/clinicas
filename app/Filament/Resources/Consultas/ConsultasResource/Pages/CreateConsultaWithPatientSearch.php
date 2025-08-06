@@ -220,47 +220,162 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                         Forms\Components\Repeater::make('recetas')
                             ->label('')
                             ->schema([
-                                Forms\Components\Textarea::make('medicamentos')
+                                Forms\Components\TextInput::make('medicamentos')
                                     ->label('Medicamentos')
                                     ->required()
-                                    ->rows(4)
-                                    ->placeholder('Ej: Loratadina 500 mg')
-                                    ->helperText('Liste todos los medicamentos con sus dosis y frecuencia')
-                                    ->columnSpanFull(),
+                                    ->placeholder('Ej: Loratadina 500 mg, Ibuprofeno 400 mg')
+                                    ->columnSpan(1),
 
-                                Forms\Components\Textarea::make('indicaciones')
+                                Forms\Components\TextInput::make('indicaciones')
                                     ->label('Indicaciones')
                                     ->required()
-                                    ->rows(3)
-                                    ->placeholder('Tomar una diaria, etc.')
-                                    ->helperText('Proporcione instrucciones específicas para el paciente')
-                                    ->columnSpanFull(),
+                                    ->placeholder('Tomar una diaria, cada 8 horas por 3 días')
+                                    ->columnSpan(1),
                             ])
-                            ->addActionLabel('Agregar Nueva Receta')
-                            ->reorderableWithButtons()
-                            ->collapsible()
-                            ->cloneable()
+                            ->columns(2)
+                            ->addActionLabel('➕ Agregar Nueva Receta')
                             ->deleteAction(
-                                fn ($action) => $action->requiresConfirmation()
+                                fn ($action) => $action
+                                    ->requiresConfirmation()
+                                    ->modalHeading('¿Eliminar receta?')
+                                    ->modalDescription('¿Está seguro de que desea eliminar esta receta?')
+                                    ->modalSubmitActionLabel('Sí, eliminar')
+                                    ->color('danger')
+                                    ->icon('heroicon-o-trash')
+                            )
+                            ->reorderAction(
+                                fn ($action) => $action
+                                    ->icon('heroicon-o-bars-3')
+                                    ->color('gray')
                             )
                             ->itemLabel(function (array $state): ?string {
+                                static $numero = 0;
+                                $numero++;
+
                                 if (empty($state['medicamentos'])) {
-                                    return 'Nueva Receta';
+                                    return "Receta #{$numero}";
                                 }
 
-                                $medicamentos = substr($state['medicamentos'], 0, 50);
-                                if (strlen($state['medicamentos']) > 50) {
+                                $medicamentos = substr($state['medicamentos'], 0, 40);
+                                if (strlen($state['medicamentos']) > 40) {
                                     $medicamentos .= '...';
                                 }
 
-                                return 'Receta: ' . $medicamentos;
+                                return "Receta #{$numero}: {$medicamentos}";
                             })
                             ->columnSpanFull()
                             ->defaultItems(0)
-                            ->hint('Las recetas se crearán automáticamente al guardar la consulta'),
+                            ->extraAttributes([
+                                'style' => 'border: 1px solid rgb(209, 213, 219); border-radius: 8px; padding: 16px; background-color: rgba(249, 250, 251, 0.5);'
+                            ])
+                            ->hint('💡 Las recetas se crearán automáticamente al guardar la consulta')
+                            ->hintColor('info'),
+
+                        // Previsualización de las recetas en formato tabla
+                        Forms\Components\Placeholder::make('recetas_preview')
+                            ->label('📋 Previsualización de Recetas')
+                            ->content(function (callable $get) {
+                                $recetas = $get('recetas') ?? [];
+
+                                if (empty($recetas) || !is_array($recetas)) {
+                                    return new \Illuminate\Support\HtmlString('
+                                        <div class="flex items-center justify-center p-6">
+                                            <div class="text-center">
+                                                <div class="text-4xl mb-2">📝</div>
+                                                <p class="text-gray-500 dark:text-gray-400">No hay recetas agregadas aún</p>
+                                                <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Use el botón "➕ Agregar Nueva Receta" arriba</p>
+                                            </div>
+                                        </div>
+                                    ');
+                                }
+
+                                // Filtrar recetas que tengan contenido
+                                $recetasValidas = array_filter($recetas, function($receta) {
+                                    return !empty($receta['medicamentos']) && !empty($receta['indicaciones']);
+                                });
+
+                                if (empty($recetasValidas)) {
+                                    return new \Illuminate\Support\HtmlString('
+                                        <div class="flex items-center justify-center p-6">
+                                            <div class="text-center">
+                                                <div class="text-4xl mb-2">⚠️</div>
+                                                <p class="text-amber-600 dark:text-amber-400">Recetas incompletas</p>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Complete todos los campos de medicamentos e indicaciones</p>
+                                            </div>
+                                        </div>
+                                    ');
+                                }
+
+                                $html = '
+                                <div class="space-y-4">
+                                    <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                                        <h4 class="text-sm font-semibold text-green-800 dark:text-green-200 mb-2">📋 Recetas Médicas</h4>
+                                        <p class="text-xs text-green-600 dark:text-green-300">Lista organizada de todas las recetas médicas que se crearán</p>
+                                    </div>
+
+                                    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                            <thead>
+                                                <tr class="bg-gray-50 dark:bg-gray-800">
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Fecha</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Medicamentos</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Indicaciones</th>
+                                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">';
+
+                                $contador = 0;
+                                foreach ($recetasValidas as $receta) {
+                                    $contador++;
+                                    $fecha = now()->format('d/m/Y');
+                                    $medicamentos = htmlspecialchars($receta['medicamentos']);
+                                    $indicaciones = htmlspecialchars($receta['indicaciones']);
+
+                                    $html .= '
+                                        <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">' . $contador . '</td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">' . $fecha . '</td>
+                                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
+                                                <div class="truncate">' . nl2br($medicamentos) . '</div>
+                                            </td>
+                                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
+                                                <div class="truncate">' . nl2br($indicaciones) . '</div>
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                    ✅ Listo
+                                                </span>
+                                            </td>
+                                        </tr>';
+                                }
+
+                                $html .= '
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                                        <p class="text-sm text-green-600 dark:text-green-400">
+                                            ✅ <strong>' . count($recetasValidas) . ' receta(s)</strong> lista(s) para ser creada(s) automáticamente
+                                        </p>
+                                    </div>
+                                </div>';
+
+                                return new \Illuminate\Support\HtmlString($html);
+                            })
+                            ->reactive()
+                            ->columnSpanFull()
+                            ->extraAttributes([
+                                'style' => 'margin-top: 16px;'
+                            ]),
                     ])
                     ->collapsible()
-                    ->collapsed(false),
+                    ->collapsed(false)
+                    ->extraAttributes([
+                        'style' => 'border: 2px solid rgb(34, 197, 94); border-radius: 12px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(16, 185, 129, 0.05));'
+                    ]),
             ])
             ->statePath('consultaData');
     }
@@ -442,6 +557,22 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                 ->danger()
                 ->send();
         }
+    }
+
+    public function redirectToCreatePatient(): void
+    {
+        // Construir la URL para crear un nuevo paciente con un parámetro de retorno
+        $createPatientUrl = \App\Filament\Resources\PacientesResource::getUrl('create') . '?return_to=create_consulta';
+
+        // Mostrar notificación informativa
+        Notification::make()
+            ->title('Redirigiendo a crear paciente')
+            ->body('Será redirigido al formulario de creación de paciente. Después de crear el paciente, podrá regresar a crear la consulta.')
+            ->info()
+            ->send();
+
+        // Redirigir a la página de creación de pacientes
+        $this->redirect($createPatientUrl);
     }
 
     protected function getForms(): array
