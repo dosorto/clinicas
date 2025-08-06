@@ -14,7 +14,18 @@
                 <div class="space-y-6">
                     {{ $this->patientSearchForm }}
 
-                    <div class="flex justify-end">
+                    <div class="flex justify-between items-center">
+                        <x-filament::button
+                            wire:click="redirectToCreatePatient"
+                            type="button"
+                            color="success"
+                            outlined
+                            size="lg"
+                        >
+                            <x-heroicon-o-user-plus class="w-4 h-4 mr-2" />
+                            Crear Nuevo Paciente
+                        </x-filament::button>
+
                         <x-filament::button
                             wire:click="selectPatient"
                             type="button"
