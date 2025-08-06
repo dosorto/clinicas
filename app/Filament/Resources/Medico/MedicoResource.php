@@ -56,7 +56,7 @@ class MedicoResource extends Resource
                             ->dehydrated()
                             ->live(debounce: 500) // Esto hace que se actualice cada 500ms después de dejar de escribir
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                if (strlen($state) >= 8) { // Asumiendo que el DNI tiene al menos 8 caracteres
+                                if (strlen($state) >= 1) { // Asumiendo que el DNI tiene al menos 1 carácter
                                     $existingPersona = Persona::where('dni', $state)->first();
                                     if ($existingPersona) {
                                         $set('primer_nombre', $existingPersona->primer_nombre);
