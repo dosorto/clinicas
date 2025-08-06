@@ -212,7 +212,7 @@ class CreateNomina extends CreateRecord
 
         // Crear los detalles de nómina
         foreach ($medicosSeleccionados as $medico) {
-            $data = [
+            $detalleData = [
                 'nomina_id' => $nomina->id,
                 'medico_id' => $medico['id'],
                 'medico_nombre' => $medico['nombre'],
@@ -221,12 +221,14 @@ class CreateNomina extends CreateRecord
                 'percepciones' => $medico['percepciones'],
                 'total_pagar' => $medico['total'],
                 'centro_id' => $nomina->centro_id,
+                'percepciones_detalle' => $medico['percepciones_detalle'] ?? null,
+                'deducciones_detalle' => $medico['deducciones_detalle'] ?? null,
             ];
             
             // Asegurar que no haya campos problemáticos
-            unset($data['created_by'], $data['updated_by'], $data['deleted_by']);
+            unset($detalleData['created_by'], $detalleData['updated_by'], $detalleData['deleted_by']);
             
-            DetalleNomina::create($data);
+            DetalleNomina::create($detalleData);
         }
 
         Notification::make()
@@ -236,6 +238,83 @@ class CreateNomina extends CreateRecord
             ->send();
 
         $this->redirect($this->getRedirectUrl());
+    }
+
+    public function calcularComisiones(): void
+    {
+        $comisionService = app(\App\Services\ComisionMedicoService::class);
+        $formData = $this->form->getState();
+        $año = $formData['año'] ?? date('Y');
+        $mes = $formData['mes'] ?? date('n');
+        
+        // Determinar si es quincenal
+        $quincena = null;
+        if (($formData['tipo_pago'] ?? null) === 'quincenal') {
+            $quincena = $formData['quincena'] ?? 1;
+        }
+        
+        $medicosActualizados = 0;
+        
+        foreach ($this->medicosSeleccionados as $index => $medico) {
+            if ($medico['seleccionado']) {
+                // Calcular comisión para este médico
+                $resultado = $comisionService->calcularComision(
+                    $medico['id'],
+                    $año,
+                    $mes,
+                    $quincena
+                );
+                
+                if ($resultado['total_comision'] > 0) {
+                    // Agregar la comisión como percepción
+                    $this->medicosSeleccionados[$index]['percepciones'] += $resultado['total_comision'];
+                    
+                    // Recalcular total
+                    $this->medicosSeleccionados[$index]['total'] = 
+                        $this->medicosSeleccionados[$index]['salario_base'] + 
+                        $this->medicosSeleccionados[$index]['percepciones'] - 
+                        $this->medicosSeleccionados[$index]['deducciones'];
+                    
+                    $medicosActualizados++;
+                    
+                    // Generar detalle para mostrar
+                    $nombreMedico = $medico['nombre'];
+                    $totalFacturado = number_format($resultado['total_facturado'], 2);
+                    $porcentaje = $resultado['porcentaje_servicio'];
+                    $comision = number_format($resultado['total_comision'], 2);
+                    
+                    // Agregar información de comisión como detalle
+                    if (!isset($this->medicosSeleccionados[$index]['percepciones_detalle'])) {
+                        $this->medicosSeleccionados[$index]['percepciones_detalle'] = '';
+                    }
+                    
+                    $this->medicosSeleccionados[$index]['percepciones_detalle'] .= 
+                        "Comisión por servicios: L. {$comision} " .
+                        "({$porcentaje}% de L. {$totalFacturado})\n";
+                }
+            }
+        }
+        
+        if ($medicosActualizados > 0) {
+            \Filament\Notifications\Notification::make()
+                ->title('Comisiones calculadas')
+                ->body("Se han calculado comisiones para {$medicosActualizados} médicos.")
+                ->success()
+                ->send();
+        } else {
+            \Filament\Notifications\Notification::make()
+                ->title('Sin comisiones')
+                ->body('No se encontraron comisiones para los médicos seleccionados en este período.')
+                ->warning()
+                ->send();
+        }
+    }
+    
+    protected function getHeaderActions(): array
+    {
+        // Ya no necesitamos el botón de calcular comisiones aquí 
+        // porque lo hemos movido a la interfaz junto con los botones de selección
+        return [];
     }
 
     protected function getRedirectUrl(): string

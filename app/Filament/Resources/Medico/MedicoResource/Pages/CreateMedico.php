@@ -82,6 +82,15 @@ protected function handleRecordCreation(array $data): Model
                 'horario_salida' => $data['horario_salida'],
                 'centro_id' => $centro_id,
             ]);
+            
+            // Si vamos a crear un contrato manualmente, asegurar que los valores puedan ser cero
+            if (isset($data['salario_quincenal'])) {
+                $data['salario_quincenal'] = (float) $data['salario_quincenal'];
+            }
+            
+            if (isset($data['porcentaje_servicio'])) {
+                $data['porcentaje_servicio'] = (float) $data['porcentaje_servicio'];
+            }
 
             Log::info("Médico creado", ['medico_id' => $medico->id]);
 

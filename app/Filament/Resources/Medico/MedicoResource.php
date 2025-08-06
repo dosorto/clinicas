@@ -56,7 +56,7 @@ class MedicoResource extends Resource
                             ->dehydrated()
                             ->live(debounce: 500) // Esto hace que se actualice cada 500ms después de dejar de escribir
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                if (strlen($state) >= 8) { // Asumiendo que el DNI tiene al menos 8 caracteres
+                                if (strlen($state) >= 1) { // Asumiendo que el DNI tiene al menos 1 carácter
                                     $existingPersona = Persona::where('dni', $state)->first();
                                     if ($existingPersona) {
                                         $set('primer_nombre', $existingPersona->primer_nombre);
@@ -265,31 +265,58 @@ class MedicoResource extends Resource
                         ->schema([
                             Forms\Components\TextInput::make('salario_quincenal')
                                 ->label('Salario Quincenal')
-                                ->required(fn ($operation) => $operation === 'create')
                                 ->numeric()
+                                ->default(0)
                                 ->prefix('L')
                                 ->placeholder('0.00')
                                 ->extraAttributes([
-                                    'title' => 'Monto que recibirá el médico cada quincena (15 días)'
+                                    'title' => 'Monto que recibirá el médico cada quincena (15 días) - Puede ser 0 si solo es por comisión'
                                 ])
+                                ->helperText('Puede ser 0 si el contrato es solo por porcentaje')
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    if ($state) {
-                                        $set('salario_mensual', $state * 2);
+                                ->afterStateUpdated(function ($state, callable $set, Forms\Get $get) {
+                                    // Asegurarse de que sea un número, defecto 0
+                                    $value = is_numeric($state) ? (float) $state : 0;
+                                    $set('salario_mensual', $value * 2);
+                                    
+                                    // Validación para verificar si ambos valores son cero
+                                    $porcentaje = (float) ($get('porcentaje_servicio') ?? 0);
+                                    if ($value <= 0 && $porcentaje <= 0) {
+                                        $set('validacion_compensacion', false);
+                                    } else {
+                                        $set('validacion_compensacion', true);
                                     }
-                                }),
+                                })
+                                ->rules([
+                                    function (Forms\Get $get) {
+                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            $porcentajeServicio = (float)($get('porcentaje_servicio') ?? 0);
+                                            $salario = (float)($value ?? 0);
+                                            
+                                            if ($salario <= 0 && $porcentajeServicio <= 0) {
+                                                $fail('Debe especificar al menos una forma de compensación (salario o porcentaje por servicio).');
+                                            }
+                                        };
+                                    },
+                                ]),
 
                             Forms\Components\TextInput::make('salario_mensual')
                                 ->label('Salario Mensual')
-                                ->required(fn ($operation) => $operation === 'create')
                                 ->numeric()
+                                ->default(0)
                                 ->prefix('L')
                                 ->placeholder('0.00')
                                 ->extraAttributes([
                                     'title' => 'Salario completo mensual (calculado automáticamente)'
                                 ])
+                                ->helperText('Calculado como el doble del salario quincenal')
                                 ->disabled()
                                 ->dehydrated(),
+                                
+                            // Campo oculto para validación
+                            Forms\Components\Hidden::make('validacion_compensacion')
+                                ->default(false)
+                                ->dehydrated(false),
                         ]),
 
                     Forms\Components\Grid::make(2)
@@ -302,18 +329,40 @@ class MedicoResource extends Resource
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(100)
-                                ->required(fn ($operation) => $operation === 'create')
                                 ->extraAttributes([
                                     'title' => 'Porcentaje de comisión que recibe por servicios médicos realizados'
                                 ])
+                                ->helperText('Puede ser 0 si el contrato es solo por salario fijo')
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(function ($state, callable $set) {
+                                ->afterStateUpdated(function ($state, callable $set, Forms\Get $get) {
                                     if ($state === '' || $state === null) {
                                         $set('porcentaje_servicio', 0);
+                                        $state = 0;
                                     }
                                     // Convertir a número para evitar problemas con strings vacíos
-                                    $set('porcentaje_servicio', floatval($state ?? 0));
-                                }),
+                                    $porcentaje = floatval($state ?? 0);
+                                    $set('porcentaje_servicio', $porcentaje);
+                                    
+                                    // Validación para verificar si ambos valores son cero
+                                    $salario = (float) ($get('salario_quincenal') ?? 0);
+                                    if ($porcentaje <= 0 && $salario <= 0) {
+                                        $set('validacion_compensacion', false);
+                                    } else {
+                                        $set('validacion_compensacion', true);
+                                    }
+                                })
+                                ->rules([
+                                    function (Forms\Get $get) {
+                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            $salarioQuincenal = (float)($get('salario_quincenal') ?? 0);
+                                            $porcentaje = (float)($value ?? 0);
+                                            
+                                            if ($porcentaje <= 0 && $salarioQuincenal <= 0) {
+                                                $fail('Debe especificar al menos una forma de compensación (salario o porcentaje por servicio).');
+                                            }
+                                        };
+                                    },
+                                ]),
 
                             Forms\Components\DatePicker::make('fecha_inicio')
                                 ->label('Fecha de Inicio')
@@ -871,12 +920,25 @@ class MedicoResource extends Resource
             }
 
             // Crear el contrato médico
-            if (isset($data['salario_quincenal']) && isset($data['porcentaje_servicio'])) {
+            if (isset($data['salario_quincenal']) || isset($data['porcentaje_servicio'])) {
+                $salarioQuincenal = isset($data['salario_quincenal']) ? (float) $data['salario_quincenal'] : 0;
+                $porcentajeServicio = isset($data['porcentaje_servicio']) ? (float) $data['porcentaje_servicio'] : 0;
+                
+                // Validar que al menos uno de los dos valores sea mayor que cero
+                if ($salarioQuincenal <= 0 && $porcentajeServicio <= 0) {
+                    // Mostrar notificación de advertencia
+                    \Filament\Notifications\Notification::make()
+                        ->title('⚠️ Advertencia: Contrato sin compensación')
+                        ->body('Se ha creado un contrato sin salario ni porcentaje por servicio. Debe establecer al menos una forma de compensación.')
+                        ->warning()
+                        ->send();
+                }
+                
                 $contrato = \App\Models\ContabilidadMedica\ContratoMedico::create([
                     'medico_id' => $medico->id,
-                    'salario_quincenal' => $data['salario_quincenal'],
-                    'salario_mensual' => $data['salario_quincenal'] * 2,
-                    'porcentaje_servicio' => $data['porcentaje_servicio'] ?? 0,
+                    'salario_quincenal' => $salarioQuincenal,
+                    'salario_mensual' => $salarioQuincenal * 2,
+                    'porcentaje_servicio' => $porcentajeServicio,
                     'fecha_inicio' => $data['fecha_inicio'],
                     'fecha_fin' => isset($data['fecha_fin']) && $data['fecha_fin'] ? $data['fecha_fin'] : null,
                     'activo' => $data['activo'] ?? true,

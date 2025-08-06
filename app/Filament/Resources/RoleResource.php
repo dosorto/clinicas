@@ -118,7 +118,7 @@ class RoleResource extends Resource
     public static function canViewAny(): bool
     {
         $user = auth()->user();
-        return $user->hasRole('root') || $user->hasRole('administrador centro');
+        return $user->hasRole('root') || $user->hasRole('administrador');
     }
   
 }
