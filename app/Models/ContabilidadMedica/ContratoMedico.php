@@ -46,11 +46,15 @@ class ContratoMedico extends ModeloBase
 
     protected $casts = [
         'porcentaje_servicio' => 'decimal:2',
+        'salario_quincenal' => 'decimal:2',
+        'salario_mensual' => 'decimal:2',
         'activo' => 'boolean',
     ];
 
     protected $attributes = [
         'porcentaje_servicio' => 0,
+        'salario_quincenal' => 0,
+        'salario_mensual' => 0,
     ];
 
     public function medico(): BelongsTo
@@ -67,4 +71,55 @@ class ContratoMedico extends ModeloBase
     // {
     //     return $this->hasMany(CargoMedico::class, 'contrato_id');
     // }
+    
+    /**
+     * Determina si el contrato es solo por porcentaje de servicio
+     *
+     * @return bool
+     */
+    public function esSoloPorcentaje(): bool
+    {
+        return ($this->porcentaje_servicio > 0) && 
+               ($this->salario_quincenal == 0 && $this->salario_mensual == 0);
+    }
+    
+    /**
+     * Determina si el contrato es solo por salario
+     *
+     * @return bool
+     */
+    public function esSoloSalario(): bool
+    {
+        return ($this->porcentaje_servicio == 0) && 
+               (($this->salario_quincenal > 0) || ($this->salario_mensual > 0));
+    }
+    
+    /**
+     * Determina si el contrato es mixto (porcentaje y salario)
+     *
+     * @return bool
+     */
+    public function esMixto(): bool
+    {
+        return ($this->porcentaje_servicio > 0) && 
+               (($this->salario_quincenal > 0) || ($this->salario_mensual > 0));
+    }
+    
+    /**
+     * Obtiene el tipo de contrato en formato legible
+     *
+     * @return string
+     */
+    public function getTipoContratoAttribute(): string
+    {
+        if ($this->esSoloPorcentaje()) {
+            return "Solo por porcentaje de servicio ({$this->porcentaje_servicio}%)";
+        } elseif ($this->esSoloSalario()) {
+            return "Solo por salario";
+        } elseif ($this->esMixto()) {
+            return "Mixto (salario + {$this->porcentaje_servicio}%)";
+        } else {
+            return "No especificado";
+        }
+    }
 }

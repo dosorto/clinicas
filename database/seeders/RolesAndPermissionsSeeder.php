@@ -158,8 +158,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $roleAdminMedicos = Role::create(['name' => 'medico']);
         $roleAdminMedicos->givePermissionTo(['crear pacientes', 'ver pacientes', 'actualizar pacientes', 'borrar pacientes',
-            'crear consultas', 'ver consultas', 'actualizar consultas', 'borrar consultas',
-            'crear recetas', 'ver recetas', 'actualizar recetas', 'borrar recetas',
+            'crear consultas', 'ver consultas', 'actualizar consultas', 'borrar consultas','ver contratomedico', 'ver nomina', 'ver detallenomina',
+            'crear recetas', 'ver recetas', 'actualizar recetas', 'borrar recetas', 'crear nomina', 'crear detallenomina','crear contratomedico',
             
         ]);
     }

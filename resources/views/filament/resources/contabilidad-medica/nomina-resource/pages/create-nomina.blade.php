@@ -75,6 +75,17 @@
                                 </svg>
                                 Deseleccionar Todos
                             </button>
+                            
+                            <button 
+                                type="button"
+                                wire:click="calcularComisiones"
+                                class="btn-calcular-comisiones inline-flex items-center font-bold transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                </svg>
+                                Calcular Comisiones
+                            </button>
                         </div>
                     </div>
                 </div>                <div class="p-6">
@@ -404,6 +415,20 @@
         .btn-guardar-principal:hover {
             background: linear-gradient(to right, #10b981, #059669);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-calcular-comisiones {
+            background: linear-gradient(to right, #3b82f6, #2563eb); /* Azul */
+            color: #ffffff;
+            border: none;
+            padding: 0.4rem 0.8rem; /* Compacto */
+            font-size: 0.75rem; /* Texto más pequeño */
+            border-radius: 0.375rem; /* Bordes redondeados */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-calcular-comisiones:hover {
+            background: linear-gradient(to right, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
         }
     </style>
 
