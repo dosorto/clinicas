@@ -292,7 +292,13 @@
             </div>
             <div class="invoice-info">
                 <div class="invoice-title">FACTURA</div>
-                <div class="invoice-number"># {{ $factura->numero_factura }}</div>
+                <div class="invoice-number"># 
+                    @if($factura->usa_cai && $factura->caiCorrelativo)
+                        {{ $factura->caiCorrelativo->numero_factura }}
+                    @else
+                        PROV-{{ $factura->centro_id }}-{{ $factura->fecha_emision->year }}-{{ str_pad($factura->fecha_emision->month, 2, '0', STR_PAD_LEFT) }}-{{ str_pad($factura->id, 6, '0', STR_PAD_LEFT) }}
+                    @endif
+                </div>
                 
                 <!-- CAI debajo del número de factura -->
                 @if($factura->usa_cai && $factura->caiAutorizacion)
@@ -316,22 +322,16 @@
                     @if($factura->paciente && $factura->paciente->persona)
                         <div class="info-row">
                             <span class="label">Paciente:</span>
-                            <span class="value">{{ $factura->paciente->persona->primer_nombre }} {{ $factura->paciente->persona->segundo_nombre }} {{ $factura->paciente->persona->primer_apellido }} {{ $factura->paciente->persona->segundo_apellido }}</span>
+                            <span class="value">{{ $factura->paciente->persona->nombre_completo }}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Identidad:</span>
-                            <span class="value">{{ $factura->paciente->persona->identidad ?? 'N/A' }}</span>
+                            <span class="value">{{ $factura->paciente->persona->dni ?? 'N/A' }}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Teléfono:</span>
                             <span class="value">{{ $factura->paciente->persona->telefono ?? 'N/A' }}</span>
                         </div>
-                        @if($factura->paciente->persona->email)
-                            <div class="info-row">
-                                <span class="label">Email:</span>
-                                <span class="value">{{ $factura->paciente->persona->email }}</span>
-                            </div>
-                        @endif
                     @else
                         <div class="info-row">
                             <span class="value">Información del paciente no disponible</span>
@@ -346,11 +346,22 @@
                     @if($factura->medico && $factura->medico->persona)
                         <div class="info-row">
                             <span class="label">Médico:</span>
-                            <span class="value">Dr. {{ $factura->medico->persona->primer_nombre }} {{ $factura->medico->persona->primer_apellido }}</span>
+                            <span class="value">Dr. {{ $factura->medico->persona->nombre_completo }}</span>
                         </div>
                         <div class="info-row">
                             <span class="label">Especialidad:</span>
-                            <span class="value">{{ $factura->medico->especialidad ?? 'N/A' }}</span>
+                            <span class="value">
+                                @if($factura->medico->especialidades && $factura->medico->especialidades->count() > 0)
+                                    {{ $factura->medico->especialidades->pluck('nombre')->join(', ') }}
+                                @else
+                                    General
+                                @endif
+                            </span>
+                        </div>
+                    @else
+                        <div class="info-row">
+                            <span class="label">Médico:</span>
+                            <span class="value">No asignado</span>
                         </div>
                     @endif
                     @if($factura->cita)
@@ -362,7 +373,12 @@
                     @if($factura->consulta)
                         <div class="info-row">
                             <span class="label">Tipo Consulta:</span>
-                            <span class="value">{{ $factura->consulta->tipo ?? 'N/A' }}</span>
+                            <span class="value">{{ $factura->consulta->tipo ?? 'Consulta General' }}</span>
+                        </div>
+                    @else
+                        <div class="info-row">
+                            <span class="label">Tipo Consulta:</span>
+                            <span class="value">Consulta General</span>
                         </div>
                     @endif
                 </div>
@@ -385,33 +401,34 @@
                 @forelse($factura->detalles as $detalle)
                     <tr>
                         <td>
-                            <strong>{{ $detalle->servicio->nombre ?? 'Servicio' }}</strong>
+                            <strong>{{ $detalle->servicio->nombre ?? 'Consulta Médica' }}</strong>
                             @if($detalle->servicio && $detalle->servicio->descripcion)
                                 <br><small style="color: #6b7280;">{{ $detalle->servicio->descripcion }}</small>
                             @endif
                         </td>
-                        <td class="text-center">{{ $detalle->cantidad }}</td>
-                        <td class="text-right">L. {{ number_format($detalle->precio_unitario, 2) }}</td>
+                        <td class="text-center">{{ $detalle->cantidad ?? 1 }}</td>
+                        <td class="text-right">L. {{ number_format($detalle->precio_unitario ?? 0, 2) }}</td>
                         <td class="text-right">
-                            @if($detalle->descuento_monto > 0)
+                            @if(isset($detalle->descuento_monto) && $detalle->descuento_monto > 0)
                                 L. {{ number_format($detalle->descuento_monto, 2) }}
                             @else
                                 -
                             @endif
                         </td>
                         <td class="text-right">
-                            @if($detalle->impuesto_monto > 0)
+                            @if(isset($detalle->impuesto_monto) && $detalle->impuesto_monto > 0)
                                 L. {{ number_format($detalle->impuesto_monto, 2) }}
                             @else
                                 -
                             @endif
                         </td>
-                        <td class="text-right currency">L. {{ number_format($detalle->total_linea, 2) }}</td>
+                        <td class="text-right currency">L. {{ number_format($detalle->total_linea ?? 0, 2) }}</td>
                     </tr>
                 @empty
                     <tr>
                         <td colspan="6" class="text-center" style="padding: 30px; color: #6b7280;">
-                            No se encontraron servicios en esta factura
+                            <strong>Consulta Médica General</strong><br>
+                            <small>Servicio médico completo</small>
                         </td>
                     </tr>
                 @endforelse
