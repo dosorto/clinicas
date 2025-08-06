@@ -45,7 +45,6 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'ver descuento']);
         Permission::create(['name' => 'ver factura_detalles']);
         Permission::create(['name' => 'ver pagos_facturas']);
-        Permission::create(['name' => 'ver factura']);
 
         // CREAR
         Permission::create(['name' => 'crear personas']);
@@ -73,7 +72,6 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'crear descuento']);
         Permission::create(['name' => 'crear factura_detalles']);
         Permission::create(['name' => 'crear pagos_facturas']);
-        Permission::create(['name' => 'crear factura']);
 
 
         // ACTUALIZAR
@@ -102,7 +100,6 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'actualizar descuento']);
         Permission::create(['name' => 'actualizar factura_detalles']);
         Permission::create(['name' => 'actualizar pagos_facturas']);
-        Permission::create(['name' => 'actualizar factura']);
 
 
         // BORRAR
@@ -131,7 +128,6 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'borrar descuento']);
         Permission::create(['name' => 'borrar factura_detalles']);
         Permission::create(['name' => 'borrar pagos_facturas']);
-        Permission::create(['name' => 'borrar factura']);
 
         // Crear roles y asignar permisos
         $roleAdmin = Role::create(['name' => 'root']);
