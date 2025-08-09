@@ -22,7 +22,7 @@ class ViewConsultas extends ViewRecord
 
             // En ViewConsultas.php agregar botón:
             Actions\Action::make('agregar_servicios')
-                ->label('Generar cobro')
+                ->label('Generar Cobro')
                 ->icon('heroicon-o-plus-circle')
                 ->color('info')
                 ->url(fn () => "/admin/consultas/consultas/{$this->record->id}/servicios")

@@ -30,6 +30,11 @@ class DatabaseSeeder extends Seeder
             EspecialidadMedicoSeeder::class,
             PacientesSeeder::class,
             CitasSeeder::class,
+            
+            // Seeders para contabilidad y facturación
+            ImpuestoSeeder::class,
+            DescuentoSeeder::class,
+            TipoPagoSeeder::class,
         ]);
 
         // Crear usuario root después de tener los centros
