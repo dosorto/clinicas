@@ -4,9 +4,18 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\FacturaPdfController;
 use App\Http\Controllers\NominaController;
+use App\Http\Controllers\FacturaController;
 
 Route::get('/', function () {
     return redirect('/admin');
+});
+
+//Rutas para facturas y diseños
+Route::prefix('facturas')->group(function () {
+    Route::get('preview/{diseno}/pdf', [FacturaController::class, 'generarPDF'])->name('facturas.preview.pdf');
+    Route::get('preview-demo', [FacturaController::class, 'vistaPreviewDemo'])->name('facturas.preview.demo');
+    Route::get('{factura}/pdf', [FacturaController::class, 'generarFacturaReal'])->name('facturas.pdf');
+    Route::get('{factura}/pdf-diseño', [FacturaController::class, 'generarPDFFactura'])->name('facturas.pdf.diseno');
 });
 
 Route::get('/receta/{receta}/imprimir', [RecetaController::class, 'imprimir'])->name('receta.imprimir');

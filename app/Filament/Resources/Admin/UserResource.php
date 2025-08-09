@@ -76,10 +76,8 @@ class UserResource extends Resource
                                             $set('persona.fecha_nacimiento', $persona->fecha_nacimiento);
                                             $set('persona.nacionalidad_id', $persona->nacionalidad_id);
                                             
-                                            // También llenar el email del usuario si existe
-                                            if ($persona->email) {
-                                                $set('email', $persona->email);
-                                            }
+                                            // También llenar el email del usuario si el usuario tiene email
+                                            // Nota: El email está en la tabla users, no en personas
                                             
                                             // Mostrar notificación de éxito
                                             \Filament\Notifications\Notification::make()
