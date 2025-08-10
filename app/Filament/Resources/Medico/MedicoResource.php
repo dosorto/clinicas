@@ -273,11 +273,32 @@ class MedicoResource extends Resource
                                     'title' => 'Monto que recibirá el médico cada quincena (15 días)'
                                 ])
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    if ($state) {
-                                        $set('salario_mensual', $state * 2);
+                                ->afterStateUpdated(function ($state, callable $set, Forms\Get $get) {
+                                    // Asegurarse de que sea un número, defecto 0
+                                    $value = is_numeric($state) ? (float) $state : 0;
+                                    $set('salario_mensual', $value * 2);
+                                    
+                                    // Validación para verificar si ambos valores son cero
+                                    $porcentaje = (float) ($get('porcentaje_servicio') ?? 0);
+                                    if ($value <= 0 && $porcentaje <= 0) {
+                                        $set('validacion_compensacion', false);
+                                    } else {
+                                        $set('validacion_compensacion', true);
                                     }
-                                }),
+                                })
+                                ->rules([
+                                    function (Forms\Get $get) {
+                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            $porcentajeServicio = (float)($get('porcentaje_servicio') ?? 0);
+                                            $salario = (float)($value ?? 0);
+                                            
+                                            if ($salario <= 0 && $porcentajeServicio <= 0) {
+                                                $fail('Debe especificar al menos una forma de compensación (salario o porcentaje por servicio).');
+                                            }
+                                        };
+                                    },
+                                ]),
+                                
 
                             Forms\Components\TextInput::make('salario_mensual')
                                 ->label('Salario Mensual')
