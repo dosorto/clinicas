@@ -29,6 +29,9 @@ class PacientesResource extends Resource
     public static function shouldRegisterNavigation(): bool
     {
         return auth()->user()?->can('crear pacientes');
+        return auth()->user()?->can('ver pacientes');
+        return auth()->user()?->can('actualizar pacientes');
+        return auth()->user()?->can('borrar pacientes');
     }
     
     protected static ?string $model = Pacientes::class;
