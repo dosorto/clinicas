@@ -299,6 +299,7 @@ class MedicoResource extends Resource
                                         };
                                     },
                                 ]),
+                                
 
                             Forms\Components\TextInput::make('salario_mensual')
                                 ->label('Salario Mensual')
