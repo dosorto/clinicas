@@ -62,6 +62,10 @@ class AdminPanelProvider extends PanelProvider
                 'panels::user-menu.before',
                 fn () => view('filament.components.centro-selector-topbar')
             )
+            ->renderHook(
+                'panels::body.end',
+                fn () => '<script src="/js/disable-livewire-polling.js"></script>'
+            )
             ->plugins([
              ])
             ->middleware([

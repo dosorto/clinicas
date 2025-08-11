@@ -4,22 +4,27 @@ namespace App\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
 use App\Models\Citas;
+use Filament\Facades\Filament;
 
 class CitasPieChart extends ChartWidget
 {
-    protected static ?string $heading = 'Estado de las Citas';
-    protected static ?int $sort = 1;
-    protected int | string | array $columnSpan = 'full';
+    protected static ?string $heading = '📊 Distribución de Citas';
+    protected static ?int $sort = 3;
+    protected int | string | array $columnSpan = [
+        'sm' => 2,
+        'md' => 3,
+        'lg' => 4,
+    ];
+    protected static ?string $maxHeight = '300px';
     
     protected function getData(): array
     {
-        // Obtener las citas agrupadas por estado, filtradas por centro actual
         $currentCentroId = session('current_centro_id');
+        $user = Filament::auth()->user();
         
         $query = Citas::query();
         
-        // Si no es usuario root, filtrar por centro actual
-        if (!auth()->user()?->hasRole('root')) {
+        if ($user && !$user->hasRole('root')) {
             $query->where('centro_id', $currentCentroId);
         }
         
@@ -32,29 +37,35 @@ class CitasPieChart extends ChartWidget
             'datasets' => [
                 [
                     'label' => 'Citas por Estado',
-                    'data' => [$pendientes, $confirmadas, $canceladas, $realizadas],
+                    'data' => [$pendientes, $confirmadas, $realizadas, $canceladas],
                     'backgroundColor' => [
-                        '#fbbf24', // Amarillo para pendientes
-                        '#10b981', // Verde para confirmadas
-                        '#ef4444', // Rojo para canceladas
-                        '#3b82f6', // Azul para realizadas
+                        'rgba(251, 191, 36, 0.8)',
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(239, 68, 68, 0.8)',
                     ],
                     'borderColor' => [
-                        '#f59e0b',
-                        '#059669',
-                        '#dc2626',
-                        '#2563eb',
+                        'rgb(245, 158, 11)',
+                        'rgb(22, 163, 74)',
+                        'rgb(37, 99, 235)',
+                        'rgb(220, 38, 38)',
                     ],
-                    'borderWidth' => 2,
+                    'borderWidth' => 3,
+                    'hoverOffset' => 10,
                 ],
             ],
-            'labels' => ['Pendientes', 'Confirmadas', 'Canceladas', 'Realizadas'],
+            'labels' => [
+                "⏳ Pendientes ({$pendientes})",
+                "✅ Confirmadas ({$confirmadas})",
+                "✨ Realizadas ({$realizadas})",
+                "❌ Canceladas ({$canceladas})"
+            ],
         ];
     }
 
     protected function getType(): string
     {
-        return 'pie';
+        return 'doughnut';
     }
     
     protected function getOptions(): array
@@ -65,17 +76,28 @@ class CitasPieChart extends ChartWidget
             'plugins' => [
                 'legend' => [
                     'position' => 'bottom',
+                    'labels' => [
+                        'usePointStyle' => true,
+                        'padding' => 20,
+                        'font' => [
+                            'size' => 12,
+                            'weight' => 'bold'
+                        ]
+                    ]
                 ],
-                'title' => [
-                    'display' => true,
-                    'text' => 'Distribución de Citas por Estado',
-                ],
+                'tooltip' => [
+                    'backgroundColor' => 'rgba(0, 0, 0, 0.8)',
+                    'titleColor' => 'white',
+                    'bodyColor' => 'white',
+                    'borderColor' => 'rgba(255, 255, 255, 0.2)',
+                    'borderWidth' => 1
+                ]
             ],
+            'cutout' => '60%',
+            'animation' => [
+                'animateRotate' => true,
+                'animateScale' => true
+            ]
         ];
-    }
-
-    public static function canView(): bool
-    {
-        return true; // Simplificado para debugging
     }
 }
