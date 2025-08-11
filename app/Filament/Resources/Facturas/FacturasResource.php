@@ -746,27 +746,7 @@ class FacturasResource extends Resource
                                 Forms\Components\Hidden::make('centro_id')
                                     ->default(Auth::user()->centro_id),
                                     
-                                Forms\Components\Select::make('factura_diseno_id')
-                                    ->label('Diseño de Factura')
-                                    ->options(function () {
-                                        $centroId = Auth::user()->centro_id ?? session('current_centro_id');
-                                        return \App\Models\FacturaDiseno::where('centro_id', $centroId)
-                                            ->where('activo', true)
-                                            ->pluck('nombre', 'id');
-                                    })
-                                    ->default(function () {
-                                        $centroId = Auth::user()->centro_id ?? session('current_centro_id');
-                                        $predeterminado = \App\Models\FacturaDiseno::where('centro_id', $centroId)
-                                            ->where('activo', true)
-                                            ->where('es_predeterminado', true)
-                                            ->first();
-                                        return $predeterminado?->id;
-                                    })
-                                    ->searchable()
-                                    ->preload()
-                                    ->helperText('Seleccione el diseño a usar para esta factura')
-                                    ->columnSpanFull(),
-                                    
+                                
                                 Forms\Components\Hidden::make('fecha_pago')
                                     ->default(now()),
                                     

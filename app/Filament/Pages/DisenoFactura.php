@@ -28,6 +28,11 @@ class DisenoFactura extends Page implements HasForms
 {
     use InteractsWithForms;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static ?string $navigationIcon = 'heroicon-o-paint-brush';
     protected static ?string $navigationLabel = 'Diseño de Facturas';
     protected static ?string $title = 'Configuración de Diseño de Facturas';
