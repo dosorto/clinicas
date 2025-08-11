@@ -3,10 +3,12 @@
 namespace App\Filament\Resources\Consultas\ConsultasResource\Pages;
 
 use App\Filament\Resources\Consultas\ConsultasResource;
-use App\Models\Consulta;
-use App\Models\Receta;
+use App\Filament\Resources\Facturas\FacturasResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
+use App\Filament\Resources\Consultas\Widgets\FacturacionStatus;
+use App\Models\Consulta;
+use App\Models\Receta;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 
@@ -17,6 +19,29 @@ class ViewConsultas extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+
+            // En ViewConsultas.php agregar botón:
+            Actions\Action::make('agregar_servicios')
+                ->label('Generar Cobro')
+                ->icon('heroicon-o-plus-circle')
+                ->color('info')
+                ->url(fn () => "/admin/consultas/consultas/{$this->record->id}/servicios")
+                ->visible(fn () => !$this->record->facturas()->exists()),
+
+
+
+            // ---- BOTÓN VER FACTURA ---------------------------------
+            Actions\Action::make('ver_factura')
+                ->label('Ver Factura')
+                ->icon('heroicon-o-eye')
+                ->color('primary')
+                ->url(fn ($record) =>
+                    FacturasResource::getUrl('view', [
+                        'record' => $record->facturas()->first()?->id,
+                    ])
+                )
+                ->visible(fn ($record) => $record->facturas()->exists()),
+
             // Botón principal para crear nueva receta
             Actions\Action::make('crear_receta')
                 ->label('Nueva Receta')
@@ -50,169 +75,163 @@ class ViewConsultas extends ViewRecord
         ];
     }
 
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            // Aquí podrías agregar widgets si necesitas mostrar información adicional
+        ];
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            // Widget personalizado para mostrar el estado de facturación
+            \App\Filament\Resources\Consultas\Widgets\FacturacionStatus::class,
+
+        ];
+    }
+
+    private function getServiciosSubtotal($record): float
+    {
+        return \App\Models\FacturaDetalle::where('consulta_id', $record->id)
+            ->whereNull('factura_id')
+            ->sum('subtotal');
+    }
+
+    private function getServiciosImpuesto($record): float
+    {
+        return \App\Models\FacturaDetalle::where('consulta_id', $record->id)
+            ->whereNull('factura_id')
+            ->sum('impuesto_monto');
+    }
+
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist
             ->schema([
-                Infolists\Components\Section::make('Información General')
-                    ->schema([
-                        Infolists\Components\Grid::make(3)
-                            ->schema([
-                                Infolists\Components\TextEntry::make('created_at')
-                                    ->label('📅 Fecha de Consulta')
-                                    ->dateTime('d/m/Y H:i')
-                                    ->color('primary')
-                                    ->weight('semibold')
-                                    ->extraAttributes([
-                                        'style' => 'padding: 8px; border-radius: 6px; border: 1px solid;',
-                                        'class' => 'bg-blue-50 border-blue-200 dark:bg-blue-900 dark:border-blue-600'
-                                    ]),
+                // 🎯 LAYOUT COMPLETO: INFORMACIÓN GENERAL + DETALLES DE CONSULTA
+                Infolists\Components\TextEntry::make('informacion_completa_consulta')
+                    ->label('')
+                    ->state(function (Consulta $record): string {
+                        // Fecha de consulta
+                        $fecha = \Carbon\Carbon::parse($record->created_at)->format('d/m/Y H:i');
 
-                                Infolists\Components\TextEntry::make('paciente_info')
-                                    ->label('👤 Paciente')
-                                    ->state(function (Consulta $record): string {
-                                        if ($record->paciente && $record->paciente->persona) {
-                                            $persona = $record->paciente->persona;
-                                            $nombre = $persona->nombre_completo;
-                                            $dni = $persona->dni ? "\nDNI: {$persona->dni}" : '';
-                                            $telefono = $persona->telefono ? "\nTel: {$persona->telefono}" : '';
-                                            return $nombre . $dni . $telefono;
-                                        }
-                                        return 'No disponible';
-                                    })
-                                    ->color('success')
-                                    ->weight('medium')
-                                    ->extraAttributes([
-                                        'style' => 'white-space: pre-line; padding: 8px; border-radius: 6px; border: 1px solid;',
-                                        'class' => 'bg-green-50 border-green-200 dark:bg-green-900 dark:border-green-600'
-                                    ])
-                                    ->copyable(),
+                        // Información del paciente
+                        $pacienteInfo = 'No disponible';
+                        if ($record->paciente && $record->paciente->persona) {
+                            $persona = $record->paciente->persona;
+                            $nombre = $persona->nombre_completo;
+                            $dni = $persona->dni ? "DNI: {$persona->dni}" : '';
+                            $telefono = $persona->telefono ? "Tel: {$persona->telefono}" : '';
+                            $pacienteInfo = $nombre . "<br>" . $dni . "<br>" . $telefono;
+                        }
 
-                                Infolists\Components\TextEntry::make('medico_info')
-                                    ->label('👨‍⚕️ Médico')
-                                    ->state(function (Consulta $record): string {
-                                        if ($record->medico && $record->medico->persona) {
-                                            $persona = $record->medico->persona;
-                                            $nombre = $persona->nombre_completo;
-                                            $dni = $persona->dni ? "\nDNI: {$persona->dni}" : '';
-                                            $colegiacion = $record->medico->numero_colegiacion ? "\nCol: {$record->medico->numero_colegiacion}" : '';
-                                            return $nombre . $dni . $colegiacion;
-                                        }
+                        // Información del médico
+                        $medicoInfo = 'No disponible';
+                        if ($record->medico && $record->medico->persona) {
+                            $persona = $record->medico->persona;
+                            $nombre = $persona->nombre_completo;
+                            $dni = $persona->dni ? "DNI: {$persona->dni}" : '';
+                            $colegiacion = $record->medico->numero_colegiacion ? "Col: {$record->medico->numero_colegiacion}" : '';
+                            $medicoInfo = $nombre . "<br>" . $dni . "<br>" . $colegiacion;
+                        } elseif ($record->medico_id) {
+                            $medico = \App\Models\Medico::withoutGlobalScopes()->with('persona')->find($record->medico_id);
+                            if ($medico && $medico->persona) {
+                                $persona = $medico->persona;
+                                $nombre = $persona->nombre_completo;
+                                $dni = $persona->dni ? "DNI: {$persona->dni}" : '';
+                                $colegiacion = $medico->numero_colegiacion ? "Col: {$medico->numero_colegiacion}" : '';
+                                $medicoInfo = $nombre . "<br>" . $dni . "<br>" . $colegiacion;
+                            }
+                        }
 
-                                        // Fallback manual si no se carga la relación
-                                        if ($record->medico_id) {
-                                            $medico = \App\Models\Medico::withoutGlobalScopes()->with('persona')->find($record->medico_id);
-                                            if ($medico && $medico->persona) {
-                                                $persona = $medico->persona;
-                                                $nombre = $persona->nombre_completo;
-                                                $dni = $persona->dni ? "\nDNI: {$persona->dni}" : '';
-                                                $colegiacion = $medico->numero_colegiacion ? "\nCol: {$medico->numero_colegiacion}" : '';
-                                                return $nombre . $dni . $colegiacion;
-                                            }
-                                        }
+                        // Diagnóstico, Tratamiento y Observaciones
+                        $diagnostico = $record->diagnostico ?: 'Sin diagnóstico registrado';
+                        $tratamiento = $record->tratamiento ?: 'Sin tratamiento registrado';
+                        $observaciones = $record->observaciones ?: 'Sin observaciones registradas';
 
-                                        return 'No disponible';
-                                    })
-                                    ->color('warning')
-                                    ->weight('medium')
-                                    ->extraAttributes([
-                                        'style' => 'white-space: pre-line; padding: 8px; border-radius: 6px; border: 1px solid;',
-                                        'class' => 'bg-orange-50 border-orange-200 dark:bg-orange-900 dark:border-orange-600'
-                                    ])
-                                    ->copyable(),
-                            ]),
-                        ])
-                    ->description('Información principal de la consulta médica')
-                    ->icon('heroicon-o-information-circle'),
+                        return '
+                        <div style="width: 100%;">
+                            <!-- PRIMERA FILA: Información General -->
+                            <!-- TÍTULO: Información del Paciente -->
+                            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; margin-top: 0.5rem; color: #374151;">Información del Paciente</h3>
 
-                Infolists\Components\Section::make('Detalles de Consulta')
-                    ->schema([
-                        Infolists\Components\Grid::make(1)
-                            ->schema([
-                                Infolists\Components\TextEntry::make('diagnostico')
-                                    ->label(' Diagnóstico')
-                                    ->placeholder('Sin diagnóstico registrado')
-                                    ->columnSpanFull()
-                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin diagnóstico registrado')
-                                    ->copyable()
-                                    ->extraAttributes(function ($state): array {
-                                        $content = $state ?: 'Sin diagnóstico registrado';
-                                        $lineCount = substr_count($content, "\n") + 1;
-                                        $charCount = strlen($content);
+                            <div style="display: flex !important; flex-direction: row !important; gap: 1rem; width: 100%; margin-bottom: 1rem;">
+                                <!-- Tarjeta Fecha -->
+                                <div style="flex: 1; background: white; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 1.25rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); min-height: 120px;">
+                                    <div style="font-weight: 600; color: #374151; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                                        📅 Fecha de Consulta
+                                    </div>
+                                    <div style="font-size: 1.1rem; font-weight: 600; color: #059669;">
+                                        ' . $fecha . '
+                                    </div>
+                                </div>
 
-                                        // Calcular altura dinámica ultra compacta
-                                        $minHeight = 25; // Reducido de 30 a 25
-                                        $lineHeight = 18; // Reducido de 20 a 18
-                                        $maxHeight = 100; // Reducido de 120 a 100
+                                <!-- Tarjeta Paciente -->
+                                <div style="flex: 1; background: white; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 1.25rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); min-height: 120px;">
+                                    <div style="font-weight: 600; color: #374151; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                                        👤 Paciente
+                                    </div>
+                                    <div style="color: #059669; line-height: 1.4;">
+                                        ' . $pacienteInfo . '
+                                    </div>
+                                </div>
 
-                                        $estimatedHeight = max($minHeight, min($maxHeight, $lineCount * $lineHeight + 12));
-                                        $needsScroll = ($lineCount * $lineHeight + 12) > $maxHeight;
+                                <!-- Tarjeta Médico -->
+                                <div style="flex: 1; background: white; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 1.25rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); min-height: 120px;">
+                                    <div style="font-weight: 600; color: #374151; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                                        👨‍⚕️ Médico
+                                    </div>
+                                    <div style="color: #059669; line-height: 1.4;">
+                                        ' . $medicoInfo . '
+                                    </div>
+                                </div>
+                            </div>
 
-                                        return [
-                                            'style' => "white-space: pre-line; text-align: left; word-wrap: break-word; " .
-                                                      ($needsScroll ? "max-height: {$maxHeight}px; overflow-y: auto;" : "min-height: {$estimatedHeight}px;") .
-                                                      " padding: 6px; border-radius: 6px; border: 1px solid; line-height: 1.3; margin-bottom: 6px;", // Ultra compacto
-                                            'class' => 'bg-blue-50 border-blue-200 text-gray-900 dark:bg-blue-900 dark:border-blue-600 dark:text-gray-100'
-                                        ];
-                                    }),
+                            <!-- SEGUNDA FILA: Detalles de Consulta -->
+                                                        </div>
 
-                                Infolists\Components\TextEntry::make('tratamiento')
-                                    ->label(' Tratamiento')
-                                    ->placeholder('Sin tratamiento registrado')
-                                    ->columnSpanFull()
-                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin tratamiento registrado')
-                                    ->copyable()
-                                    ->extraAttributes(function ($state): array {
-                                        $content = $state ?: 'Sin tratamiento registrado';
-                                        $lineCount = substr_count($content, "\n") + 1;
+                            <!-- TÍTULO: Detalles de Consulta -->
+                            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; margin-top: 0.5rem; color: #374151;">Detalles de Consulta</h3>
 
-                                        // Calcular altura dinámica ultra compacta
-                                        $minHeight = 25;
-                                        $lineHeight = 18;
-                                        $maxHeight = 100;
+                            <!-- SEGUNDA FILA: Detalles de Consulta -->
+                            <div style="display: flex !important; flex-direction: row !important; gap: 1rem; width: 100%; margin-bottom: 2rem;">
+                                <!-- Tarjeta Diagnóstico -->
+                                <div style="flex: 1; background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 0.5rem; padding: 1rem; min-height: 120px;">
+                                    <div style="font-weight: 600; color: #374151; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                                        🔍 Diagnóstico
+                                    </div>
+                                    <div style="color: #1e40af; line-height: 1.4; word-wrap: break-word; max-height: 80px; overflow-y: auto;">
+                                        ' . nl2br(htmlspecialchars($diagnostico)) . '
+                                    </div>
+                                </div>
 
-                                        $estimatedHeight = max($minHeight, min($maxHeight, $lineCount * $lineHeight + 12));
-                                        $needsScroll = ($lineCount * $lineHeight + 12) > $maxHeight;
+                                <!-- Tarjeta Tratamiento -->
+                                <div style="flex: 1; background: #f0fdf4; border: 1px solid #22c55e; border-radius: 0.5rem; padding: 1rem; min-height: 120px;">
+                                    <div style="font-weight: 600; color: #374151; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                                        💊 Tratamiento
+                                    </div>
+                                    <div style="color: #166534; line-height: 1.4; word-wrap: break-word; max-height: 80px; overflow-y: auto;">
+                                        ' . nl2br(htmlspecialchars($tratamiento)) . '
+                                    </div>
+                                </div>
 
-                                        return [
-                                            'style' => "white-space: pre-line; text-align: left; word-wrap: break-word; " .
-                                                      ($needsScroll ? "max-height: {$maxHeight}px; overflow-y: auto;" : "min-height: {$estimatedHeight}px;") .
-                                                      " padding: 6px; border-radius: 6px; border: 1px solid; line-height: 1.3; margin-bottom: 6px;",
-                                            'class' => 'bg-green-50 border-green-200 text-gray-900 dark:bg-green-900 dark:border-green-600 dark:text-gray-100'
-                                        ];
-                                    }),
-
-                                Infolists\Components\TextEntry::make('observaciones')
-                                    ->label(' Observaciones')
-                                    ->placeholder('Sin observaciones registradas')
-                                    ->columnSpanFull()
-                                    ->formatStateUsing(fn (?string $state): string => $state ?: 'Sin observaciones registradas')
-                                    ->copyable()
-                                    ->extraAttributes(function ($state): array {
-                                        $content = $state ?: 'Sin observaciones registradas';
-                                        $lineCount = substr_count($content, "\n") + 1;
-
-                                        // Calcular altura dinámica ultra compacta
-                                        $minHeight = 25;
-                                        $lineHeight = 18;
-                                        $maxHeight = 100;
-
-                                        $estimatedHeight = max($minHeight, min($maxHeight, $lineCount * $lineHeight + 12));
-                                        $needsScroll = ($lineCount * $lineHeight + 12) > $maxHeight;
-
-                                        return [
-                                            'style' => "white-space: pre-line; text-align: left; word-wrap: break-word; " .
-                                                      ($needsScroll ? "max-height: {$maxHeight}px; overflow-y: auto;" : "min-height: {$estimatedHeight}px;") .
-                                                      " padding: 6px; border-radius: 6px; border: 1px solid; line-height: 1.3; margin-bottom: 6px;",
-                                            'class' => 'bg-yellow-50 border-yellow-200 text-gray-900 dark:bg-yellow-900 dark:border-yellow-600 dark:text-gray-100'
-                                        ];
-                                    }),
-                            ]),
-                    ])
-                    ->collapsible()
-                    ->collapsed(false),
-
-                // Sección de recetas asociadas
+                                <!-- Tarjeta Observaciones -->
+                                <div style="flex: 1; background: #fffbeb; border: 1px solid #f59e0b; border-radius: 0.5rem; padding: 1rem; min-height: 120px;">
+                                    <div style="font-weight: 600; color: #374151; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                                        📝 Observaciones
+                                    </div>
+                                    <div style="color: #92400e; line-height: 1.4; word-wrap: break-word; max-height: 80px; overflow-y: auto;">
+                                        ' . nl2br(htmlspecialchars($observaciones)) . '
+                                    </div>
+                                </div>
+                            </div>
+                        </div>';
+                    })
+                    ->html()
+                    ->extraAttributes([
+                        'style' => 'margin: 0; padding: 0;'
+                    ]),                // Sección de recetas asociadas
                 Infolists\Components\Section::make('Recetas Médicas')
                     ->schema([
                         Infolists\Components\TextEntry::make('recetas')

@@ -220,47 +220,239 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                         Forms\Components\Repeater::make('recetas')
                             ->label('')
                             ->schema([
-                                Forms\Components\Textarea::make('medicamentos')
+                                Forms\Components\TextInput::make('medicamentos')
                                     ->label('Medicamentos')
                                     ->required()
-                                    ->rows(4)
-                                    ->placeholder('Ej: Loratadina 500 mg')
-                                    ->helperText('Liste todos los medicamentos con sus dosis y frecuencia')
-                                    ->columnSpanFull(),
+                                    ->placeholder('Ej: Loratadina 500 mg, Ibuprofeno 400 mg')
+                                    ->columnSpan(1)
+                                    ->reactive()
+                                    ->debounce(500) // Esperar 500ms antes de actualizar
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        // Forzar actualización de la previsualización
+                                        $set('../../recetas_preview_trigger', uniqid());
+                                    })
+                                    ->helperText('💡 La previsualización se actualiza automáticamente'),
 
-                                Forms\Components\Textarea::make('indicaciones')
+                                Forms\Components\TextInput::make('indicaciones')
                                     ->label('Indicaciones')
                                     ->required()
-                                    ->rows(3)
-                                    ->placeholder('Tomar una diaria, etc.')
-                                    ->helperText('Proporcione instrucciones específicas para el paciente')
-                                    ->columnSpanFull(),
+                                    ->placeholder('Tomar una diaria, cada 8 horas por 3 días')
+                                    ->columnSpan(1)
+                                    ->reactive()
+                                    ->debounce(500) // Esperar 500ms antes de actualizar
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        // Forzar actualización de la previsualización
+                                        $set('../../recetas_preview_trigger', uniqid());
+                                    })
+                                    ->helperText('💡 La previsualización se actualiza automáticamente'),
                             ])
-                            ->addActionLabel('Agregar Nueva Receta')
-                            ->reorderableWithButtons()
-                            ->collapsible()
-                            ->cloneable()
+                            ->columns(2)
+                            ->addActionLabel('➕ Agregar Nueva Receta')
+                            ->addAction(function ($action) {
+                                return $action
+                                    ->after(function (callable $set) {
+                                        // Actualizar previsualización cuando se agrega una nueva receta
+                                        $set('recetas_preview_trigger', uniqid());
+                                    });
+                            })
                             ->deleteAction(
-                                fn ($action) => $action->requiresConfirmation()
+                                fn ($action) => $action
+                                    ->requiresConfirmation()
+                                    ->modalHeading('¿Eliminar receta?')
+                                    ->modalDescription('¿Está seguro de que desea eliminar esta receta?')
+                                    ->modalSubmitActionLabel('Sí, eliminar')
+                                    ->color('danger')
+                                    ->icon('heroicon-o-trash')
+                                    ->after(function (callable $set) {
+                                        // Actualizar previsualización cuando se elimina una receta
+                                        $set('recetas_preview_trigger', uniqid());
+                                    })
+                            )
+                            ->reorderAction(
+                                fn ($action) => $action
+                                    ->icon('heroicon-o-bars-3')
+                                    ->color('gray')
                             )
                             ->itemLabel(function (array $state): ?string {
+                                static $numero = 0;
+                                $numero++;
+
                                 if (empty($state['medicamentos'])) {
-                                    return 'Nueva Receta';
+                                    return "Receta #{$numero}";
                                 }
 
-                                $medicamentos = substr($state['medicamentos'], 0, 50);
-                                if (strlen($state['medicamentos']) > 50) {
+                                $medicamentos = substr($state['medicamentos'], 0, 40);
+                                if (strlen($state['medicamentos']) > 40) {
                                     $medicamentos .= '...';
                                 }
 
-                                return 'Receta: ' . $medicamentos;
+                                return "Receta #{$numero}: {$medicamentos}";
                             })
                             ->columnSpanFull()
                             ->defaultItems(0)
-                            ->hint('Las recetas se crearán automáticamente al guardar la consulta'),
+                            ->extraAttributes([
+                                'style' => 'border: 1px solid rgb(209, 213, 219); border-radius: 8px; padding: 16px; background-color: rgba(249, 250, 251, 0.5);'
+                            ])
+                            ->hint('💡 Las recetas se crearán automáticamente al guardar la consulta')
+                            ->hintColor('info'),
+
+                        // Campo oculto para triggear actualizaciones de la previsualización
+                        Forms\Components\Hidden::make('recetas_preview_trigger'),
+
+                        // Previsualización de las recetas en formato tabla
+                        Forms\Components\Placeholder::make('recetas_preview')
+                            ->label('📋 Previsualización de Recetas')
+                            ->extraAttributes([
+                                'class' => 'border border-blue-200 rounded-lg bg-blue-50/30 dark:bg-blue-900/10 dark:border-blue-800',
+                'x-data' => '{ updating: false }',
+                'x-init' => '$watch("$el.querySelector(\'[wire\\:loading]\')", () => { updating = true; setTimeout(() => updating = false, 300) })'
+                            ])
+                            ->reactive()
+                            ->content(function (callable $get) {
+                                $recetas = $get('recetas') ?? [];
+                                $timestamp = now()->format('H:i:s');
+
+                                if (empty($recetas) || !is_array($recetas)) {
+                                    return new \Illuminate\Support\HtmlString('
+                                        <div class="flex items-center justify-center p-8">
+                                            <div class="text-center">
+                                                <div class="text-5xl mb-3 animate-pulse">📝</div>
+                                                <p class="text-gray-500 dark:text-gray-400 font-medium">No hay recetas agregadas aún</p>
+                                                <p class="text-sm text-blue-500 dark:text-blue-400 mt-2">Use el botón "➕ Agregar Nueva Receta" arriba</p>
+                                                <p class="text-xs text-gray-400 mt-2">⏰ Actualizado: ' . $timestamp . '</p>
+                                            </div>
+                                        </div>
+                                    ');
+                                }
+
+                                // Filtrar recetas que tengan contenido
+                                $recetasValidas = array_filter($recetas, function($receta) {
+                                    return !empty($receta['medicamentos']) && !empty($receta['indicaciones']);
+                                });
+
+                                if (empty($recetasValidas)) {
+                                    $totalRecetas = count($recetas);
+                                    $recetasCompletas = count($recetasValidas);
+
+                                    return new \Illuminate\Support\HtmlString('
+                                        <div class="flex items-center justify-center p-8">
+                                            <div class="text-center">
+                                                <div class="text-5xl mb-3 animate-bounce">⚠️</div>
+                                                <p class="text-amber-600 dark:text-amber-400 font-medium text-lg">Recetas incompletas</p>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Complete todos los campos de medicamentos e indicaciones</p>
+                                                <div class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                                                    <p class="text-sm text-amber-700 dark:text-amber-300">
+                                                        📊 Progreso: ' . $recetasCompletas . '/' . $totalRecetas . ' recetas completas
+                                                    </p>
+                                                </div>
+                                                <p class="text-xs text-gray-400 mt-2">⏰ Actualizado: ' . $timestamp . '</p>
+                                            </div>
+                                        </div>
+                                    ');
+                                }
+
+                                $totalRecetas = count($recetasValidas);
+
+                                $html = '
+                                <div class="space-y-4">
+                                    <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <h4 class="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">📋 Recetas Médicas - Previsualización en Tiempo Real</h4>
+                                                <p class="text-xs text-green-600 dark:text-green-300">
+                                                    ✅ ' . $totalRecetas . ' receta' . ($totalRecetas != 1 ? 's' : '') . ' lista' . ($totalRecetas != 1 ? 's' : '') . ' para crear
+                                                </p>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                                                    Actualizado: ' . $timestamp . '
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
+                                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                            <thead>
+                                                <tr class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">💊 Medicamentos</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">📋 Indicaciones</th>
+                                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">';
+
+                                $contador = 0;
+                                foreach ($recetasValidas as $receta) {
+                                    $contador++;
+                                    $fecha = now()->format('d/m/Y');
+                                    $medicamentos = htmlspecialchars($receta['medicamentos']);
+                                    $indicaciones = htmlspecialchars($receta['indicaciones']);
+
+                                    $html .= '
+                                        <tr class="hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">' . $contador . '</td>
+                                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">' . $fecha . '</td>
+                                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
+                                                <div class="truncate">' . nl2br($medicamentos) . '</div>
+                                            </td>
+                                            <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 max-w-xs">
+                                                <div class="truncate">' . nl2br($indicaciones) . '</div>
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                    ✅ Listo
+                                                </span>
+                                            </td>
+                                        </tr>';
+                                }
+
+                                $html .= '
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                                                        <span class="text-green-600 dark:text-green-300 text-sm font-bold">✓</span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-medium text-green-800 dark:text-green-200">
+                                                        🎯 <strong>' . count($recetasValidas) . ' receta' . (count($recetasValidas) != 1 ? 's' : '') . '</strong> lista' . (count($recetasValidas) != 1 ? 's' : '') . ' para crear
+                                                    </p>
+                                                    <p class="text-xs text-green-600 dark:text-green-300 mt-1">
+                                                        Se crearán automáticamente al guardar la consulta
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                                <span class="text-xs text-green-600 dark:text-green-400 font-medium">Actualización en tiempo real</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>';
+
+                                return new \Illuminate\Support\HtmlString($html);
+                            })
+                            ->reactive()
+                            ->columnSpanFull()
+                            ->extraAttributes([
+                                'style' => 'margin-top: 16px;'
+                            ]),
                     ])
                     ->collapsible()
-                    ->collapsed(false),
+                    ->collapsed(false)
+                    ->extraAttributes([
+                        'style' => 'border: 2px solid rgb(34, 197, 94); border-radius: 12px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(16, 185, 129, 0.05));'
+                    ]),
             ])
             ->statePath('consultaData');
     }
@@ -442,6 +634,22 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                 ->danger()
                 ->send();
         }
+    }
+
+    public function redirectToCreatePatient(): void
+    {
+        // Construir la URL para crear un nuevo paciente con un parámetro de retorno
+        $createPatientUrl = \App\Filament\Resources\PacientesResource::getUrl('create') . '?return_to=create_consulta';
+
+        // Mostrar notificación informativa
+        Notification::make()
+            ->title('Redirigiendo a crear paciente')
+            ->body('Será redirigido al formulario de creación de paciente. Después de crear el paciente, podrá regresar a crear la consulta.')
+            ->info()
+            ->send();
+
+        // Redirigir a la página de creación de pacientes
+        $this->redirect($createPatientUrl);
     }
 
     protected function getForms(): array

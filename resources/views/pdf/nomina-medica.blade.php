@@ -177,8 +177,8 @@
 <body>
     <div class="header">
         <div class="company-name">{{ $nomina->empresa }}</div>
-        <div class="company-info">Colonia Palmira, Tegucigalpa</div>
-        <div class="company-info">Teléfono: 2233-4455</div>
+        <div class="company-info">{{ $centroMedico->direccion ?? 'Colonia Palmira, Tegucigalpa' }}</div>
+        <div class="company-info">Teléfono: {{ $centroMedico->telefono ?? '2233-4455' }}</div>
         <div class="title">{{ $tituloNomina }}</div>
     </div>
 
@@ -235,6 +235,22 @@
                 <td class="number-cell">L. {{ number_format($detalle->percepciones, 2) }}</td>
                 <td class="number-cell">L. {{ number_format($detalle->total_pagar, 2) }}</td>
             </tr>
+            @if($detalle->percepciones_detalle)
+            <tr>
+                <td colspan="5" style="background-color: #f0fff4; padding: 6px; font-size: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 3px;">Detalles de percepciones:</div>
+                    <div style="white-space: pre-wrap; padding-left: 10px;">{{ $detalle->percepciones_detalle }}</div>
+                </td>
+            </tr>
+            @endif
+            @if($detalle->deducciones_detalle)
+            <tr>
+                <td colspan="5" style="background-color: #fff5f5; padding: 6px; font-size: 8px;">
+                    <div style="font-weight: bold; margin-bottom: 3px;">Detalles de deducciones:</div>
+                    <div style="white-space: pre-wrap; padding-left: 10px;">{{ $detalle->deducciones_detalle }}</div>
+                </td>
+            </tr>
+            @endif
             @endforeach
         </tbody>
         <tfoot>
@@ -264,6 +280,9 @@
     <div class="footer">
         <p><strong>Reporte generado el {{ $fechaGeneracion }}</strong></p>
         <p>Sistema de Gestión de Clínicas Médicas - {{ $nomina->empresa }}</p>
+        @if($centroMedico && $centroMedico->rtn)
+            <p><strong>RTN:</strong> {{ $centroMedico->rtn }}</p>
+        @endif
         @if($nomina->tipo_pago === 'quincenal')
             <p style="font-style: italic; color: #7c3aed;">
                 Nómina {{ $nomina->quincena == 1 ? 'de la primera quincena' : 'de la segunda quincena' }} del mes de {{ $mesNombre }}

@@ -20,6 +20,8 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\ListConsultas;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\CreateConsultas;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\EditConsultas;
+use Filament\Actions;
+use Filament\Resources\Pages\ViewRecord;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\ViewConsultas;
 
 
@@ -524,6 +526,8 @@ class ConsultasResource extends Resource
             'create-simple' => Pages\CreateConsultas::route('/create-simple'),
             'view' => Pages\ViewConsultas::route('/{record}'),
             'edit' => Pages\EditConsultas::route('/{record}/edit'),
+            'view' => Pages\ViewConsultas::route('/{record}'),
+            'servicios' => Pages\ManageServiciosConsulta::route('/{record}/servicios'),
         ];
     }
 
@@ -571,4 +575,6 @@ class ConsultasResource extends Resource
             return null;
         }
     }
+
+
 }

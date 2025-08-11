@@ -6,8 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    
     /**
      * Run the migrations.
+     * 
+     * 
      */
     public function up(): void
     {
@@ -16,7 +19,7 @@ return new class extends Migration
             
             $table->unsignedBigInteger('persona_id');
             $table->foreign('persona_id')->references('id')->on('personas');
-            $table->enum('grupo_sanguineo', ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'])->nullable();
+            $table->enum('grupo_sanguineo', ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-', 'No especificado'])->nullable();
             $table->string('contacto_emergencia')->nullable();
             $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
             $table->foreign("centro_id")->references("id")->on("centros_medicos");

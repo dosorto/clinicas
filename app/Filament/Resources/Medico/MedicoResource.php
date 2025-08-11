@@ -56,7 +56,7 @@ class MedicoResource extends Resource
                             ->dehydrated()
                             ->live(debounce: 500) // Esto hace que se actualice cada 500ms después de dejar de escribir
                             ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                if (strlen($state) >= 8) { // Asumiendo que el DNI tiene al menos 8 caracteres
+                                if (strlen($state) >= 1) { // Asumiendo que el DNI tiene al menos 1 carácter
                                     $existingPersona = Persona::where('dni', $state)->first();
                                     if ($existingPersona) {
                                         $set('primer_nombre', $existingPersona->primer_nombre);
@@ -201,6 +201,7 @@ class MedicoResource extends Resource
                         ->label('Número de Colegiación')
                         ->required()
                         ->maxLength(20)
+                        ->unique('medicos', 'numero_colegiacion', ignoreRecord: true)
                         ->placeholder('Ingrese su número de colegiación'),
                       // ->unique('medicos', 'numero_colegiacion', ignoreRecord: true),
 
@@ -273,11 +274,32 @@ class MedicoResource extends Resource
                                     'title' => 'Monto que recibirá el médico cada quincena (15 días)'
                                 ])
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(function ($state, callable $set) {
-                                    if ($state) {
-                                        $set('salario_mensual', $state * 2);
+                                ->afterStateUpdated(function ($state, callable $set, Forms\Get $get) {
+                                    // Asegurarse de que sea un número, defecto 0
+                                    $value = is_numeric($state) ? (float) $state : 0;
+                                    $set('salario_mensual', $value * 2);
+                                    
+                                    // Validación para verificar si ambos valores son cero
+                                    $porcentaje = (float) ($get('porcentaje_servicio') ?? 0);
+                                    if ($value <= 0 && $porcentaje <= 0) {
+                                        $set('validacion_compensacion', false);
+                                    } else {
+                                        $set('validacion_compensacion', true);
                                     }
-                                }),
+                                })
+                                ->rules([
+                                    function (Forms\Get $get) {
+                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                            $porcentajeServicio = (float)($get('porcentaje_servicio') ?? 0);
+                                            $salario = (float)($value ?? 0);
+                                            
+                                            if ($salario <= 0 && $porcentajeServicio <= 0) {
+                                                $fail('Debe especificar al menos una forma de compensación (salario o porcentaje por servicio).');
+                                            }
+                                        };
+                                    },
+                                ]),
+                                
 
                             Forms\Components\TextInput::make('salario_mensual')
                                 ->label('Salario Mensual')
@@ -379,6 +401,70 @@ class MedicoResource extends Resource
                                 ->inline(false)
                                 ->dehydrated(),
                         ]),
+
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('auto_generate')
+                            ->label('🎲 Generar datos automáticamente')
+                            ->icon('heroicon-o-sparkles')
+                            ->size('lg')
+                            ->color('success')
+                            ->outlined()
+                            ->extraAttributes([
+                                'class' => 'w-full justify-center'
+                            ])
+                            ->action(function (callable $set, Forms\Get $get) {
+                                // Obtener nombre de los datos de persona
+                                $primerNombre = $get('primer_nombre');
+                                $primerApellido = $get('primer_apellido');
+
+                                if ($primerNombre && $primerApellido) {
+                                    $username = strtolower($primerNombre . '.' . $primerApellido);
+                                    $username = preg_replace('/[^a-z0-9.]/', '', $username);
+
+                                    $email = $username . '@clinica.com';
+                                    $password = 'Temp' . rand(1000, 9999);
+
+                                    $set('username', $username);
+                                    $set('user_email', $email);
+                                    $set('user_password', $password);
+                                    $set('user_password_confirmation', $password);
+
+                                    Notification::make()
+                                        ->title('Datos generados automáticamente')
+                                        ->body("Usuario: {$username}\nEmail: {$email}\nContraseña: {$password}")
+                                        ->icon('heroicon-o-sparkles')
+                                        ->iconColor('success')
+                                        ->success()
+                                        ->persistent()
+                                        ->actions([
+                                            \Filament\Notifications\Actions\Action::make('copy')
+                                                ->label('Copiar contraseña')
+                                                ->icon('heroicon-o-clipboard')
+                                                ->button()
+                                                ->color('success')
+                                                ->action(function () use ($password) {
+                                                    // Copiar la contraseña al portapapeles
+                                                    Notification::make()
+                                                        ->title('¡Copiado!')
+                                                        ->body('La contraseña ha sido copiada al portapapeles')
+                                                        ->success()
+                                                        ->send();
+
+                                                    return $password;
+                                                }),
+                                        ])
+                                        ->send();
+                                } else {
+                                    Notification::make()
+                                        ->title('Error')
+                                        ->body('Se necesita el nombre y apellido del médico para generar los datos')
+                                        ->danger()
+                                        ->send();
+                                }
+                            })
+                    ])
+                    ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
+                    ->columnSpanFull(),
 
                     Forms\Components\Section::make('Datos del Usuario')
                         ->description('Complete la información de acceso del médico')
@@ -484,6 +570,7 @@ class MedicoResource extends Resource
                                                 ? 'Solo complete si desea cambiar la contraseña'
                                                 : 'Contraseña inicial del médico (puede cambiarla después)'
                                         )
+                                        ->revealable()
                                         ->dehydrated(),
 
                                     Forms\Components\TextInput::make('user_password_confirmation')
@@ -492,6 +579,7 @@ class MedicoResource extends Resource
                                         ->required(fn (Forms\Get $get, $operation) => 
                                             $get('crear_usuario') && $operation === 'create' && $get('user_password')
                                         )
+                                        ->revealable()
                                         ->same('user_password')
                                         ->placeholder(fn ($operation) => 
                                             $operation === 'edit' 
@@ -532,37 +620,7 @@ class MedicoResource extends Resource
                         ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
                         ->columns(1),
 
-                    Forms\Components\Section::make('Generación Automática')
-                        ->description('Opción rápida: generar datos automáticamente')
-                        ->schema([
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('auto_generate')
-                                    ->label('🎲 Generar datos automáticamente')
-                                    ->icon('heroicon-o-sparkles')
-                                    ->color('info')
-                                    ->action(function (callable $set, Forms\Get $get) {
-                                        // Obtener nombre de los datos de persona
-                                        $primerNombre = $get('primer_nombre');
-                                        $primerApellido = $get('primer_apellido');
-
-                                        if ($primerNombre && $primerApellido) {
-                                            $username = strtolower($primerNombre . '.' . $primerApellido);
-                                            $username = preg_replace('/[^a-z0-9.]/', '', $username);
-
-                                            $email = $username . '@clinica.com';
-                                            $password = 'Temp' . rand(1000, 9999);
-
-                                            $set('username', $username);
-                                            $set('user_email', $email);
-                                            $set('user_password', $password);
-                                            $set('user_password_confirmation', $password);
-                                        }
-                                    }),
-                            ])
-                        ])
-                        ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
-                        ->collapsible()
-                        ->collapsed(),
+                    
                 ]),
         ])
         ->columnSpanFull() //  Esto hará que el Wizard ocupe el 100% del ancho
@@ -641,6 +699,70 @@ class MedicoResource extends Resource
                         ->modalHeading('Crear Usuario de Acceso')
                         ->modalDescription('Complete los datos para crear un usuario de acceso al sistema para este médico')
                         ->form([
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('auto_generate_modal')
+                                    ->label('🎲 Generar datos automáticamente')
+                                    ->icon('heroicon-o-sparkles')
+                                    ->size('lg')
+                                    ->color('success')
+                                    ->outlined()
+                                    ->extraAttributes([
+                                        'class' => 'w-full justify-center'
+                                    ])
+                                    ->action(function (callable $set, Medico $record) {
+                                        $primerNombre = $record->persona->primer_nombre;
+                                        $primerApellido = $record->persona->primer_apellido;
+
+                                        if ($primerNombre && $primerApellido) {
+                                            $username = strtolower($primerNombre . '.' . $primerApellido);
+                                            $username = preg_replace('/[^a-z0-9.]/', '', $username);
+
+                                            $email = $username . '@clinica.com';
+                                            $password = 'Temp' . rand(1000, 9999);
+
+                                            $set('username', $username);
+                                            $set('user_email', $email);
+                                            $set('password', $password);
+                                            $set('password_confirmation', $password);
+
+                                            Notification::make()
+                                                ->title('Datos generados automáticamente')
+                                                ->body("Usuario: {$username}\nEmail: {$email}\nContraseña: {$password}")
+                                                ->icon('heroicon-o-sparkles')
+                                                ->iconColor('success')
+                                                ->success()
+                                                ->persistent()
+                                                ->actions([
+                                                    \Filament\Notifications\Actions\Action::make('copy')
+                                                        ->label('Copiar contraseña')
+                                                        ->icon('heroicon-o-clipboard')
+                                                        ->button()
+                                                        ->color('success')
+                                                        ->close()
+                                                        ->action(function () use ($password) {
+                                                            return $password;
+                                                        }),
+                                                ])
+                                                ->send();
+                                            $username = strtolower($primerNombre . '.' . $primerApellido);
+                                            $username = preg_replace('/[^a-z0-9.]/', '', $username);
+
+                                            $email = $username . '@clinica.com';
+                                            $password = 'Temp' . rand(1000, 9999);
+
+                                            $set('username', $username);
+                                            $set('user_email', $email);
+                                            $set('password', $password);
+                                            $set('password_confirmation', $password);
+
+                                            Notification::make()
+                                                ->title('Datos generados automáticamente')
+                                                ->success()
+                                                ->send();
+                                        }
+                                    }),
+                            ])->columnSpanFull(),
+
                             Forms\Components\Section::make('Datos del Usuario')
                                 ->schema([
                                     Forms\Components\Grid::make(2)

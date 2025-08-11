@@ -13,6 +13,12 @@ class ContratoMedicoPolicy
      */
     public function viewAny(User $user): bool
     {
+        // Si es médico, necesita permiso específico
+        if ($user->hasRole('medico')) {
+            return $user->can('ver contratomedico');
+        }
+        
+        // Otros roles como admin o root
         return $user->can('ver contratomedico');
     }
 
@@ -21,6 +27,13 @@ class ContratoMedicoPolicy
      */
     public function view(User $user, ContratoMedico $contratoMedico): bool
     {
+        // Si es médico, solo puede ver sus propios contratos
+        if ($user->hasRole('medico')) {
+            // Verificar si el contrato pertenece al médico asociado al usuario
+            return $user->medico && $contratoMedico->medico_id === $user->medico->id;
+        }
+        
+        // Otros roles como admin o root
         return $user->can('ver contratomedico');
     }
 
@@ -37,6 +50,11 @@ class ContratoMedicoPolicy
      */
     public function update(User $user, ContratoMedico $contratoMedico): bool
     {
+        // Los médicos no pueden actualizar contratos, incluso los suyos
+        if ($user->roles()->where('name', 'medico')->exists()) {
+            return false;
+        }
+        
         return $user->can('actualizar contratomedico');
     }
 
@@ -45,6 +63,11 @@ class ContratoMedicoPolicy
      */
     public function delete(User $user, ContratoMedico $contratoMedico): bool
     {
+        // Los médicos no pueden eliminar contratos, incluso los suyos
+        if ($user->roles()->where('name', 'medico')->exists()) {
+            return false;
+        }
+        
         return $user->can('borrar contratomedico');
     }
 

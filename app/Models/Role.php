@@ -20,15 +20,20 @@ class Role extends SpatieRole
         'centro_id', // Assuming you want to add centro_id for tenant scoping
     ];
 
-    public function permissions()
+    public function permissions(): BelongsToMany
     {
-        return $this->belongsToMany(Permission::class, 'role_has_permissions');
+        return $this->belongsToMany(
+            config('permission.models.permission'),
+            config('permission.table_names.role_has_permissions'),
+            config('permission.column_names.role_morph_key'),
+            'permission_id'
+        );
     }
 
     // Agregar la relación con el centro médico
     public function centro(): BelongsTo
     {
-        return $this->belongsTo(Centros_Medico::class, 'centro_id');
+        return $this->belongsTo(\App\Models\Centros_Medico::class, 'centro_id', 'id');
     }
 
     protected static function booted()
@@ -38,6 +43,11 @@ class Role extends SpatieRole
         static::creating(function ($model) {
             if (!$model->centro_id && session()->has('current_centro_id')) {
                 $model->centro_id = session('current_centro_id');
+            }
+
+            // Asegurarse de que el guard_name esté establecido
+            if (!$model->guard_name) {
+                $model->guard_name = 'web';
             }
         });
 

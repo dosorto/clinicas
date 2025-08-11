@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Traits\TenantScoped;
 
@@ -25,6 +26,11 @@ class Consulta extends ModeloBase
         'centro_id',
     ];
 
+    public function facturas(): HasMany
+    {
+        return $this->hasMany(Factura::class);
+    }
+    
 
     public function paciente()
     {
@@ -40,7 +46,23 @@ class Consulta extends ModeloBase
     {
         return $this->belongsTo(Citas::class, 'cita_id');
     }
-
+    public function centro(): BelongsTo
+    {
+        return $this->belongsTo(Centros_Medico::class, 'centro_id');
+    }
+    // AGREGAR ESTA RELACIÓN:
+    public function servicios(): HasMany
+    {
+        return $this->hasMany(FacturaDetalle::class, 'consulta_id')
+                    ->whereNull('factura_id');
+    }
+    
+    // O si prefieres llamarla detallesTemporales:
+    public function detallesTemporales(): HasMany
+    {
+        return $this->hasMany(FacturaDetalle::class, 'consulta_id')
+                    ->whereNull('factura_id');
+    }
     public function recetas()
     {
         return $this->hasMany(Receta::class, 'consulta_id');

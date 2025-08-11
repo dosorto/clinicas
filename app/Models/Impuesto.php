@@ -17,7 +17,6 @@ class Impuesto extends ModeloBase
     protected $fillable = [
         'nombre',
         'porcentaje',
-        'es_exento',
         'vigente_desde',
         'vigente_hasta',
         'centro_id',

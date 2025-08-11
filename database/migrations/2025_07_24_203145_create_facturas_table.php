@@ -23,10 +23,15 @@ return new class extends Migration
             $table->decimal('descuento_total', 12, 2)->default(0);
             $table->decimal('impuesto_total', 12, 2)->default(0);
             $table->decimal('total', 12, 2);
+            $table->boolean('usa_cai')->default(true);
             $table->enum('estado', ['PENDIENTE','PAGADA','ANULADA','PARCIAL'])->default('PENDIENTE');
             $table->text('observaciones')->nullable();
+            $table->foreignId('cai_autorizacion_id')->nullable()->constrained('cai_autorizaciones');
             $table->foreignId('centro_id')->constrained('centros_medicos');
-            $table->unsignedBigInteger('numero_factura')->unique();
+            $table->foreignId('descuento_id')->nullable()->constrained('descuentos');
+            $table->foreignId('tipo_pago_id')->nullable()->constrained('tipo_pagos');
+            $table->foreignId('cai_correlativo_id')->nullable()->constrained('cai_correlativos');
+            
 
             /* logs */
             $table->timestamps();
