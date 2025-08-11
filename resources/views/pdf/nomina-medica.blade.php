@@ -177,8 +177,8 @@
 <body>
     <div class="header">
         <div class="company-name">{{ $nomina->empresa }}</div>
-        <div class="company-info">Colonia Palmira, Tegucigalpa</div>
-        <div class="company-info">Teléfono: 2233-4455</div>
+        <div class="company-info">{{ $centroMedico->direccion ?? 'Colonia Palmira, Tegucigalpa' }}</div>
+        <div class="company-info">Teléfono: {{ $centroMedico->telefono ?? '2233-4455' }}</div>
         <div class="title">{{ $tituloNomina }}</div>
     </div>
 
@@ -280,6 +280,9 @@
     <div class="footer">
         <p><strong>Reporte generado el {{ $fechaGeneracion }}</strong></p>
         <p>Sistema de Gestión de Clínicas Médicas - {{ $nomina->empresa }}</p>
+        @if($centroMedico && $centroMedico->rtn)
+            <p><strong>RTN:</strong> {{ $centroMedico->rtn }}</p>
+        @endif
         @if($nomina->tipo_pago === 'quincenal')
             <p style="font-style: italic; color: #7c3aed;">
                 Nómina {{ $nomina->quincena == 1 ? 'de la primera quincena' : 'de la segunda quincena' }} del mes de {{ $mesNombre }}

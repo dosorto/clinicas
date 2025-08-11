@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ContabilidadMedica;
 use App\Filament\Resources\ContabilidadMedica\ContratoMedicoResource\Pages;
 use App\Filament\Resources\ContabilidadMedica\ContratoMedicoResource\RelationManagers;
 use App\Models\ContabilidadMedica\ContratoMedico;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -12,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 
 
 class ContratoMedicoResource extends Resource
@@ -216,8 +218,22 @@ class ContratoMedicoResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
+        $user = Auth::user();
         
-        return $query->where('centro_id', \Illuminate\Support\Facades\Auth::user()->centro_id)
-                    ->latest('id');
+        // Filtrar por centro médico
+        $query = $query->where('centro_id', $user->centro_id);
+        
+        // Obtener el médico vinculado al usuario actual si existe
+        $medico = $user->medico;
+        
+        // Verificar si el usuario está autorizado como médico
+        if ($medico && \Spatie\Permission\Models\Role::where('name', 'medico')->whereHas('users', function($q) use ($user) {
+            $q->where('model_id', $user->id);
+        })->exists()) {
+            // Si es médico, filtrar solo sus contratos
+            $query = $query->where('medico_id', $medico->id);
+        }
+        
+        return $query->latest('id');
     }
 }

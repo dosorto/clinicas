@@ -300,6 +300,7 @@ class PacientesResource extends Resource
                                     'O-' => 'O-',
                                     'AB+' => 'AB+',
                                     'AB-' => 'AB-',
+                                    'No especificado' => 'No especificado',
                                 ])
                                 ->required(),
                             
@@ -551,6 +552,7 @@ class PacientesResource extends Resource
                         'O-' => 'O-',
                         'AB+' => 'AB+',
                         'AB-' => 'AB-',
+                        'No especificado' => 'No especificado',
                     ]),
                 
                 Tables\Filters\SelectFilter::make('sexo')
