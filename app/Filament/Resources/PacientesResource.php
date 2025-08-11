@@ -33,7 +33,7 @@ class PacientesResource extends Resource
         return auth()->user()?->can('actualizar pacientes');
         return auth()->user()?->can('borrar pacientes');
     }
-    
+
     protected static ?string $model = Pacientes::class;
     protected static ?string $navigationIcon = 'heroicon-o-users';
     protected static ?string $navigationGroup = 'Gestión de Personas';
@@ -60,12 +60,12 @@ class PacientesResource extends Resource
         column: 'dni',
         modifyRuleUsing: function (Unique $rule, callable $get, $context) {
             $personaId = $get('persona_id');
-            
+
             // Solo ignorar si existe una persona asociada
             if ($personaId) {
                 $rule->ignore($personaId);
             }
-            
+
             return $rule->where('dni', $get('dni'));
         }
     )
@@ -94,7 +94,7 @@ class PacientesResource extends Resource
                                                     ->send();
                                                 return;
                                             }
-                                            
+
                                             // Si la persona existe pero no es paciente, llenar los datos
                                             $set('primer_nombre', $existingPersona->primer_nombre);
                                             $set('segundo_nombre', $existingPersona->segundo_nombre);
@@ -105,7 +105,7 @@ class PacientesResource extends Resource
                                             $set('sexo', $existingPersona->sexo);
                                             $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
                                             $set('nacionalidad_id', $existingPersona->nacionalidad_id);
-                                            
+
                                             // Handle file upload properly
                                             if ($existingPersona->fotografia) {
                                                 $set('fotografia', [
@@ -117,9 +117,9 @@ class PacientesResource extends Resource
                                             } else {
                                                 $set('fotografia', null);
                                             }
-                                            
+
                                             $set('persona_id', $existingPersona->id);
-                                            
+
                                             Notification::make()
                                                 ->title('Persona encontrada')
                                                 ->body("Se encontró: {$existingPersona->primer_nombre} {$existingPersona->primer_apellido}. Complete los datos médicos para registrarlo como paciente.")
@@ -131,9 +131,9 @@ class PacientesResource extends Resource
                                         }
                                     }
                                 }),
-                            
+
                             Forms\Components\Hidden::make('persona_id'),
-                            
+
                             // ✅ VALIDACIÓN DE SOLO LETRAS PARA NOMBRES
                             Forms\Components\TextInput::make('primer_nombre')
                                 ->label('Primer Nombre')
@@ -154,7 +154,7 @@ class PacientesResource extends Resource
                                     }
                                     self::checkPersonExists($state, $set);
                                 }),
-                            
+
                             Forms\Components\TextInput::make('segundo_nombre')
                                 ->label('Segundo Nombre')
                                 ->maxLength(255)
@@ -171,7 +171,7 @@ class PacientesResource extends Resource
                                             ->send();
                                     }
                                 }),
-                            
+
                             Forms\Components\TextInput::make('primer_apellido')
                                 ->label('Primer Apellido')
                                 ->required()
@@ -191,7 +191,7 @@ class PacientesResource extends Resource
                                     }
                                     self::checkPersonExists($state, $set);
                                 }),
-                            
+
                             Forms\Components\TextInput::make('segundo_apellido')
                                 ->label('Segundo Apellido')
                                 ->maxLength(255)
@@ -208,17 +208,17 @@ class PacientesResource extends Resource
                                             ->send();
                                     }
                                 }),
-                            
+
                             Forms\Components\TextInput::make('telefono')
                                 ->label('Teléfono')
                                 ->required()
                                 ->maxLength(255),
-                            
+
                             Forms\Components\Textarea::make('direccion')
                                 ->label('Dirección')
                                 ->required()
                                 ->rows(3),
-                            
+
                             Forms\Components\Select::make('sexo')
                                 ->label('Sexo')
                                 ->options([
@@ -226,18 +226,18 @@ class PacientesResource extends Resource
                                     'F' => 'Femenino',
                                 ])
                                 ->required(),
-                            
+
                             Forms\Components\DatePicker::make('fecha_nacimiento')
                                 ->label('Fecha de Nacimiento')
                                 ->required()
                                 ->native(false),
-                                
+
                             Forms\Components\Select::make('nacionalidad_id')
                                 ->label('Nacionalidad')
                                 ->options(Nacionalidad::pluck('nacionalidad', 'id'))
                                 ->required()
                                 ->searchable(),
-                                
+
                             // ✅ MEJORAR SUBIDA DE ARCHIVOS
                             Forms\Components\FileUpload::make('fotografia')
                                 ->label('Fotografía')
@@ -271,21 +271,21 @@ class PacientesResource extends Resource
                                 'fecha_nacimiento' => 'Fecha de Nacimiento',
                                 'nacionalidad_id' => 'Nacionalidad',
                             ];
-                            
+
                             $missingFields = [];
                             foreach ($requiredFields as $field => $label) {
                                 if (empty($get($field))) {
                                     $missingFields[] = $label;
                                 }
                             }
-                            
+
                             if (!empty($missingFields)) {
                                 Notification::make()
                                     ->title('Campos obligatorios faltantes')
                                     ->body('Complete los siguientes campos: ' . implode(', ', $missingFields))
                                     ->danger()
                                     ->send();
-                                    
+
                                 throw new \Exception('Campos obligatorios faltantes');
                             }
                         }),
@@ -305,7 +305,7 @@ class PacientesResource extends Resource
                                     'AB-' => 'AB-',
                                 ])
                                 ->required(),
-                            
+
                             Forms\Components\TextInput::make('contacto_emergencia')
                                 ->label('Contacto de Emergencia')
                                 ->required()
@@ -317,25 +317,25 @@ class PacientesResource extends Resource
                                 'grupo_sanguineo' => 'Grupo Sanguíneo',
                                 'contacto_emergencia' => 'Contacto de Emergencia',
                             ];
-                            
+
                             $missingFields = [];
                             foreach ($requiredFields as $field => $label) {
                                 if (empty($get($field))) {
                                     $missingFields[] = $label;
                                 }
                             }
-                            
+
                             if (!empty($missingFields)) {
                                 Notification::make()
                                     ->title('Campos obligatorios faltantes')
                                     ->body('Complete los siguientes campos: ' . implode(', ', $missingFields))
                                     ->danger()
                                     ->send();
-                                    
+
                                 throw new \Exception('Campos obligatorios faltantes');
                             }
                         }),
-                    
+
                     Wizard\Step::make('Enfermedades')
                         ->schema([
                             Forms\Components\Toggle::make('sin_enfermedades')
@@ -352,7 +352,7 @@ class PacientesResource extends Resource
                                     }
                                 })
                                 ->columnSpanFull(),
-                            
+
                             Repeater::make('enfermedades_data')
                                 ->label('Enfermedades del Paciente')
                                 ->schema([
@@ -369,7 +369,7 @@ class PacientesResource extends Resource
                                                 array_column($enfermedadesData, 'enfermedad_id'),
                                                 fn($id) => !is_null($id)
                                             );
-                                            
+
                                             $repetidas = array_count_values($enfermedadesSeleccionadas);
                                             if (isset($repetidas[$state]) && $repetidas[$state] > 1) {
                                                 Notification::make()
@@ -380,7 +380,7 @@ class PacientesResource extends Resource
                                                 $set('enfermedad_id', null);
                                             }
                                         }),
-                                    
+
                                     Forms\Components\TextInput::make('ano_diagnostico')
                                         ->label('Año de Diagnóstico')
                                         ->numeric()
@@ -388,7 +388,7 @@ class PacientesResource extends Resource
                                         ->maxValue(date('Y'))
                                         ->default(date('Y'))
                                         ->required(),
-                                    
+
                                     Forms\Components\Textarea::make('tratamiento')
                                         ->label('Tratamiento')
                                         ->rows(3)
@@ -398,9 +398,9 @@ class PacientesResource extends Resource
                                 ->columns(2)
                                 ->defaultItems(1)
                                 ->addActionLabel('Agregar Enfermedad')
-                                ->itemLabel(fn (array $state): ?string => 
-                                    $state['enfermedad_id'] ? 
-                                    Enfermedade::find($state['enfermedad_id'])?->enfermedades : 
+                                ->itemLabel(fn (array $state): ?string =>
+                                    $state['enfermedad_id'] ?
+                                    Enfermedade::find($state['enfermedad_id'])?->enfermedades :
                                     'Nueva Enfermedad'
                                 )
                                 ->collapsible()
@@ -418,7 +418,7 @@ class PacientesResource extends Resource
                         ->afterValidation(function (callable $get) {
                             $sinEnfermedades = $get('sin_enfermedades');
                             $enfermedadesData = $get('enfermedades_data');
-                            
+
                             // Si no marcó "sin enfermedades" debe tener al menos una enfermedad
                             if (!$sinEnfermedades) {
                                 if (empty($enfermedadesData)) {
@@ -427,22 +427,22 @@ class PacientesResource extends Resource
                                         ->body('Debe agregar al menos una enfermedad o marcar "No tengo enfermedades"')
                                         ->danger()
                                         ->send();
-                                        
+
                                     throw new \Exception('Debe agregar al menos una enfermedad o marcar "No tengo enfermedades"');
                                 }
-                                
+
                                 $enfermedadesSeleccionadas = array_filter(
                                     array_column($enfermedadesData, 'enfermedad_id'),
                                     fn($id) => !is_null($id)
                                 );
-                                
+
                                 if (count($enfermedadesSeleccionadas) !== count(array_unique($enfermedadesSeleccionadas))) {
                                     Notification::make()
                                         ->title('Enfermedades duplicadas')
                                         ->body('No puede seleccionar la misma enfermedad más de una vez.')
                                         ->danger()
                                         ->send();
-                                        
+
                                     throw new \Exception('Enfermedades duplicadas detectadas');
                                 }
                             }
@@ -463,7 +463,7 @@ class PacientesResource extends Resource
         $iniciales = strtoupper(substr($nombre, 0, 1) . substr($apellido, 0, 1));
         $colores = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8'];
         $color = $colores[array_rand($colores)];
-        
+
         return "https://ui-avatars.com/api/?name={$iniciales}&background=" . substr($color, 1) . "&color=fff&size=100&font-size=0.5";
     }
 
@@ -486,30 +486,30 @@ class PacientesResource extends Resource
                             $record->persona->primer_apellido
                         );
                     }),
-                
+
                 Tables\Columns\TextColumn::make('persona.primer_nombre')
                     ->label('Nombre Completo')
-                    ->formatStateUsing(fn ($record) => 
+                    ->formatStateUsing(fn ($record) =>
                         trim("{$record->persona->primer_nombre} {$record->persona->segundo_nombre} {$record->persona->primer_apellido} {$record->persona->segundo_apellido}"))
                     ->searchable(['primer_nombre', 'segundo_nombre', 'primer_apellido', 'segundo_apellido'])
                     ->weight(FontWeight::Medium),
-                    
+
                 Tables\Columns\TextColumn::make('persona.dni')
                     ->label('DNI')
                     ->searchable()
                     ->copyable(),
-                
+
                 Tables\Columns\TextColumn::make('grupo_sanguineo')
                     ->label('Grupo Sanguíneo')
                     ->sortable()
                     ->badge()
                     ->color('danger'),
-                
+
                 Tables\Columns\TextColumn::make('contacto_emergencia')
                     ->label('Contacto Emergencia')
                     ->limit(30)
                     ->tooltip(fn ($record) => $record->contacto_emergencia),
-                
+
                 // ✅ MEJORADA: Columna de enfermedades más visual
                 Tables\Columns\TextColumn::make('enfermedades_count')
                     ->label('Enfermedades')
@@ -535,7 +535,7 @@ class PacientesResource extends Resource
                         }
                         return implode(', ', $enfermedades);
                     }),
-                
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Registrado')
                     ->dateTime('d/m/Y H:i')
@@ -555,7 +555,7 @@ class PacientesResource extends Resource
                         'AB+' => 'AB+',
                         'AB-' => 'AB-',
                     ]),
-                
+
                 Tables\Filters\SelectFilter::make('sexo')
                     ->label('Sexo')
                     ->options([
@@ -571,6 +571,15 @@ class PacientesResource extends Resource
                     }),
             ])
             ->actions([
+                // ✅ NUEVO: Acción principal para crear consulta
+                Tables\Actions\Action::make('crear_consulta')
+                    ->label('Crear Consulta')
+                    ->icon('heroicon-o-clipboard-document-list')
+                    ->color('success')
+                    ->size('sm')
+                    ->button()
+                    ->url(fn ($record) => \App\Filament\Resources\Consultas\ConsultasResource::getUrl('create', ['paciente_id' => $record->id])),
+
                 // ✅ NUEVO: Dropdown con todas las acciones agrupadas
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ViewAction::make()
