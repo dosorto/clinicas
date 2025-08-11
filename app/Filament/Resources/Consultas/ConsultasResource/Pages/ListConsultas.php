@@ -17,9 +17,10 @@ class ListConsultas extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make()
+            Actions\Action::make('nueva_consulta')
                 ->label('Nueva Consulta')
-                ->icon('heroicon-o-plus'),
+                ->icon('heroicon-o-plus')
+                ->url(fn () => \App\Filament\Resources\PacientesResource::getUrl('index')),
         ];
     }
 

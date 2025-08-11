@@ -224,16 +224,37 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->label('Medicamentos')
                                     ->required()
                                     ->placeholder('Ej: Loratadina 500 mg, Ibuprofeno 400 mg')
-                                    ->columnSpan(1),
+                                    ->columnSpan(1)
+                                    ->reactive()
+                                    ->debounce(500) // Esperar 500ms antes de actualizar
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        // Forzar actualización de la previsualización
+                                        $set('../../recetas_preview_trigger', uniqid());
+                                    })
+                                    ->helperText('💡 La previsualización se actualiza automáticamente'),
 
                                 Forms\Components\TextInput::make('indicaciones')
                                     ->label('Indicaciones')
                                     ->required()
                                     ->placeholder('Tomar una diaria, cada 8 horas por 3 días')
-                                    ->columnSpan(1),
+                                    ->columnSpan(1)
+                                    ->reactive()
+                                    ->debounce(500) // Esperar 500ms antes de actualizar
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        // Forzar actualización de la previsualización
+                                        $set('../../recetas_preview_trigger', uniqid());
+                                    })
+                                    ->helperText('💡 La previsualización se actualiza automáticamente'),
                             ])
                             ->columns(2)
                             ->addActionLabel('➕ Agregar Nueva Receta')
+                            ->addAction(function ($action) {
+                                return $action
+                                    ->after(function (callable $set) {
+                                        // Actualizar previsualización cuando se agrega una nueva receta
+                                        $set('recetas_preview_trigger', uniqid());
+                                    });
+                            })
                             ->deleteAction(
                                 fn ($action) => $action
                                     ->requiresConfirmation()
@@ -242,6 +263,10 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->modalSubmitActionLabel('Sí, eliminar')
                                     ->color('danger')
                                     ->icon('heroicon-o-trash')
+                                    ->after(function (callable $set) {
+                                        // Actualizar previsualización cuando se elimina una receta
+                                        $set('recetas_preview_trigger', uniqid());
+                                    })
                             )
                             ->reorderAction(
                                 fn ($action) => $action
@@ -271,19 +296,30 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                             ->hint('💡 Las recetas se crearán automáticamente al guardar la consulta')
                             ->hintColor('info'),
 
+                        // Campo oculto para triggear actualizaciones de la previsualización
+                        Forms\Components\Hidden::make('recetas_preview_trigger'),
+
                         // Previsualización de las recetas en formato tabla
                         Forms\Components\Placeholder::make('recetas_preview')
                             ->label('📋 Previsualización de Recetas')
+                            ->extraAttributes([
+                                'class' => 'border border-blue-200 rounded-lg bg-blue-50/30 dark:bg-blue-900/10 dark:border-blue-800',
+                'x-data' => '{ updating: false }',
+                'x-init' => '$watch("$el.querySelector(\'[wire\\:loading]\')", () => { updating = true; setTimeout(() => updating = false, 300) })'
+                            ])
+                            ->reactive()
                             ->content(function (callable $get) {
                                 $recetas = $get('recetas') ?? [];
+                                $timestamp = now()->format('H:i:s');
 
                                 if (empty($recetas) || !is_array($recetas)) {
                                     return new \Illuminate\Support\HtmlString('
-                                        <div class="flex items-center justify-center p-6">
+                                        <div class="flex items-center justify-center p-8">
                                             <div class="text-center">
-                                                <div class="text-4xl mb-2">📝</div>
-                                                <p class="text-gray-500 dark:text-gray-400">No hay recetas agregadas aún</p>
-                                                <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Use el botón "➕ Agregar Nueva Receta" arriba</p>
+                                                <div class="text-5xl mb-3 animate-pulse">📝</div>
+                                                <p class="text-gray-500 dark:text-gray-400 font-medium">No hay recetas agregadas aún</p>
+                                                <p class="text-sm text-blue-500 dark:text-blue-400 mt-2">Use el botón "➕ Agregar Nueva Receta" arriba</p>
+                                                <p class="text-xs text-gray-400 mt-2">⏰ Actualizado: ' . $timestamp . '</p>
                                             </div>
                                         </div>
                                     ');
@@ -295,33 +331,56 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                 });
 
                                 if (empty($recetasValidas)) {
+                                    $totalRecetas = count($recetas);
+                                    $recetasCompletas = count($recetasValidas);
+
                                     return new \Illuminate\Support\HtmlString('
-                                        <div class="flex items-center justify-center p-6">
+                                        <div class="flex items-center justify-center p-8">
                                             <div class="text-center">
-                                                <div class="text-4xl mb-2">⚠️</div>
-                                                <p class="text-amber-600 dark:text-amber-400">Recetas incompletas</p>
-                                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Complete todos los campos de medicamentos e indicaciones</p>
+                                                <div class="text-5xl mb-3 animate-bounce">⚠️</div>
+                                                <p class="text-amber-600 dark:text-amber-400 font-medium text-lg">Recetas incompletas</p>
+                                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Complete todos los campos de medicamentos e indicaciones</p>
+                                                <div class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                                                    <p class="text-sm text-amber-700 dark:text-amber-300">
+                                                        📊 Progreso: ' . $recetasCompletas . '/' . $totalRecetas . ' recetas completas
+                                                    </p>
+                                                </div>
+                                                <p class="text-xs text-gray-400 mt-2">⏰ Actualizado: ' . $timestamp . '</p>
                                             </div>
                                         </div>
                                     ');
                                 }
 
+                                $totalRecetas = count($recetasValidas);
+
                                 $html = '
                                 <div class="space-y-4">
-                                    <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
-                                        <h4 class="text-sm font-semibold text-green-800 dark:text-green-200 mb-2">📋 Recetas Médicas</h4>
-                                        <p class="text-xs text-green-600 dark:text-green-300">Lista organizada de todas las recetas médicas que se crearán</p>
+                                    <div class="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                                        <div class="flex justify-between items-center">
+                                            <div>
+                                                <h4 class="text-sm font-semibold text-green-800 dark:text-green-200 mb-1">📋 Recetas Médicas - Previsualización en Tiempo Real</h4>
+                                                <p class="text-xs text-green-600 dark:text-green-300">
+                                                    ✅ ' . $totalRecetas . ' receta' . ($totalRecetas != 1 ? 's' : '') . ' lista' . ($totalRecetas != 1 ? 's' : '') . ' para crear
+                                                </p>
+                                            </div>
+                                            <div class="text-right">
+                                                <div class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                                                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                                                    Actualizado: ' . $timestamp . '
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                                    <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
                                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                             <thead>
-                                                <tr class="bg-gray-50 dark:bg-gray-800">
-                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">#</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Fecha</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Medicamentos</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Indicaciones</th>
-                                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Estado</th>
+                                                <tr class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700">
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">💊 Medicamentos</th>
+                                                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">📋 Indicaciones</th>
+                                                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">';
@@ -356,10 +415,28 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                         </table>
                                     </div>
 
-                                    <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
-                                        <p class="text-sm text-green-600 dark:text-green-400">
-                                            ✅ <strong>' . count($recetasValidas) . ' receta(s)</strong> lista(s) para ser creada(s) automáticamente
-                                        </p>
+                                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-200 dark:border-green-700">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center space-x-3">
+                                                <div class="flex-shrink-0">
+                                                    <div class="w-8 h-8 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center">
+                                                        <span class="text-green-600 dark:text-green-300 text-sm font-bold">✓</span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-medium text-green-800 dark:text-green-200">
+                                                        🎯 <strong>' . count($recetasValidas) . ' receta' . (count($recetasValidas) != 1 ? 's' : '') . '</strong> lista' . (count($recetasValidas) != 1 ? 's' : '') . ' para crear
+                                                    </p>
+                                                    <p class="text-xs text-green-600 dark:text-green-300 mt-1">
+                                                        Se crearán automáticamente al guardar la consulta
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                                <span class="text-xs text-green-600 dark:text-green-400 font-medium">Actualización en tiempo real</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>';
 

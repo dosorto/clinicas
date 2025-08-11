@@ -18,7 +18,6 @@ class Medico extends ModeloBase
 protected $table = 'medicos';
 
     protected $fillable = [
-        'user_id',
         'persona_id',
         'numero_colegiacion',
         'horario_entrada',  
@@ -31,9 +30,9 @@ protected $table = 'medicos';
         return $this->belongsTo(Centros_Medico::class, 'centro_id');
     }
     public function user()
-{
-    return $this->belongsTo(User::class, 'user_id');
-}
+    {
+        return $this->hasOneThrough(User::class, Persona::class, 'id', 'persona_id', 'persona_id', 'id');
+    }
 
 
     public function centrosMedicos()

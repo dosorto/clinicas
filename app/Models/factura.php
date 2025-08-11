@@ -31,6 +31,7 @@ class Factura extends Model
         'descuento_id',
         'cai_correlativo_id',
         'usa_cai',
+        'factura_diseno_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -46,6 +47,11 @@ class Factura extends Model
     ];
 
     // Relaciones
+    public function facturaDiseno(): BelongsTo
+    {
+        return $this->belongsTo(FacturaDiseno::class, 'factura_diseno_id');
+    }
+
     public function caiCorrelativo(): BelongsTo
     {
         return $this->belongsTo(CAI_Correlativos::class, 'cai_correlativo_id');
