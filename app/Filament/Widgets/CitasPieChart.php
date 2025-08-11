@@ -8,14 +8,10 @@ use Filament\Facades\Filament;
 
 class CitasPieChart extends ChartWidget
 {
-    protected static ?string $heading = '📊 Distribución de Citas';
+    protected static ?string $heading = '📊 Estado de Citas';
     protected static ?int $sort = 3;
-    protected int | string | array $columnSpan = [
-        'sm' => 2,
-        'md' => 3,
-        'lg' => 4,
-    ];
-    protected static ?string $maxHeight = '300px';
+    protected int | string | array $columnSpan = 1;
+    protected static ?string $maxHeight = '250px';
     
     protected function getData(): array
     {
@@ -24,41 +20,41 @@ class CitasPieChart extends ChartWidget
         
         $query = Citas::query();
         
-        if ($user && !$user->hasRole('root')) {
-            $query->where('centro_id', $currentCentroId);
+        // Aplicar filtros según el usuario
+        if (!$user || !$user->hasRole('root')) {
+            if ($currentCentroId) {
+                $query->where('centro_id', $currentCentroId);
+            }
         }
+        
+        // Solo citas de hoy para simplificar
+        $query->whereDate('fecha', today());
         
         $pendientes = $query->clone()->where('estado', 'Pendiente')->count();
         $confirmadas = $query->clone()->where('estado', 'Confirmado')->count();
-        $canceladas = $query->clone()->where('estado', 'Cancelado')->count();
         $realizadas = $query->clone()->where('estado', 'Realizada')->count();
+        $canceladas = $query->clone()->where('estado', 'Cancelado')->count();
         
         return [
             'datasets' => [
                 [
-                    'label' => 'Citas por Estado',
+                    'label' => 'Citas de Hoy',
                     'data' => [$pendientes, $confirmadas, $realizadas, $canceladas],
                     'backgroundColor' => [
-                        'rgba(251, 191, 36, 0.8)',
-                        'rgba(34, 197, 94, 0.8)',
-                        'rgba(59, 130, 246, 0.8)',
-                        'rgba(239, 68, 68, 0.8)',
+                        'rgba(251, 191, 36, 0.8)',  // Amarillo para pendientes
+                        'rgba(34, 197, 94, 0.8)',   // Verde para confirmadas  
+                        'rgba(59, 130, 246, 0.8)',  // Azul para realizadas
+                        'rgba(239, 68, 68, 0.8)',   // Rojo para canceladas
                     ],
-                    'borderColor' => [
-                        'rgb(245, 158, 11)',
-                        'rgb(22, 163, 74)',
-                        'rgb(37, 99, 235)',
-                        'rgb(220, 38, 38)',
-                    ],
-                    'borderWidth' => 3,
-                    'hoverOffset' => 10,
+                    'borderWidth' => 2,
+                    'hoverOffset' => 4,
                 ],
             ],
             'labels' => [
-                "⏳ Pendientes ({$pendientes})",
-                "✅ Confirmadas ({$confirmadas})",
-                "✨ Realizadas ({$realizadas})",
-                "❌ Canceladas ({$canceladas})"
+                "Pendientes ({$pendientes})",
+                "Confirmadas ({$confirmadas})", 
+                "Realizadas ({$realizadas})",
+                "Canceladas ({$canceladas})"
             ],
         ];
     }
@@ -78,26 +74,14 @@ class CitasPieChart extends ChartWidget
                     'position' => 'bottom',
                     'labels' => [
                         'usePointStyle' => true,
-                        'padding' => 20,
+                        'padding' => 15,
                         'font' => [
-                            'size' => 12,
-                            'weight' => 'bold'
+                            'size' => 11
                         ]
                     ]
-                ],
-                'tooltip' => [
-                    'backgroundColor' => 'rgba(0, 0, 0, 0.8)',
-                    'titleColor' => 'white',
-                    'bodyColor' => 'white',
-                    'borderColor' => 'rgba(255, 255, 255, 0.2)',
-                    'borderWidth' => 1
                 ]
             ],
-            'cutout' => '60%',
-            'animation' => [
-                'animateRotate' => true,
-                'animateScale' => true
-            ]
+            'cutout' => '65%',
         ];
     }
 }
