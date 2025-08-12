@@ -201,7 +201,6 @@ class MedicoResource extends Resource
                         ->label('Número de Colegiación')
                         ->required()
                         ->maxLength(20)
-                        ->unique('medicos', 'numero_colegiacion', ignoreRecord: true)
                         ->placeholder('Ingrese su número de colegiación'),
                       // ->unique('medicos', 'numero_colegiacion', ignoreRecord: true),
 
