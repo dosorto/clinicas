@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Gate;
 use Filament\Notifications\Notification;
 
 class CalendarioCitasWidget extends Widget
@@ -233,68 +234,94 @@ class CalendarioCitasWidget extends Widget
         $this->citas = [];
         $this->citasPorDia = [];
         
-        $medico = Auth::user()->medico;
+        $user = Auth::user();
         
-        if ($medico) {
-            $fechaInicio = Carbon::createFromDate($this->anio, $this->mes, 1)->startOfMonth();
-            $fechaFin = Carbon::createFromDate($this->anio, $this->mes, 1)->endOfMonth();
-            
-            $withRelations = ['paciente.persona', 'medico.persona', 'medico.especialidades'];
-            
-            $citaModel = new Citas();
-            $availableRelations = get_class_methods($citaModel);
-            if (in_array('especialidad', $availableRelations)) {
-                $withRelations[] = 'especialidad';
-            }
-            if (in_array('especialidad_medico', $availableRelations)) {
-                $withRelations[] = 'especialidad_medico';
-            }
-            
-            $this->citas = Citas::query()
-                ->where('medico_id', $medico->id)
-                ->where('estado', '!=', 'Cancelado')
-                ->whereBetween('fecha', [$fechaInicio->format('Y-m-d'), $fechaFin->format('Y-m-d')])
-                ->with($withRelations)
-                ->get()
-                ->map(function ($cita) {
-                    $fecha = Carbon::parse($cita->fecha);
-                    $hora = Carbon::parse($cita->hora)->format('H:i');
-                    $pacienteNombre = $cita->paciente->persona->nombre_completo ?? 'Paciente sin nombre';
-                    
-                    $especialidad = '';
-                    if (isset($cita->especialidad_id) && isset($cita->especialidad) && is_object($cita->especialidad)) {
-                        $especialidad = $cita->especialidad->nombre ?? '';
-                    } elseif (isset($cita->especialidad_medico) && is_object($cita->especialidad_medico)) {
-                        $especialidad = $cita->especialidad_medico->nombre ?? '';
-                    } elseif (isset($cita->medico) && isset($cita->medico->especialidades) && $cita->medico->especialidades->isNotEmpty()) {
-                        $especialidad = $cita->medico->especialidades->first()->nombre ?? '';
-                    }
-                    
-                    return [
-                        'id' => $cita->id,
-                        'fecha' => $fecha->format('Y-m-d'),
-                        'dia' => $fecha->day,
-                        'hora' => $hora,
-                        'paciente' => $pacienteNombre,
-                        'paciente_id' => $cita->paciente_id,
-                        'medico_id' => $cita->medico_id,
-                        'motivo' => $cita->motivo,
-                        'estado' => $cita->estado,
-                        'color' => $this->getColorForEstado($cita->estado),
-                        'medico' => $cita->medico->persona->nombre_completo ?? 'Médico',
-                        'especialidad' => $especialidad,
-                    ];
-                })
-                ->toArray();
-                
-            // Agrupar citas por día
-            $this->citasPorDia = collect($this->citas)
-                ->groupBy('dia')
-                ->map(function ($items) {
-                    return $items->sortBy('hora')->values()->toArray();
-                })
-                ->toArray();
+        if (!$user) {
+            return;
         }
+
+        $fechaInicio = Carbon::createFromDate($this->anio, $this->mes, 1)->startOfMonth();
+        $fechaFin = Carbon::createFromDate($this->anio, $this->mes, 1)->endOfMonth();
+        
+        $withRelations = ['paciente.persona', 'medico.persona', 'medico.especialidades'];
+        
+        $citaModel = new Citas();
+        $availableRelations = get_class_methods($citaModel);
+        if (in_array('especialidad', $availableRelations)) {
+            $withRelations[] = 'especialidad';
+        }
+        if (in_array('especialidad_medico', $availableRelations)) {
+            $withRelations[] = 'especialidad_medico';
+        }
+        
+        // Construir query según el rol del usuario
+        $query = Citas::query()
+            ->where('estado', '!=', 'Cancelado')
+            ->whereBetween('fecha', [$fechaInicio->format('Y-m-d'), $fechaFin->format('Y-m-d')])
+            ->with($withRelations);
+
+        // Filtrar según el rol del usuario
+        if ($user->roles->contains('name', 'root')) {
+            // Root puede ver todas las citas del centro seleccionado
+            $centroActual = session('current_centro_id');
+            if ($centroActual) {
+                $query->where('centro_id', $centroActual);
+            }
+        } elseif ($user->roles->contains('name', 'administrador')) {
+            // Administradores ven todas las citas de su centro
+            $query->where('centro_id', $user->centro_id);
+        } elseif ($user->roles->contains('name', 'medico')) {
+            // Médicos solo ven sus propias citas
+            if ($user->medico) {
+                $query->where('medico_id', $user->medico->id);
+            } else {
+                // Si no tiene médico asociado, no ver nada
+                return;
+            }
+        } else {
+            // Otros roles no ven citas
+            return;
+        }
+
+        $this->citas = $query->get()
+            ->map(function ($cita) {
+                $fecha = Carbon::parse($cita->fecha);
+                $hora = Carbon::parse($cita->hora)->format('H:i');
+                $pacienteNombre = $cita->paciente->persona->nombre_completo ?? 'Paciente sin nombre';
+                
+                $especialidad = '';
+                if (isset($cita->especialidad_id) && isset($cita->especialidad) && is_object($cita->especialidad)) {
+                    $especialidad = $cita->especialidad->nombre ?? '';
+                } elseif (isset($cita->especialidad_medico) && is_object($cita->especialidad_medico)) {
+                    $especialidad = $cita->especialidad_medico->nombre ?? '';
+                } elseif (isset($cita->medico) && isset($cita->medico->especialidades) && $cita->medico->especialidades->isNotEmpty()) {
+                    $especialidad = $cita->medico->especialidades->first()->nombre ?? '';
+                }
+                
+                return [
+                    'id' => $cita->id,
+                    'fecha' => $fecha->format('Y-m-d'),
+                    'dia' => $fecha->day,
+                    'hora' => $hora,
+                    'paciente' => $pacienteNombre,
+                    'paciente_id' => $cita->paciente_id,
+                    'medico_id' => $cita->medico_id,
+                    'motivo' => $cita->motivo,
+                    'estado' => $cita->estado,
+                    'color' => $this->getColorForEstado($cita->estado),
+                    'medico' => $cita->medico->persona->nombre_completo ?? 'Médico',
+                    'especialidad' => $especialidad,
+                ];
+            })
+            ->toArray();
+            
+        // Agrupar citas por día
+        $this->citasPorDia = collect($this->citas)
+            ->groupBy('dia')
+            ->map(function ($items) {
+                return $items->sortBy('hora')->values()->toArray();
+            })
+            ->toArray();
     }
     
     /**
@@ -305,30 +332,47 @@ class CalendarioCitasWidget extends Widget
         try {
             $cita = Citas::find($citaId);
             
-            if ($cita) {
-                $cita->estado = 'Cancelado';
-                $cita->save();
-                
-                // Actualizar en memoria
-                $this->actualizarEstadoCitaEnMemoria($citaId, 'Cancelado');
-                
-                // Recargar las citas
-                $this->cargarCitas();
-                
-                // Limpiar el modal
-                $this->citasDelDia = [];
-                $this->diaSeleccionado = null;
-                $this->citaSeleccionadaId = null;
-                
+            if (!$cita) {
                 Notification::make()
-                    ->title('Cita cancelada')
-                    ->body('La cita ha sido cancelada correctamente')
-                    ->success()
+                    ->title('Error')
+                    ->body('Cita no encontrada')
+                    ->danger()
                     ->send();
-                
-                // NO usar dispatch - simplemente retornar
-                return true;
+                return false;
             }
+
+            // Verificar permisos
+            $user = Auth::user();
+            if (!Gate::allows('cancel', $cita)) {
+                Notification::make()
+                    ->title('Sin permisos')
+                    ->body('No tiene permisos para cancelar esta cita')
+                    ->danger()
+                    ->send();
+                return false;
+            }
+
+            $cita->estado = 'Cancelado';
+            $cita->save();
+            
+            // Actualizar en memoria
+            $this->actualizarEstadoCitaEnMemoria($citaId, 'Cancelado');
+            
+            // Recargar las citas
+            $this->cargarCitas();
+            
+            // Limpiar el modal
+            $this->citasDelDia = [];
+            $this->diaSeleccionado = null;
+            $this->citaSeleccionadaId = null;
+            
+            Notification::make()
+                ->title('Cita cancelada')
+                ->body('La cita ha sido cancelada correctamente')
+                ->success()
+                ->send();
+            
+            return true;
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error al cancelar cita')
@@ -348,24 +392,41 @@ class CalendarioCitasWidget extends Widget
         try {
             $cita = Citas::find($citaId);
             
-            if ($cita) {
-                $cita->estado = 'Confirmado';
-                $cita->save();
-                
-                // Actualizar en memoria
-                $this->actualizarEstadoCitaEnMemoria($citaId, 'Confirmado');
-                
-                // Recargar las citas
-                $this->cargarCitas();
-                
+            if (!$cita) {
                 Notification::make()
-                    ->title('Cita confirmada')
-                    ->body('La cita ha sido confirmada correctamente')
-                    ->success()
+                    ->title('Error')
+                    ->body('Cita no encontrada')
+                    ->danger()
                     ->send();
-                
-                return true;
+                return false;
             }
+
+            // Verificar permisos
+            if (!Gate::allows('confirm', $cita)) {
+                Notification::make()
+                    ->title('Sin permisos')
+                    ->body('No tiene permisos para confirmar esta cita')
+                    ->danger()
+                    ->send();
+                return false;
+            }
+
+            $cita->estado = 'Confirmado';
+            $cita->save();
+            
+            // Actualizar en memoria
+            $this->actualizarEstadoCitaEnMemoria($citaId, 'Confirmado');
+            
+            // Recargar las citas
+            $this->cargarCitas();
+            
+            Notification::make()
+                ->title('Cita confirmada')
+                ->body('La cita ha sido confirmada correctamente')
+                ->success()
+                ->send();
+            
+            return true;
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error al confirmar cita')
@@ -418,18 +479,47 @@ class CalendarioCitasWidget extends Widget
         try {
             $cita = Citas::with('paciente')->find($citaId);
             
-            if ($cita) {
-                session(['cita_en_consulta' => $citaId]);
-                
+            if (!$cita) {
                 Notification::make()
-                    ->title('Redirigiendo...')
-                    ->body('Creando consulta para ' . ($cita->paciente->persona->nombre_completo ?? 'el paciente'))
-                    ->success()
+                    ->title('Error')
+                    ->body('Cita no encontrada')
+                    ->danger()
                     ->send();
-                
-                // Usar redirect() directo - SIN dispatch
-                return redirect("/admin/consultas/consultas/create?paciente_id={$cita->paciente_id}&cita_id={$citaId}");
+                return false;
             }
+
+            $user = Auth::user();
+
+            // Solo médicos pueden crear consultas, y solo para sus propias citas
+            if (!$user->roles->contains('name', 'medico')) {
+                Notification::make()
+                    ->title('Sin permisos')
+                    ->body('Solo los médicos pueden crear consultas')
+                    ->danger()
+                    ->send();
+                return false;
+            }
+
+            // Verificar que la cita pertenezca al médico
+            if ($user->medico && $cita->medico_id !== $user->medico->id) {
+                Notification::make()
+                    ->title('Sin permisos')
+                    ->body('Solo puede crear consultas para sus propias citas')
+                    ->danger()
+                    ->send();
+                return false;
+            }
+
+            session(['cita_en_consulta' => $citaId]);
+            
+            Notification::make()
+                ->title('Redirigiendo...')
+                ->body('Creando consulta para ' . ($cita->paciente->persona->nombre_completo ?? 'el paciente'))
+                ->success()
+                ->send();
+            
+            // Usar redirect() directo - SIN dispatch
+            return redirect("/admin/consultas/consultas/create?paciente_id={$cita->paciente_id}&cita_id={$citaId}");
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error al crear consulta')

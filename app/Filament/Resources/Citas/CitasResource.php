@@ -9,6 +9,7 @@ use App\Models\Pacientes;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Select;
+use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\Textarea;
@@ -42,21 +43,69 @@ public static function form(Form $form): Form
 {
     return $form
         ->schema([
-            // Campo oculto con el ID del médico autenticado
-            Forms\Components\Hidden::make('medico_id')
-                ->default(fn () => auth()->user()?->medico?->id ?? null)
-                ->required(),
+            // Campo médico - Mostrar select solo si no es médico
+            Select::make('medico_id')
+                ->label('Médico asignado')
+                ->options(function () {
+                    $query = Medico::with('persona');
+                    
+                    // Si no es root, filtrar por centro actual
+                    $user = Auth::user();
+                    if ($user && !$user->roles->contains('name', 'root')) {
+                        $query->where('centro_id', session('current_centro_id'));
+                    }
+                    
+                    return $query->get()
+                        ->mapWithKeys(fn($m) => [
+                            $m->id => "{$m->persona->primer_nombre} {$m->persona->primer_apellido}",
+                        ]);
+                })
+                ->searchable()
+                ->required()
+                ->visible(function () {
+                    $user = Auth::user();
+                    return $user && ($user->roles->contains('name', 'root') || $user->roles->contains('name', 'administrador'));
+                })
+                ->default(function () {
+                    $user = Auth::user();
+                    if ($user && $user->roles->contains('name', 'medico')) {
+                        return $user->medico?->id;
+                    }
+                    return null;
+                }),
 
-            // Opcional: Mostrar el nombre del médico en solo lectura
+            // Campo oculto para médicos
+            Forms\Components\Hidden::make('medico_id')
+                ->default(function () {
+                    $user = Auth::user();
+                    return $user && $user->roles->contains('name', 'medico') ? $user->medico?->id : null;
+                })
+                ->visible(function () {
+                    $user = Auth::user();
+                    return $user && $user->roles->contains('name', 'medico');
+                }),
+
+            // Mostrar el nombre del médico para médicos (solo lectura)
             Forms\Components\Placeholder::make('medico_nombre')
                 ->label('Médico')
-                ->content(fn () => auth()->user()?->medico?->persona?->primer_nombre . ' ' . auth()->user()?->medico?->persona?->primer_apellido),
+                ->content(function () {
+                    $user = Auth::user();
+                    if ($user && $user->medico) {
+                        return $user->medico->persona->primer_nombre . ' ' . $user->medico->persona->primer_apellido;
+                    }
+                    return 'N/A';
+                })
+                ->visible(function () {
+                    $user = Auth::user();
+                    return $user && $user->roles->contains('name', 'medico');
+                }),
 
             Select::make('paciente_id')
                 ->label('Paciente')
                 ->options(function () {
                     $query = Pacientes::with('persona');
-                    if (!auth()->user()?->hasRole('root')) {
+                    $user = Auth::user();
+                    if ($user && !$user->roles->contains('name', 'root')) {
                         $query->where('centro_id', session('current_centro_id'));
                     }
 
@@ -155,7 +204,11 @@ public static function form(Form $form): Form
             ActionGroup::make([
                 ViewAction::make(),
 
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(function () {
+                        $user = Auth::user();
+                        return $user && !$user->roles->contains('name', 'medico');
+                    }),
 
                 Action::make('confirmar')
                     ->label('Confirmar')
@@ -175,7 +228,11 @@ public static function form(Form $form): Form
                     // ← sólo si está aún pendiente
                     ->visible(fn (Citas $record) => $record->estado === 'Pendiente'),
 
-                DeleteAction::make(),
+                DeleteAction::make()
+                    ->visible(function () {
+                        $user = Auth::user();
+                        return $user && !$user->roles->contains('name', 'medico');
+                    }),
             ])
             ->label('Acciones')
             ->icon('heroicon-o-ellipsis-horizontal'),
@@ -195,7 +252,8 @@ public static function form(Form $form): Form
         $query = parent::getEloquentQuery();
 
         // Si no es usuario root, filtrar por centro actual
-        if (!auth()->user()?->hasRole('root')) {
+        $user = Auth::user();
+        if ($user && !$user->roles->contains('name', 'root')) {
             $query->where('centro_id', session('current_centro_id'));
         }
 
