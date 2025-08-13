@@ -12,8 +12,13 @@ class CheckAndSetCentro
         if (auth()->check()) {
             // Para usuarios root
             if (auth()->user()->hasRole('root')) {
-                // Obtener el centro seleccionado de la sesión
-                $selectedCentroId = session('current_centro_id');
+                // Obtener el centro seleccionado de la sesión o del request
+                $selectedCentroId = $request->input('centro_id') ?? session('current_centro_id');
+                
+                // Si hay un centro_id en el request, actualizamos la sesión
+                if ($request->has('centro_id')) {
+                    session(['current_centro_id' => $selectedCentroId]);
+                }
                 
                 // Si no hay centro seleccionado y hay centros disponibles, seleccionar el primero
                 if (!$selectedCentroId) {
