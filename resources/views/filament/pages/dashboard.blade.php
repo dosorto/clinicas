@@ -56,11 +56,7 @@
         {{-- Columna 1: Estadísticas (1/3 del ancho) --}}
         <div class="lg:col-span-1 space-y-6">
             @livewire(\App\Filament\Widgets\CentroStatsWidget::class)
-            
-            {{-- Gráfico debajo de las estadísticas --}}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4">
-                @livewire(\App\Filament\Widgets\CitasPieChart::class)
-            </div>
+            @livewire(\App\Filament\Widgets\CitasPieChart::class)
         </div>
         
         {{-- Columna 2: Calendario (2/3 del ancho) --}}

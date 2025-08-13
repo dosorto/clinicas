@@ -53,6 +53,10 @@ class ConsultasResource extends Resource
                 Forms\Components\Hidden::make('paciente_id')
                     ->default(null),
 
+                // Campo cita_id oculto - se debe asignar al crear la consulta desde el calendario
+                Forms\Components\Hidden::make('cita_id')
+                    ->default(null),
+
                 Forms\Components\Section::make('Información de la Consulta')
                     ->schema([
                         Forms\Components\Placeholder::make('medico_info')

@@ -16,6 +16,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class CreateConsultaWithPatientSearch extends Page implements HasForms
@@ -39,6 +40,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
         // Si se pasa un paciente_id en la URL, precargarlo automáticamente
         if (request()->has('paciente_id')) {
             $pacienteId = request()->get('paciente_id');
+            $citaId = request()->get('cita_id'); // Capturar también el cita_id
             $paciente = Pacientes::with('persona')->find($pacienteId);
 
             if ($paciente && $paciente->persona) {
@@ -49,11 +51,15 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                 $this->patientSearchForm->fill(['paciente_id' => $pacienteId]);
                 $this->consultaForm->fill([
                     'paciente_id' => $pacienteId,
+                    'cita_id' => $citaId,
                     'centro_id' => Auth::check() ? Auth::user()->centro_id : null,
                 ]);
 
                 // Verificar que el paciente fue encontrado
                 $message = "Paciente precargado: {$paciente->persona->nombre_completo}.";
+                if ($citaId) {
+                    $message .= " (Cita ID: {$citaId})";
+                }
 
                 // Mostrar notificación de paciente precargado
                 Notification::make()
@@ -136,6 +142,10 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                     ->schema([
                         Forms\Components\Hidden::make('paciente_id')
                             ->default(fn () => $this->selectedPatient?->id),
+
+                        // Campo cita_id oculto - se debe asignar al crear la consulta desde el calendario
+                        Forms\Components\Hidden::make('cita_id')
+                            ->default(fn () => request()->get('cita_id')),
 
                         Forms\Components\Placeholder::make('medico_info')
                             ->label('Médico')
@@ -529,6 +539,12 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
         // Asegurar que el paciente_id esté presente
         $data['paciente_id'] = $this->selectedPatient->id;
 
+        // Capturar cita_id desde múltiples fuentes
+        $citaId = $data['cita_id'] ?? request()->get('cita_id') ?? session('cita_en_consulta');
+        if ($citaId) {
+            $data['cita_id'] = $citaId;
+        }
+
         // Agregar centro_id si está disponible en el usuario autenticado
         if (Auth::check() && Auth::user()->centro_id) {
             $data['centro_id'] = Auth::user()->centro_id;
@@ -561,6 +577,16 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
             return;
         }
 
+        // Log para debugging
+        Log::info('CREANDO CONSULTA - Datos:', [
+            'paciente_id' => $data['paciente_id'] ?? 'null',
+            'medico_id' => $data['medico_id'] ?? 'null',
+            'cita_id' => $data['cita_id'] ?? 'null',
+            'centro_id' => $data['centro_id'] ?? 'null',
+            'request_cita_id' => request()->get('cita_id'),
+            'session_cita_id' => session('cita_en_consulta')
+        ]);
+
         // Extraer las recetas del data para procesarlas por separado
         $recetas = $data['recetas'] ?? [];
         unset($data['recetas']); // Remover recetas del data de consulta
@@ -568,6 +594,12 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
         try {
             // Crear la consulta
             $consulta = Consulta::create($data);
+
+            Log::info('CONSULTA CREADA EXITOSAMENTE', [
+                'consulta_id' => $consulta->id,
+                'cita_id_guardado' => $consulta->cita_id,
+                'datos_enviados' => $data
+            ]);
 
             $recetasCreadas = 0;
 
@@ -593,41 +625,60 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                 $message .= " Se crearon {$recetasCreadas} receta(s) médica(s).";
             }
 
+            // Actualizar estado de la cita si existe
+            if ($consulta->cita_id) {
+                Log::info('BUSCANDO CITA PARA ACTUALIZAR', ['cita_id' => $consulta->cita_id]);
+                
+                $cita = \App\Models\Citas::find($consulta->cita_id);
+
+                if ($cita) {
+                    Log::info('CITA ENCONTRADA - Estado actual:', [
+                        'cita_id' => $cita->id,
+                        'estado_anterior' => $cita->estado
+                    ]);
+
+                    // Actualizar el estado de la cita a "Realizado"
+                    $cita->estado = 'Realizado';
+                    $cita->save();
+
+                    Log::info('CITA ACTUALIZADA', [
+                        'cita_id' => $cita->id,
+                        'estado_nuevo' => $cita->estado
+                    ]);
+
+                    // Crear notificación adicional
+                    Notification::make()
+                        ->title('Cita completada')
+                        ->body('La cita ha sido marcada como realizada')
+                        ->success()
+                        ->send();
+                        
+                    $message .= ' La cita asociada ha sido marcada como realizada.';
+                } else {
+                    Log::warning('CITA NO ENCONTRADA', ['cita_id' => $consulta->cita_id]);
+                }
+
+                // Limpiar la sesión
+                session()->forget('cita_en_consulta');
+            } else {
+                Log::info('NO HAY CITA_ID EN LA CONSULTA CREADA');
+            }
+
             Notification::make()
                 ->title('Consulta creada exitosamente')
                 ->body($message)
                 ->success()
                 ->send();
 
-            // Verificar si hay una cita pendiente desde la sesión
-            if (request()->has('cita_id') || session()->has('cita_en_consulta')) {
-                $citaId = request()->get('cita_id') ?? session('cita_en_consulta');
-
-                if ($citaId) {
-                    $cita = \App\Models\Citas::find($citaId);
-
-                    if ($cita) {
-                        // Actualizar el estado de la cita a "Realizado" después de crear la consulta
-                        // Utilizamos fill para asegurarnos de que el formato sea correcto
-                        $cita->fill(['estado' => 'Realizado']);
-                        $cita->save();
-
-                        // Crear notificación adicional
-                        Notification::make()
-                            ->title('Cita completada')
-                            ->body('La cita ha sido marcada como realizado')
-                            ->success()
-                            ->send();
-                    }
-
-                    // Limpiar la sesión
-                    session()->forget('cita_en_consulta');
-                }
-            }
-
             // Redirigir a la vista previa de la consulta recién creada
             $this->redirect($this->getResource()::getUrl('view', ['record' => $consulta->id]));
         } catch (\Exception $e) {
+            Log::error('ERROR AL CREAR CONSULTA', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'data' => $data
+            ]);
+
             Notification::make()
                 ->title('Error al crear la consulta')
                 ->body('Ocurrió un error: ' . $e->getMessage())

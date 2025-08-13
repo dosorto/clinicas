@@ -4,11 +4,11 @@ namespace App\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
 use App\Models\Citas;
-use Filament\Facades\Filament;
+use Illuminate\Support\Facades\Auth;
 
 class CitasPieChart extends ChartWidget
 {
-    protected static ?string $heading = '📊 Estado de Citas';
+    protected static ?string $heading = '📊 Estado de Citas Hoy';
     protected static ?int $sort = 3;
     protected int | string | array $columnSpan = 1;
     protected static ?string $maxHeight = '250px';
@@ -16,14 +16,16 @@ class CitasPieChart extends ChartWidget
     protected function getData(): array
     {
         $currentCentroId = session('current_centro_id');
-        $user = Filament::auth()->user();
+        $user = Auth::user();
         
         $query = Citas::query();
         
-        // Aplicar filtros según el usuario
-        if (!$user || !$user->hasRole('root')) {
+        // Aplicar filtros según el usuario y centro
+        if ($user && !$user->hasRole('root')) {
             if ($currentCentroId) {
                 $query->where('centro_id', $currentCentroId);
+            } elseif ($user->centro_id) {
+                $query->where('centro_id', $user->centro_id);
             }
         }
         
@@ -41,20 +43,26 @@ class CitasPieChart extends ChartWidget
                     'label' => 'Citas de Hoy',
                     'data' => [$pendientes, $confirmadas, $realizadas, $canceladas],
                     'backgroundColor' => [
-                        'rgba(251, 191, 36, 0.8)',  // Amarillo para pendientes
-                        'rgba(34, 197, 94, 0.8)',   // Verde para confirmadas  
-                        'rgba(59, 130, 246, 0.8)',  // Azul para realizadas
-                        'rgba(239, 68, 68, 0.8)',   // Rojo para canceladas
+                        '#fbbf24',  // Amarillo para pendientes
+                        '#22c55e',  // Verde para confirmadas  
+                        '#3b82f6',  // Azul para realizadas
+                        '#ef4444',  // Rojo para canceladas
+                    ],
+                    'borderColor' => [
+                        '#f59e0b',
+                        '#16a34a',
+                        '#2563eb',
+                        '#dc2626',
                     ],
                     'borderWidth' => 2,
-                    'hoverOffset' => 4,
+                    'hoverOffset' => 6,
                 ],
             ],
             'labels' => [
-                "Pendientes ({$pendientes})",
-                "Confirmadas ({$confirmadas})", 
-                "Realizadas ({$realizadas})",
-                "Canceladas ({$canceladas})"
+                "⏳ Pendientes ({$pendientes})",
+                "✅ Confirmadas ({$confirmadas})", 
+                "✨ Realizadas ({$realizadas})",
+                "❌ Canceladas ({$canceladas})"
             ],
         ];
     }
@@ -74,14 +82,25 @@ class CitasPieChart extends ChartWidget
                     'position' => 'bottom',
                     'labels' => [
                         'usePointStyle' => true,
-                        'padding' => 15,
+                        'padding' => 12,
                         'font' => [
-                            'size' => 11
+                            'size' => 10
                         ]
                     ]
+                ],
+                'tooltip' => [
+                    'backgroundColor' => 'rgba(0, 0, 0, 0.8)',
+                    'titleColor' => 'white',
+                    'bodyColor' => 'white',
+                    'borderColor' => 'rgba(255, 255, 255, 0.1)',
+                    'borderWidth' => 1
                 ]
             ],
-            'cutout' => '65%',
+            'cutout' => '60%',
+            'animation' => [
+                'animateRotate' => true,
+                'animateScale' => false
+            ]
         ];
     }
 }

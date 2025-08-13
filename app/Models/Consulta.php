@@ -24,6 +24,7 @@ class Consulta extends ModeloBase
         'paciente_id',
         'medico_id',
         'centro_id',
+        'cita_id',
     ];
 
     public function facturas(): HasMany

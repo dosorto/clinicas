@@ -109,7 +109,49 @@ class CalendarioCitasWidget extends Widget
     }
     
     /**
-     * Navegar al mes anterior
+     * Actualizar el mes seleccionado
+     */
+    public function updatedMes()
+    {
+        try {
+            $this->mesActual = Carbon::createFromDate($this->anio, $this->mes, 1)->locale('es')->monthName;
+            
+            session(['calendario_mes' => $this->mes]);
+            
+            $this->cargarCitas();
+            $this->dispatch('limpiar-modal-calendario');
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error al cambiar de mes')
+                ->body('No se pudo cambiar al mes seleccionado: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+    
+    /**
+     * Actualizar el año seleccionado
+     */
+    public function updatedAnio()
+    {
+        try {
+            $this->mesActual = Carbon::createFromDate($this->anio, $this->mes, 1)->locale('es')->monthName;
+            
+            session(['calendario_anio' => $this->anio]);
+            
+            $this->cargarCitas();
+            $this->dispatch('limpiar-modal-calendario');
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error al cambiar de año')
+                ->body('No se pudo cambiar al año seleccionado: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+    
+    /**
+     * Navegar al mes anterior (mantener para compatibilidad)
      */
     public function mesAnterior()
     {
@@ -134,7 +176,7 @@ class CalendarioCitasWidget extends Widget
     }
     
     /**
-     * Navegar al mes siguiente
+     * Navegar al mes siguiente (mantener para compatibilidad)
      */
     public function mesSiguiente()
     {
@@ -264,21 +306,28 @@ class CalendarioCitasWidget extends Widget
             $cita = Citas::find($citaId);
             
             if ($cita) {
-                $cita->fill(['estado' => 'Cancelado']);
+                $cita->estado = 'Cancelado';
                 $cita->save();
                 
+                // Actualizar en memoria
                 $this->actualizarEstadoCitaEnMemoria($citaId, 'Cancelado');
+                
+                // Recargar las citas
+                $this->cargarCitas();
+                
+                // Limpiar el modal
+                $this->citasDelDia = [];
+                $this->diaSeleccionado = null;
+                $this->citaSeleccionadaId = null;
                 
                 Notification::make()
                     ->title('Cita cancelada')
                     ->body('La cita ha sido cancelada correctamente')
                     ->success()
                     ->send();
-                    
-                return [
-                    'id' => $cita->id,
-                    'estado' => 'Cancelado'
-                ];
+                
+                // NO usar dispatch - simplemente retornar
+                return true;
             }
         } catch (\Exception $e) {
             Notification::make()
@@ -292,7 +341,7 @@ class CalendarioCitasWidget extends Widget
     }
     
     /**
-     * Confirmar una cita
+     * Confirmar una cita - ARREGLADO
      */
     public function confirmarCita($citaId)
     {
@@ -300,21 +349,22 @@ class CalendarioCitasWidget extends Widget
             $cita = Citas::find($citaId);
             
             if ($cita) {
-                $cita->fill(['estado' => 'Confirmado']);
+                $cita->estado = 'Confirmado';
                 $cita->save();
                 
+                // Actualizar en memoria
                 $this->actualizarEstadoCitaEnMemoria($citaId, 'Confirmado');
+                
+                // Recargar las citas
+                $this->cargarCitas();
                 
                 Notification::make()
                     ->title('Cita confirmada')
                     ->body('La cita ha sido confirmada correctamente')
                     ->success()
                     ->send();
-                    
-                return [
-                    'id' => $cita->id,
-                    'estado' => 'Confirmado'
-                ];
+                
+                return true;
             }
         } catch (\Exception $e) {
             Notification::make()
@@ -326,9 +376,42 @@ class CalendarioCitasWidget extends Widget
         
         return false;
     }
+    public function marcarComoRealizada($citaId)
+    {
+        try {
+            $cita = Citas::find($citaId);
+            
+            if ($cita) {
+                $cita->estado = 'Realizada';
+                $cita->save();
+                
+                // Actualizar en memoria
+                $this->actualizarEstadoCitaEnMemoria($citaId, 'Realizada');
+                
+                // Recargar las citas
+                $this->cargarCitas();
+                
+                Notification::make()
+                    ->title('Cita marcada como realizada')
+                    ->body('La cita ha sido marcada como realizada correctamente')
+                    ->success()
+                    ->send();
+                
+                return true;
+            }
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error al marcar cita como realizada')
+                ->body('No se pudo marcar la cita como realizada: ' . $e->getMessage())
+                ->danger()
+                ->send();
+        }
+        
+        return false;
+    }
     
     /**
-     * Crear consulta desde una cita
+     * Crear consulta desde una cita 
      */
     public function crearConsulta($citaId)
     {
@@ -339,17 +422,13 @@ class CalendarioCitasWidget extends Widget
                 session(['cita_en_consulta' => $citaId]);
                 
                 Notification::make()
-                    ->title('Redirigiendo a creación de consulta')
-                    ->body('Creando consulta para el paciente ' . ($cita->paciente->persona->nombre_completo ?? 'Desconocido'))
+                    ->title('Redirigiendo...')
+                    ->body('Creando consulta para ' . ($cita->paciente->persona->nombre_completo ?? 'el paciente'))
                     ->success()
                     ->send();
-                    
-                $urlBase = url('/');
-                $redirectUrl = "{$urlBase}/admin/consultas/consultas/create?paciente_id={$cita->paciente_id}&cita_id={$citaId}";
                 
-                $this->dispatch('redirigirConsulta', url: $redirectUrl);
-                
-                return true;
+                // Usar redirect() directo - SIN dispatch
+                return redirect("/admin/consultas/consultas/create?paciente_id={$cita->paciente_id}&cita_id={$citaId}");
             }
         } catch (\Exception $e) {
             Notification::make()
@@ -360,5 +439,16 @@ class CalendarioCitasWidget extends Widget
         }
         
         return false;
+    }
+    
+    /**
+     * Método para cerrar modal - NUEVO
+     */
+    public function cerrarModal()
+    {
+        $this->citasDelDia = [];
+        $this->diaSeleccionado = null;
+        $this->citaSeleccionadaId = null;
+        $this->fechaSeleccionadaUrl = null;
     }
 }

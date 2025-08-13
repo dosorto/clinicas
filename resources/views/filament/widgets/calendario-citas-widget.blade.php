@@ -19,31 +19,40 @@
     >
         {{-- Barra superior --}}
         <div class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-b border-gray-200 dark:border-gray-700">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                    <button wire:click="mesAnterior" class="p-2 rounded-full hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 shadow-sm hover:shadow-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                        </svg>
-                    </button>
+            <div class="flex justify-between items-center w-full">
+                <div class="flex items-center space-x-3 flex-shrink-0">
+                    {{-- Select de Mes --}}
+                    <select wire:model.live="mes" class="min-w-[120px] px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm">
+                        <option value="1">Enero</option>
+                        <option value="2">Febrero</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Abril</option>
+                        <option value="5">Mayo</option>
+                        <option value="6">Junio</option>
+                        <option value="7">Julio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Septiembre</option>
+                        <option value="10">Octubre</option>
+                        <option value="11">Noviembre</option>
+                        <option value="12">Diciembre</option>
+                    </select>
 
-                    <h2 class="text-xl font-bold capitalize text-gray-900 dark:text-white bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm">
-                        {{ $mesActual }} {{ $anio }}
-                    </h2>
-
-                    <button wire:click="mesSiguiente" class="p-2 rounded-full hover:bg-white dark:hover:bg-gray-700 transition-all duration-200 shadow-sm hover:shadow-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                    </button>
+                    {{-- Select de Año --}}
+                    <select wire:model.live="anio" class="w-20 px-2 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg font-medium text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 shadow-sm text-center">
+                        @for ($year = 2020; $year <= 2030; $year++)
+                            <option value="{{ $year }}">{{ $year }}</option>
+                        @endfor
+                    </select>
                 </div>
 
-                <button wire:click="irHoy" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                    </svg>
-                    Hoy
-                </button>
+                <div class="flex-shrink-0">
+                    <button wire:click="irHoy" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg font-bold text-sm transition-all duration-200 shadow-lg hover:shadow-xl flex items-center whitespace-nowrap border-2 border-blue-600 hover:border-blue-700 dark:border-blue-500 dark:hover:border-blue-600">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span class="text-white font-bold uppercase tracking-wide">HOY</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -52,7 +61,7 @@
             {{-- Días de la semana --}}
             <div class="grid grid-cols-7 gap-px mb-3">
                 @foreach (['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'] as $d)
-                    <div class="py-3 text-center font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-lg">{{ $d }}</div>
+                    <div class="py-3 text-center font-bold text-gray-800 dark:text-gray-100 bg-gray-100 dark:bg-gray-600 rounded-lg border border-gray-200 dark:border-gray-500">{{ $d }}</div>
                 @endforeach
             </div>
 
@@ -88,12 +97,19 @@
                                overflow-hidden cursor-pointer shadow-sm hover:shadow-md"
                     >
                         <div class="flex justify-between items-start mb-1">
-                            <div class="flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm
-                                        {{ $esHoy ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
-                                                  : ($tieneCitas ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
-                                                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600') }}">
-                                {{ $dia }}
-                            </div>
+                            @if ($esHoy)
+                                <div class="flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md">
+                                    {{ $dia }}
+                                </div>
+                            @elseif ($tieneCitas)
+                                <div class="flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-sm">
+                                    {{ $dia }}
+                                </div>
+                            @else
+                                <div class="flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600">
+                                    {{ $dia }}
+                                </div>
+                            @endif
 
                             @if ($tieneCitas)
                                 <div class="flex items-center space-x-1">
@@ -164,5 +180,49 @@
         .dia-calendario:hover{box-shadow:inset 0 0 0 2px rgba(59,130,246,.5)}
         .cita-preview{cursor:pointer;transition:opacity .2s}
         .cita-preview:hover{opacity:.8}
+        
+        /* Estilos para números de días - más específicos */
+        .dia-calendario .w-7.h-7.rounded-full {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-weight: bold !important;
+            font-size: 0.875rem !important;
+        }
+        
+        /* Día actual (hoy) - azul */
+        .dia-calendario .w-7.h-7.bg-gradient-to-r.from-blue-500 {
+            background: linear-gradient(to right, #3b82f6, #2563eb) !important;
+            color: white !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        /* Días con citas - verde */
+        .dia-calendario .w-7.h-7.bg-gradient-to-r.from-green-500 {
+            background: linear-gradient(to right, #10b981, #059669) !important;
+            color: white !important;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        /* Días sin citas - gris claro */
+        .dia-calendario .w-7.h-7:not(.bg-gradient-to-r) {
+            background: transparent !important;
+            color: #374151 !important;
+            text-shadow: none;
+        }
+        
+        /* Modo oscuro - días sin citas */
+        .dark .dia-calendario .w-7.h-7:not(.bg-gradient-to-r) {
+            color: #d1d5db !important;
+        }
+        
+        /* Hover para días sin citas */
+        .dia-calendario:hover .w-7.h-7:not(.bg-gradient-to-r) {
+            background: rgba(156, 163, 175, 0.1) !important;
+        }
+        
+        .dark .dia-calendario:hover .w-7.h-7:not(.bg-gradient-to-r) {
+            background: rgba(75, 85, 99, 0.3) !important;
+        }
     </style>
 </x-filament-widgets::widget>
