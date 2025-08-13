@@ -10,12 +10,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Especialidad extends ModeloBase
 {
     use HasFactory;
-    use SoftDeletes;
-  //  use TenantScoped; // Assuming you have a trait for tenant scoping
 
     protected $fillable = [
-        'especialidad',
-        'centro_id',
+        'especialidad'
     ];
 
     

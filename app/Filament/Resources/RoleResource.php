@@ -79,7 +79,7 @@ class RoleResource extends Resource
                                                 'ver nacionalidad', 'crear nacionalidad', 'actualizar nacionalidad', 'borrar nacionalidad',
                                                 'ver centromedico', 'crear centromedico', 'actualizar centromedico', 'borrar centromedico',
                                                 'ver medicocentromedico', 'crear medicocentromedico', 'actualizar medicocentromedico', 'borrar medicocentromedico',
-                                                'ver especialidad', 'crear especialidad', 'actualizar especialidad', 'borrar especialidad   ',
+                                                'crear especialidad', 'actualizar especialidad', 'borrar especialidad',
                                                 'ver especialidadmedicos', 'crear especialidadmedicos', 'actualizar especialidadmedicos', 'borrar especialidadmedicos'
                                             ]);
                                         }

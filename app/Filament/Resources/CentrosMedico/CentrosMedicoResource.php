@@ -30,7 +30,7 @@ class CentrosMedicoResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('nombre_centro')->label('Nombre Centro Médico')->required()->maxLength(255),
+            Forms\Components\TextInput::make('nombre_centro')->label('Nombre Centro Médico')->required()->maxLength(255)->unique(),
             Forms\Components\TextInput::make('direccion')->label('Dirección')->required()->maxLength(255),
             Forms\Components\TextInput::make('telefono')->label('Teléfono')->required()->tel(),
             Forms\Components\TextInput::make('rtn')->label('RTN')->required()->maxLength(100),

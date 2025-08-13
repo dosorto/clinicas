@@ -9,6 +9,13 @@ use Spatie\Multitenancy\Models\Tenant;
 
 trait TenantScoped
 {
+    protected static function addDynamicCentroScope($centroId)
+    {
+        static::addGlobalScope('dynamic_centro', function (Builder $builder) use ($centroId) {
+            $builder->where('centro_id', $centroId);
+        });
+    }
+
     /**
      * El método "boot" de un trait se ejecuta automáticamente
      * cuando un modelo que lo usa es inicializado.
@@ -18,17 +25,15 @@ trait TenantScoped
         // Asignar centro_id automáticamente al crear
         static::creating(function ($model) {
             if (!isset($model->centro_id)) {
-                $model->centro_id = Auth::check() ? Auth::user()->centro_id : static::getCurrentTenantId();
+                $model->centro_id = static::getCurrentTenantId();
             }
         });
 
-        // Solo aplicar scope global si no es usuario root
+        // Aplicar scope global para filtrar por centro
         static::addGlobalScope('centros_medicos', function (Builder $builder) {
-            if (!static::shouldBypassTenantScope()) {
-                $centroId = Auth::check() ? Auth::user()->centro_id : static::getCurrentTenantId();
-                if ($centroId) {
-                    $builder->where('centro_id', $centroId);
-                }
+            $centroId = static::getCurrentTenantId();
+            if ($centroId) {
+                $builder->where('centro_id', $centroId);
             }
         });
     }
@@ -38,19 +43,8 @@ trait TenantScoped
      */
     protected static function shouldBypassTenantScope(): bool
     {
-        // Bypass en comandos de consola
-        if (app()->runningInConsole() && !app()->runningUnitTests()) {
-            return true;
-        }
-        
-        if (Auth::check()) {
-            $user = Auth::user();
-            // Root puede ver todos los datos si no hay un centro específico seleccionado
-            if (method_exists($user, 'hasRole') && $user->hasRole('root')) {
-                return !session('current_centro_id');
-            }
-        }
-        return false;
+        // Solo bypass en comandos de consola (para seeders, etc)
+        return app()->runningInConsole() && !app()->runningUnitTests();
     }
 
     /**
@@ -58,17 +52,19 @@ trait TenantScoped
      */
     protected static function getCurrentTenantId(): ?int
     {
-        // Si hay usuario autenticado, usar su centro_id primero
         if (Auth::check()) {
-            return Auth::user()->centro_id;
+            $user = Auth::user();
+            
+            // Para usuarios root, usar el centro seleccionado de la sesión
+            if (method_exists($user, 'hasRole') && $user->hasRole('root')) {
+                return session('current_centro_id');
+            }
+            
+            // Para usuarios normales, usar su centro asignado
+            return $user->centro_id;
         }
 
-        // Como respaldo, verificar si hay un centro seleccionado en la sesión
-        if ($centroId = session('current_centro_id')) {
-            return $centroId;
-        }
-
-        // Como último recurso, intentar obtener del tenant actual de Spatie
+        // Como respaldo, verificar el tenant actual de Spatie
         if ($tenant = Tenant::current()) {
             return $tenant->centro_id;
         }
