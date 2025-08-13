@@ -7,8 +7,9 @@ use App\Http\Controllers\NominaController;
 use App\Http\Controllers\FacturaController;
 
 Route::get('/', function () {
-    return redirect('/admin');
+    return view('welcome');
 });
+
 
 //Rutas para facturas y diseños
 Route::prefix('facturas')->group(function () {
