@@ -64,6 +64,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'crear contratomedico']);
         Permission::create(['name' => 'crear nomina']);
         Permission::create(['name' => 'crear detallenomina']);
+        Permission::create(['name' => 'crear citas']); // NUEVO
         Permission::create(['name' => 'crear cai_correlativos']);
         Permission::create(['name' => 'crear cai_autorizaciones']);
         Permission::create(['name' => 'crear cuentas_por_cobrars']);
