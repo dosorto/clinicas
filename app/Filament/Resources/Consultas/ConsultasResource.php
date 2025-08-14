@@ -592,15 +592,7 @@ class ConsultasResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        try {
-            $modelClass = static::getModel();
-            if (!$modelClass) {
-                return null;
-            }
-            return (string) $modelClass::count();
-        } catch (\Exception $e) {
-            return null;
-        }
+        return null;
     }
 
 

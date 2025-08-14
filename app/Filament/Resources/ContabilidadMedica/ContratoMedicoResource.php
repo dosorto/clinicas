@@ -23,10 +23,10 @@ class ContratoMedicoResource extends Resource
     protected static ?string $navigationGroup = 'Contabilidad Médica';
     protected static ?int $navigationSort = 2;
 
-    public static function getNavigationBadge(): ?string
-    {
-        return static::getModel()::where('centro_id', \Illuminate\Support\Facades\Auth::user()->centro_id)->count();
-    }
+    // public static function getNavigationBadge(): ?string
+    // {
+    //     return static::getModel()::where('centro_id', \Illuminate\Support\Facades\Auth::user()->centro_id)->count();
+    // }
 
     public static function form(Form $form): Form
     {
