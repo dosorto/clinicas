@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\{Factura, Pagos_Factura, Cuentas_Por_Cobrar};
+use App\Models\{Factura, PagosFactura, Cuentas_Por_Cobrar};
 use Illuminate\Support\Facades\DB;
 
 class FacturaPagoService
@@ -13,12 +13,12 @@ class FacturaPagoService
         float   $montoRecibido,
         ?int    $tipoPagoId = null,
         ?int    $usuarioId  = null
-    ): Pagos_Factura {
+    ): PagosFactura {
 
         return DB::transaction(function () use ($factura, $montoRecibido, $tipoPagoId, $usuarioId) {
 
             // 1. Crear el pago
-            $pago = Pagos_Factura::create([
+            $pago = PagosFactura::create([
                 'factura_id'      => $factura->id,
                 'paciente_id'     => $factura->paciente_id,
                 'centro_id'       => $factura->centro_id,

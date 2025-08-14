@@ -208,15 +208,7 @@ class ImpuestosResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $hoy = now()->toDateString();
-        $vigentes = static::getModel()::where('vigente_desde', '<=', $hoy)
-            ->where(function ($q) use ($hoy) {
-                $q->whereNull('vigente_hasta')
-                  ->orWhere('vigente_hasta', '>=', $hoy);
-            })
-            ->count();
-            
-        return $vigentes > 0 ? (string) $vigentes : null;
+        return null;
     }
 
     public static function getNavigationBadgeColor(): ?string

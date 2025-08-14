@@ -62,7 +62,7 @@ class CuentasPorCobrarResource extends Resource
                                     $factura = \App\Models\Factura::find($state);
                                     if ($factura) {
                         // Auto-llenar el saldo pendiente basado en la factura y pagos existentes
-                        $totalPagado = \App\Models\Pagos_Factura::where('factura_id', $state)->sum('monto_recibido');
+                        $totalPagado = \App\Models\PagosFactura::where('factura_id', $state)->sum('monto_recibido');
                         $saldoPendiente = $factura->total - $totalPagado;
                         $set('saldo_pendiente', $saldoPendiente);                                        // Auto-detectar estado basado en pagos
                                         if ($totalPagado == 0) {
@@ -142,7 +142,7 @@ class CuentasPorCobrarResource extends Resource
                 TextColumn::make('pagos_realizados')
                     ->label('Pagado')
                     ->formatStateUsing(function ($state, $record) {
-                        $totalPagado = \App\Models\Pagos_Factura::where('factura_id', $record->factura_id)->sum('monto_recibido');
+                        $totalPagado = \App\Models\PagosFactura::where('factura_id', $record->factura_id)->sum('monto_recibido');
                         return 'L.' . number_format($totalPagado, 2);
                     })
                     ->alignEnd()
@@ -226,7 +226,7 @@ class CuentasPorCobrarResource extends Resource
                     ->action(function (array $data, $record): void {
                         try {
                             // Crear el pago
-                            \App\Models\Pagos_Factura::create([
+                            \App\Models\PagosFactura::create([
                                 'factura_id' => $record->factura_id,
                                 'paciente_id' => $record->factura->paciente_id,
                                 'centro_id' => $record->factura->centro_id,

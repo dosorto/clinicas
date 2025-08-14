@@ -99,7 +99,7 @@ class Factura extends Model
 
     public function pagos(): HasMany
     {
-        return $this->hasMany(Pagos_Factura::class);
+    return $this->hasMany(PagosFactura::class);
     }
 
     public function cuentasPorCobrar(): HasOne
