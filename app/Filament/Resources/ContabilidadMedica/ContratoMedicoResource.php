@@ -32,19 +32,6 @@ class ContratoMedicoResource extends Resource
     {
         $centro_id = \Illuminate\Support\Facades\Auth::user()->centro_id;
         
-        // Regla de validación personalizada para asegurar que al menos un tipo de compensación esté definido
-        $validarCompensacion = function (string $attribute, $value, $fail) use ($form) {
-            $state = $form->getState();
-            
-            $salarioQuincenal = (float) ($state['salario_quincenal'] ?? 0);
-            $salarioMensual = (float) ($state['salario_mensual'] ?? 0);
-            $porcentajeServicio = (float) ($state['porcentaje_servicio'] ?? 0);
-            
-            if ($salarioQuincenal == 0 && $salarioMensual == 0 && $porcentajeServicio == 0) {
-                $fail("Debe especificar al menos una forma de compensación: salario fijo o porcentaje por servicios.");
-            }
-        };
-        
         return $form
             ->schema([
                 Forms\Components\Select::make('medico_id')
@@ -69,8 +56,17 @@ class ContratoMedicoResource extends Resource
                     ->prefix('L.')
                     ->required(false)
                     ->live(onBlur: true)
-                    ->rules([$validarCompensacion])
-                    ->helperText('Dejar en 0 si el contrato es solo por porcentaje de servicio'),
+                    ->helperText('Dejar en 0 si el contrato es solo por porcentaje de servicio')
+                    ->dehydrated(true)
+                    ->rules([
+                        fn ($get) => function ($attribute, $value, $fail) use ($get) {
+                            $mensual = (float) $get('salario_mensual');
+                            $porcentaje = (float) $get('porcentaje_servicio');
+                            if ((float) $value === 0 && $mensual === 0 && $porcentaje === 0) {
+                                $fail('Debe especificar al menos una forma de compensación: salario fijo o porcentaje por servicios.');
+                            }
+                        }
+                    ]),
                     
                 Forms\Components\TextInput::make('salario_mensual')
                     ->label('Salario Mensual')
@@ -80,8 +76,17 @@ class ContratoMedicoResource extends Resource
                     ->prefix('L.')
                     ->required(false)
                     ->live(onBlur: true)
-                    ->rules([$validarCompensacion])
-                    ->helperText('Dejar en 0 si el contrato es solo por porcentaje de servicio'),
+                    ->helperText('Dejar en 0 si el contrato es solo por porcentaje de servicio')
+                    ->dehydrated(true)
+                    ->rules([
+                        fn ($get) => function ($attribute, $value, $fail) use ($get) {
+                            $quincenal = (float) $get('salario_quincenal');
+                            $porcentaje = (float) $get('porcentaje_servicio');
+                            if ((float) $value === 0 && $quincenal === 0 && $porcentaje === 0) {
+                                $fail('Debe especificar al menos una forma de compensación: salario fijo o porcentaje por servicios.');
+                            }
+                        }
+                    ]),
                     
                 Forms\Components\TextInput::make('porcentaje_servicio')
                     ->label('Porcentaje por Servicios')
@@ -92,8 +97,17 @@ class ContratoMedicoResource extends Resource
                     ->suffix('%')
                     ->required(false)
                     ->live(onBlur: true)
-                    ->rules([$validarCompensacion])
-                    ->helperText('Dejar en 0 si el contrato es solo por salario fijo'),
+                    ->helperText('Dejar en 0 si el contrato es solo por salario fijo')
+                    ->dehydrated(true)
+                    ->rules([
+                        fn ($get) => function ($attribute, $value, $fail) use ($get) {
+                            $quincenal = (float) $get('salario_quincenal');
+                            $mensual = (float) $get('salario_mensual');
+                            if ((float) $value === 0 && $quincenal === 0 && $mensual === 0) {
+                                $fail('Debe especificar al menos una forma de compensación: salario fijo o porcentaje por servicios.');
+                            }
+                        }
+                    ]),
                     
                 Forms\Components\DatePicker::make('fecha_inicio')
                     ->required(),
@@ -125,8 +139,30 @@ class ContratoMedicoResource extends Resource
                                 } else {
                                     return '❌ Debe seleccionar al menos una forma de compensación';
                                 }
-                            }),
+                            })
+                            ->columnSpan(1),
+                        
+                        Forms\Components\Placeholder::make('validacion_compensacion')
+                            ->label('Estado de validación')
+                            ->content(function ($get) {
+                                $salarioQuincenal = (float) $get('salario_quincenal');
+                                $salarioMensual = (float) $get('salario_mensual');
+                                $porcentajeServicio = (float) $get('porcentaje_servicio');
+                                
+                                if ($salarioQuincenal > 0 || $salarioMensual > 0 || $porcentajeServicio > 0) {
+                                    return '✅ Formulario válido: Al menos una forma de compensación ha sido especificada';
+                                } else {
+                                    return '❌ Formulario incompleto: Debe especificar al menos una forma de compensación';
+                                }
+                            })
+                            ->color(fn ($get) => 
+                                ((float) $get('salario_quincenal') > 0 || 
+                                (float) $get('salario_mensual') > 0 || 
+                                (float) $get('porcentaje_servicio') > 0) ? 'success' : 'danger'
+                            )
+                            ->columnSpan(1),
                     ])
+                    ->columns(2)
                     ->collapsible(),
             ]);
     }
