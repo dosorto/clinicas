@@ -57,17 +57,32 @@ class ContratoMedicoResource extends Resource
                     ->required(false)
                     ->live(onBlur: true)
                     ->helperText('Dejar en 0 si el contrato es solo por porcentaje de servicio')
-                    ->dehydrated(true)
-                    ->rules([
-                        fn ($get) => function ($attribute, $value, $fail) use ($get) {
-                            $mensual = (float) $get('salario_mensual');
-                            $porcentaje = (float) $get('porcentaje_servicio');
-                            if ((float) $value === 0 && $mensual === 0 && $porcentaje === 0) {
-                                $fail('Debe especificar al menos una forma de compensación: salario fijo o porcentaje por servicios.');
-                            }
+                    ->afterStateUpdated(function ($state, callable $set, Forms\Get $get) {
+                        // Asegurarse de que sea un número, defecto 0
+                        $value = is_numeric($state) ? (float) $state : 0;
+                        $set('salario_mensual', $value * 2);
+                        
+                        // Validación para verificar si ambos valores son cero
+                        $porcentaje = (float) ($get('porcentaje_servicio') ?? 0);
+                        if ($value <= 0 && $porcentaje <= 0) {
+                            $set('validacion_compensacion', false);
+                        } else {
+                            $set('validacion_compensacion', true);
                         }
+                    })
+                    ->rules([
+                        function (Forms\Get $get) {
+                            return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                $porcentajeServicio = (float)($get('porcentaje_servicio') ?? 0);
+                                $salario = (float)($value ?? 0);
+                                
+                                if ($salario <= 0 && $porcentajeServicio <= 0) {
+                                    $fail('Debe especificar al menos una forma de compensación (salario o porcentaje por servicio).');
+                                }
+                            };
+                        },
                     ]),
-                    
+
                 Forms\Components\TextInput::make('salario_mensual')
                     ->label('Salario Mensual')
                     ->numeric()
@@ -75,19 +90,10 @@ class ContratoMedicoResource extends Resource
                     ->minValue(0)
                     ->prefix('L.')
                     ->required(false)
-                    ->live(onBlur: true)
                     ->helperText('Dejar en 0 si el contrato es solo por porcentaje de servicio')
-                    ->dehydrated(true)
-                    ->rules([
-                        fn ($get) => function ($attribute, $value, $fail) use ($get) {
-                            $quincenal = (float) $get('salario_quincenal');
-                            $porcentaje = (float) $get('porcentaje_servicio');
-                            if ((float) $value === 0 && $quincenal === 0 && $porcentaje === 0) {
-                                $fail('Debe especificar al menos una forma de compensación: salario fijo o porcentaje por servicios.');
-                            }
-                        }
-                    ]),
-                    
+                    ->disabled()
+                    ->dehydrated(),
+
                 Forms\Components\TextInput::make('porcentaje_servicio')
                     ->label('Porcentaje por Servicios')
                     ->numeric()
@@ -96,19 +102,37 @@ class ContratoMedicoResource extends Resource
                     ->maxValue(100)
                     ->suffix('%')
                     ->required(false)
-                    ->live(onBlur: true)
                     ->helperText('Dejar en 0 si el contrato es solo por salario fijo')
-                    ->dehydrated(true)
-                    ->rules([
-                        fn ($get) => function ($attribute, $value, $fail) use ($get) {
-                            $quincenal = (float) $get('salario_quincenal');
-                            $mensual = (float) $get('salario_mensual');
-                            if ((float) $value === 0 && $quincenal === 0 && $mensual === 0) {
-                                $fail('Debe especificar al menos una forma de compensación: salario fijo o porcentaje por servicios.');
-                            }
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function ($state, callable $set, Forms\Get $get) {
+                        if ($state === '' || $state === null) {
+                            $set('porcentaje_servicio', 0);
                         }
+                        // Convertir a número para evitar problemas con strings vacíos
+                        $set('porcentaje_servicio', floatval($state ?? 0));
+                        
+                        // Validación para verificar si ambos valores son cero
+                        $salario = (float) ($get('salario_quincenal') ?? 0);
+                        $porcentaje = floatval($state ?? 0);
+                        if ($salario <= 0 && $porcentaje <= 0) {
+                            $set('validacion_compensacion', false);
+                        } else {
+                            $set('validacion_compensacion', true);
+                        }
+                    })
+                    ->rules([
+                        function (Forms\Get $get) {
+                            return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                $salarioQuincenal = (float)($get('salario_quincenal') ?? 0);
+                                $porcentaje = (float)($value ?? 0);
+                                
+                                if ($salarioQuincenal <= 0 && $porcentaje <= 0) {
+                                    $fail('Debe especificar al menos una forma de compensación (salario o porcentaje por servicio).');
+                                }
+                            };
+                        },
                     ]),
-                    
+
                 Forms\Components\DatePicker::make('fecha_inicio')
                     ->required(),
                     
@@ -155,15 +179,14 @@ class ContratoMedicoResource extends Resource
                                     return '❌ Formulario incompleto: Debe especificar al menos una forma de compensación';
                                 }
                             })
-                            ->color(fn ($get) => 
-                                ((float) $get('salario_quincenal') > 0 || 
-                                (float) $get('salario_mensual') > 0 || 
-                                (float) $get('porcentaje_servicio') > 0) ? 'success' : 'danger'
-                            )
                             ->columnSpan(1),
                     ])
                     ->columns(2)
                     ->collapsible(),
+                
+                Forms\Components\Placeholder::make('error_message')
+                    ->content(fn ($get) => $get('error_message'))
+                    ->visible(fn ($get) => $get('error_message') !== null),
             ]);
     }
 

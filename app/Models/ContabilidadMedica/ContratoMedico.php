@@ -27,15 +27,7 @@ class ContratoMedico extends ModeloBase
         static::addGlobalScope('relaciones', function (Builder $builder) {
             $builder->with(['centro', 'medico.persona']);
         });
-        // Validación cruzada antes de guardar
-        static::saving(function ($model) {
-            $quincenal = (float)($model->salario_quincenal ?? 0);
-            $mensual = (float)($model->salario_mensual ?? 0);
-            $porcentaje = (float)($model->porcentaje_servicio ?? 0);
-            if ($quincenal == 0 && $mensual == 0 && $porcentaje == 0) {
-                throw new \Exception('Debe especificar al menos una forma de compensación: salario fijo o porcentaje por servicios.');
-            }
-        });
+        // La validación se maneja en el formulario para mejor experiencia de usuario
     }
 
     protected $table = 'contratos_medicos';
