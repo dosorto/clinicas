@@ -154,27 +154,34 @@ class ViewContratoMedico extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            Action::make('edit')
+        $user = auth()->user();
+        $actions = [];
+
+        // Botón de volver al listado siempre visible para todos
+        $actions[] = Action::make('back')
+            ->label('Volver al Listado')
+            ->icon('heroicon-o-arrow-left')
+            ->color('gray')
+            ->url(static::$resource::getUrl('index'));
+
+        // Mostrar botones de editar y ver perfil solo para administradores y root
+        if ($user->hasRole('administrador') || $user->hasRole('root')) {
+            $actions[] = Action::make('edit')
                 ->label('Editar Contrato')
                 ->icon('heroicon-o-pencil')
                 ->color('warning')
-                ->url(fn () => static::$resource::getUrl('edit', ['record' => $this->record])),
+                ->url(fn () => static::$resource::getUrl('edit', ['record' => $this->record]));
 
-            Action::make('back')
-                ->label('Volver al Listado')
-                ->icon('heroicon-o-arrow-left')
-                ->color('gray')
-                ->url(static::$resource::getUrl('index')),
-
-            Action::make('ver_medico')
+            $actions[] = Action::make('ver_medico')
                 ->label('Ver Perfil del Médico')
                 ->icon('heroicon-o-user')
                 ->color('primary')
                 ->url(fn ($record) => route('filament.admin.resources.medico.medicos.view', [
                     'record' => $record->medico
-                ])),
-        ];
+                ]));
+        }
+
+        return $actions;
     }
 
     public function getTitle(): string

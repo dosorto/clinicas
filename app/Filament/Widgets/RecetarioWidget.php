@@ -12,6 +12,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use App\Models\Recetario;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class RecetarioWidget extends Widget implements HasForms
 {
@@ -48,24 +49,28 @@ class RecetarioWidget extends Widget implements HasForms
     {
         return $form
             ->schema([
-                Section::make('Configuración Rápida del Recetario')
-                    ->description('Active o desactive su recetario médico')
+                Section::make()
                     ->schema([
                         Toggle::make('tiene_recetario')
-                            ->label('Recetario Activo')
-                            ->helperText('Active para habilitar la prescripción de medicamentos')
+                            ->label('Activar Recetario')
                             ->live()
                             ->afterStateUpdated(function ($state) {
                                 $this->actualizarRecetario($state);
                             }),
                     ])
+                    ->extraAttributes([
+                        'class' => 'flex justify-between items-center',
+                    ])
                     ->headerActions([
                         Action::make('ver_perfil')
-                            ->label('Ver Perfil Completo')
-                            ->icon('heroicon-o-user-circle')
+                            ->label('Configuración Completa')
+                            ->icon('heroicon-o-cog-6-tooth')
+                            ->button()
+                            ->color('gray')
                             ->url(fn () => route('filament.admin.pages.perfil-medico'))
                             ->openUrlInNewTab(false),
-                    ]),
+                    ])
+                    ->compact(),
             ])
             ->statePath('data');
     }
