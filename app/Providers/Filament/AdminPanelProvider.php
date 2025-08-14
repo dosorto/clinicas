@@ -20,7 +20,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Althinect\FilamentSpatieRolesPermissions\FilamentSpatieRolesPermissionsPlugin;
 use App\Filament\Pages\CustomProfile;
 use App\Filament\Pages\DisenoFactura;
-
+use App\Filament\Pages\CustomLogin; // Agrega esta línea
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -30,9 +30,12 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(CustomLogin::class) // Modifica esta línea
+            ->brandName('Sanare') // Agrega el nombre de la marca
+            ->brandLogo(asset('images/logo.png')) // Asegúrate de tener esta imagen en public/images
+            ->brandLogoHeight('65px')
+            ->favicon(asset('images/logo.png')) // Opcional: agrega un favicon
             ->profile(CustomProfile::class)
-            //->plugin(FilamentSpatieRolesPermissionsPlugin::make())
             ->colors([
                 'primary' => Color::Emerald,
                 'gray' => Color::Slate,
@@ -55,11 +58,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                //Widgets\AccountWidget::class,
                 \App\Filament\Widgets\CalendarioCitasWidget::class,
                 \App\Filament\Widgets\RecetarioWidget::class,
-                //Widgets\FilamentInfoWidget::class,
             ])
+
+
+
             ->renderHook(
                 'panels::user-menu.before',
                 fn () => view('filament.components.centro-selector-topbar')
@@ -68,8 +72,11 @@ class AdminPanelProvider extends PanelProvider
                 'panels::body.end',
                 fn () => '<script src="/js/disable-livewire-polling.js"></script>'
             )
+
+
+            
             ->plugins([
-             ])
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -86,7 +93,5 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
-
-            
     }
 }
