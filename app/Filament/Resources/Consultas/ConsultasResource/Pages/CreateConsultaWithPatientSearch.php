@@ -236,7 +236,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->placeholder('Ej: Loratadina 500 mg, Ibuprofeno 400 mg')
                                     ->columnSpan(1)
                                     ->reactive()
-                                    ->debounce(100) // Esperar 100ms antes de actualizar
+                                    ->debounce(1000) // Esperar 100ms antes de actualizar
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         // Forzar actualización de la previsualización
                                         $set('../../recetas_preview_trigger', uniqid());
@@ -249,7 +249,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->placeholder('Tomar una diaria, cada 8 horas por 3 días')
                                     ->columnSpan(1)
                                     ->reactive()
-                                    ->debounce(100) // Esperar 100ms antes de actualizar
+                                    ->debounce(1000) // Esperar 100ms antes de actualizar
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         // Forzar actualización de la previsualización
                                         $set('../../recetas_preview_trigger', uniqid());
