@@ -297,7 +297,7 @@ class CreateFacturas extends CreateRecord
         try {
             foreach ($pagosFiltrados as $pagoValido) {
                 try {
-                    $nuevoPago = Pagos_Factura::create([
+                    $nuevoPago = PagosFactura::create([
                         'factura_id' => $this->record->id,
                         'tipo_pago_id' => $pagoValido['tipo_pago_id'],
                         'monto_recibido' => $pagoValido['monto_recibido'],

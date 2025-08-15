@@ -279,7 +279,7 @@ class FacturasResource extends Resource
                                     ->afterStateUpdated(function ($state, callable $set, callable $get) {
                                         // Forzar la propagación del paciente_id si se actualiza
                                         if ($state && $state !== '?') {
-                                            \Log::info('Paciente ID actualizado en campo hidden', ['paciente_id' => $state]);
+                                            Log::info('Paciente ID actualizado en campo hidden', ['paciente_id' => $state]);
                                         }
                                     }),
                                     
