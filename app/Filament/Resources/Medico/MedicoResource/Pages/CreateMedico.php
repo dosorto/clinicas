@@ -42,19 +42,26 @@ protected function handleRecordCreation(array $data): Model
         // Si no se pudo crear con el método centralizado, intentar el método manual
         if (!$medico) {
             // Primero creamos o actualizamos la persona
+            $personaData = [
+                'primer_nombre' => $data['primer_nombre'],
+                'segundo_nombre' => $data['segundo_nombre'] ?? null,
+                'primer_apellido' => $data['primer_apellido'],
+                'segundo_apellido' => $data['segundo_apellido'] ?? null,
+                'telefono' => $data['telefono'] ?? null,
+                'direccion' => $data['direccion'] ?? null,
+                'sexo' => $data['sexo'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
+                'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
+            ];
+
+            // Agregar fotografía si se proporcionó
+            if (isset($data['fotografia']) && $data['fotografia']) {
+                $personaData['fotografia'] = $data['fotografia'];
+            }
+
             $persona = Persona::updateOrCreate(
                 ['dni' => $data['dni']],
-                [
-                    'primer_nombre' => $data['primer_nombre'],
-                    'segundo_nombre' => $data['segundo_nombre'] ?? null,
-                    'primer_apellido' => $data['primer_apellido'],
-                    'segundo_apellido' => $data['segundo_apellido'] ?? null,
-                    'telefono' => $data['telefono'] ?? null,
-                    'direccion' => $data['direccion'] ?? null,
-                    'sexo' => $data['sexo'],
-                    'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
-                    'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
-                ]
+                $personaData
             );
 
             Log::info("Persona creada/actualizada", ['persona_id' => $persona->id, 'dni' => $persona->dni]);
@@ -341,7 +348,7 @@ protected function createUserForMedicoInTransaction(Persona $persona, Medico $me
         $nombreCompleto = trim("{$persona->primer_nombre} {$persona->primer_apellido}");
         Notification::make()
             ->title('✅ Usuario creado exitosamente')
-->body("**Usuario creado para {$nombreCompleto}:**\n\n🔑 Usuario: {$username}\n📧 Email: {$email}\n🔒 Contraseña: {$password}\n👤 Rol: " . ucfirst($role) . "\n\n⚠️ IMPORTANTE: Guarde estas credenciales.")
+            ->body("**Usuario creado para {$nombreCompleto}:**\n\n🔑 Usuario: {$username}\n📧 Email: {$email}\n🔒 Contraseña: {$password}\n👤 Rol: " . ucfirst($role) . "\n\n⚠️ IMPORTANTE: Guarde estas credenciales.")
             ->success()
             ->persistent()
             ->send();

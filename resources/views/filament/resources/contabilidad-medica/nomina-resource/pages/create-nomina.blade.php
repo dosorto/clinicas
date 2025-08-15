@@ -1,4 +1,9 @@
 <x-filament-panels::page>
+    {{-- Configurar polling automático cada 30 segundos solo si es edición y no está cerrada --}}
+    @if(isset($record) && !$record->cerrada)
+    <div wire:poll.30s="actualizarBonificacionesAutomaticamente"></div>
+    @endif
+    
     <div class="space-y-6">
         {{-- Formulario principal --}}
         <form id="nomina-form" wire:submit="{{ isset($record) ? 'save' : 'create' }}" class="space-y-6">
@@ -54,6 +59,20 @@
 
                         {{-- Botones de acción --}}
                         <div class="flex space-x-2">
+                            {{-- Botón de Actualizar Bonificaciones --}}
+                            @if(isset($record) && !$record->cerrada)
+                            <button 
+                                type="button"
+                                wire:click="actualizarBonificacionesAutomaticamente"
+                                class="btn-actualizar-bonificaciones inline-flex items-center font-bold transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            >
+                                <svg class="w-4 h-4 mr-1 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Actualizar Bonificaciones
+                            </button>
+                            @endif
+                            
                             <button 
                                 type="button"
                                 wire:click="toggleSeleccionTodos"
@@ -318,8 +337,17 @@
             50% { transform: scale(1.05); }
         }
         
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         .animate-pulse-save {
             animation: pulse-save 2s ease-in-out infinite;
+        }
+        
+        .animate-spin-slow {
+            animation: spin-slow 2s linear infinite;
         }
         
         /* Transiciones suaves para inputs */
@@ -335,6 +363,20 @@
         }
 
         /* Ajustes para botones compactos y agradables */
+        .btn-actualizar-bonificaciones {
+            background: linear-gradient(to right, #3b82f6, #2563eb); /* Azul */
+            color: #ffffff;
+            border: none;
+            padding: 0.4rem 0.8rem; /* Compacto */
+            font-size: 0.75rem; /* Texto más pequeño */
+            border-radius: 0.375rem; /* Bordes redondeados */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-actualizar-bonificaciones:hover {
+            background: linear-gradient(to right, #2563eb, #1d4ed8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+        
         .btn-seleccionar-todos {
             background: linear-gradient(to right, #34d399, #10b981); /* Verde claro */
             color: #ffffff;

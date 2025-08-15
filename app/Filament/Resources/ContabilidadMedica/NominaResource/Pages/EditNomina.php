@@ -54,7 +54,7 @@ class EditNomina extends EditRecord
         
         $this->medicosSeleccionados = $todosMedicos->map(function ($medico) use ($detallesExistentes) {
             $contrato = $medico->contratoActivo;
-            $salarioBase = $contrato ? $contrato->salario_mensual : 0;
+            $salarioBase = $contrato ? (float) $contrato->salario_mensual : 0;
             
             // Buscar si este médico ya está en la nómina
             $detalleExistente = $detallesExistentes->firstWhere('medico_id', $medico->id);
@@ -63,10 +63,10 @@ class EditNomina extends EditRecord
                 return [
                     'id' => $medico->id,
                     'nombre' => $medico->persona->nombre_completo,
-                    'salario_base' => $detalleExistente->salario_base,
-                    'deducciones' => $detalleExistente->deducciones,
-                    'percepciones' => $detalleExistente->percepciones,
-                    'total' => $detalleExistente->total_pagar,
+                    'salario_base' => (float) $detalleExistente->salario_base,
+                    'deducciones' => (float) $detalleExistente->deducciones,
+                    'percepciones' => (float) $detalleExistente->percepciones,
+                    'total' => (float) $detalleExistente->total_pagar,
                     'seleccionado' => true,
                 ];
             } else {
@@ -74,8 +74,8 @@ class EditNomina extends EditRecord
                     'id' => $medico->id,
                     'nombre' => $medico->persona->nombre_completo,
                     'salario_base' => $salarioBase,
-                    'deducciones' => 0,
-                    'percepciones' => 0,
+                    'deducciones' => 0.0,
+                    'percepciones' => 0.0,
                     'total' => $salarioBase,
                     'seleccionado' => false,
                 ];
@@ -159,9 +159,9 @@ class EditNomina extends EditRecord
         
         // Recalcular totales cuando cambian los valores
         if (strpos($key, 'deducciones') !== false || strpos($key, 'percepciones') !== false || strpos($key, 'salario_base') !== false) {
-            $salario = $this->medicosSeleccionados[$index]['salario_base'] ?? 0;
-            $deducciones = $this->medicosSeleccionados[$index]['deducciones'] ?? 0;
-            $percepciones = $this->medicosSeleccionados[$index]['percepciones'] ?? 0;
+            $salario = (float) ($this->medicosSeleccionados[$index]['salario_base'] ?? 0);
+            $deducciones = (float) ($this->medicosSeleccionados[$index]['deducciones'] ?? 0);
+            $percepciones = (float) ($this->medicosSeleccionados[$index]['percepciones'] ?? 0);
             
             $this->medicosSeleccionados[$index]['total'] = $salario + $percepciones - $deducciones;
         }
@@ -198,13 +198,14 @@ class EditNomina extends EditRecord
         
         if ($resultado['total_comision'] > 0) {
             // Agregar la comisión como percepción
-            $this->medicosSeleccionados[$index]['percepciones'] += $resultado['total_comision'];
+            $this->medicosSeleccionados[$index]['percepciones'] = (float) ($this->medicosSeleccionados[$index]['percepciones'] ?? 0) + $resultado['total_comision'];
             
             // Recalcular total
-            $this->medicosSeleccionados[$index]['total'] = 
-                $this->medicosSeleccionados[$index]['salario_base'] + 
-                $this->medicosSeleccionados[$index]['percepciones'] - 
-                $this->medicosSeleccionados[$index]['deducciones'];
+            $salarioBase = (float) ($this->medicosSeleccionados[$index]['salario_base'] ?? 0);
+            $percepciones = (float) ($this->medicosSeleccionados[$index]['percepciones'] ?? 0);
+            $deducciones = (float) ($this->medicosSeleccionados[$index]['deducciones'] ?? 0);
+            
+            $this->medicosSeleccionados[$index]['total'] = $salarioBase + $percepciones - $deducciones;
             
             // Generar detalle para mostrar
             $nombreMedico = $medico['nombre'];
@@ -256,10 +257,10 @@ class EditNomina extends EditRecord
                 'nomina_id' => $record->id,
                 'medico_id' => $medico['id'],
                 'medico_nombre' => $medico['nombre'],
-                'salario_base' => $medico['salario_base'],
-                'deducciones' => $medico['deducciones'],
-                'percepciones' => $medico['percepciones'],
-                'total_pagar' => $medico['total'],
+                'salario_base' => (float) ($medico['salario_base'] ?? 0),
+                'deducciones' => (float) ($medico['deducciones'] ?? 0),
+                'percepciones' => (float) ($medico['percepciones'] ?? 0),
+                'total_pagar' => (float) ($medico['total'] ?? 0),
                 'centro_id' => $record->centro_id,
                 'percepciones_detalle' => $medico['percepciones_detalle'] ?? null,
                 'deducciones_detalle' => $medico['deducciones_detalle'] ?? null,
@@ -277,8 +278,6 @@ class EditNomina extends EditRecord
             Actions\ViewAction::make(),
             Actions\DeleteAction::make()
                 ->visible(fn () => !$this->record->cerrada),
-            // Ya no necesitamos botones de acción para las comisiones
-            // porque estas se calculan automáticamente al seleccionar un médico
         ];
     }
     
@@ -313,13 +312,14 @@ class EditNomina extends EditRecord
                 
                 if ($resultado['total_comision'] > 0) {
                     // Agregar la comisión como percepción
-                    $this->medicosSeleccionados[$index]['percepciones'] += $resultado['total_comision'];
+                    $this->medicosSeleccionados[$index]['percepciones'] = (float) ($this->medicosSeleccionados[$index]['percepciones'] ?? 0) + $resultado['total_comision'];
                     
                     // Recalcular total
-                    $this->medicosSeleccionados[$index]['total'] = 
-                        $this->medicosSeleccionados[$index]['salario_base'] + 
-                        $this->medicosSeleccionados[$index]['percepciones'] - 
-                        $this->medicosSeleccionados[$index]['deducciones'];
+                    $salarioBase = (float) ($this->medicosSeleccionados[$index]['salario_base'] ?? 0);
+                    $percepciones = (float) ($this->medicosSeleccionados[$index]['percepciones'] ?? 0);
+                    $deducciones = (float) ($this->medicosSeleccionados[$index]['deducciones'] ?? 0);
+                    
+                    $this->medicosSeleccionados[$index]['total'] = $salarioBase + $percepciones - $deducciones;
                     
                     $medicosActualizados++;
                     
@@ -397,5 +397,66 @@ class EditNomina extends EditRecord
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');
+    }
+
+    /**
+     * Actualiza automáticamente las bonificaciones cada 30 segundos
+     */
+    public function actualizarBonificacionesAutomaticamente(): void
+    {
+        // Solo actualizar si la nómina no está cerrada
+        if ($this->record->cerrada) {
+            return;
+        }
+        
+        $comisionService = app(\App\Services\ComisionMedicoService::class);
+        $año = $this->record->año;
+        $mes = $this->record->mes;
+        
+        // Determinar si es quincenal
+        $quincena = null;
+        if ($this->record->tipo_pago === 'quincenal') {
+            $quincena = $this->record->quincena ?? 1;
+        }
+        
+        $actualizacionesRealizadas = false;
+        
+        foreach ($this->medicosSeleccionados as $index => $medico) {
+            if ($medico['seleccionado']) {
+                // Calcular comisión actual para este médico
+                $resultado = $comisionService->calcularComision(
+                    $medico['id'],
+                    $año,
+                    $mes,
+                    $quincena
+                );
+                
+                // Verificar si hay cambios en la comisión
+                $comisionActual = $resultado['total_comision'];
+                $percepcionesActuales = (float) ($medico['percepciones'] ?? 0);
+                
+                // Si hay diferencia, actualizar
+                if ($comisionActual != $percepcionesActuales && $comisionActual > 0) {
+                    $this->medicosSeleccionados[$index]['percepciones'] = $comisionActual;
+                    
+                    // Recalcular total
+                    $salarioBase = (float) ($medico['salario_base'] ?? 0);
+                    $deducciones = (float) ($medico['deducciones'] ?? 0);
+                    
+                    $this->medicosSeleccionados[$index]['total'] = $salarioBase + $comisionActual - $deducciones;
+                    
+                    $actualizacionesRealizadas = true;
+                }
+            }
+        }
+        
+        if ($actualizacionesRealizadas) {
+            // Mostrar notificación
+            \Filament\Notifications\Notification::make()
+                ->title('Bonificaciones actualizadas')
+                ->body('Se han actualizado las bonificaciones automáticamente.')
+                ->success()
+                ->send();
+        }
     }
 }
