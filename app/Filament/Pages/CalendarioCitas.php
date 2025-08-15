@@ -10,6 +10,10 @@ use Carbon\Carbon;
 
 class CalendarioCitas extends Page
 {
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
     /* ───────── Configuración de la Page ───────── */
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
     protected static string $view = 'filament.pages.calendario-citas';
