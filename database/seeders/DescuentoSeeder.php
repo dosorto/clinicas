@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use App\Models\descuento;
+use App\Models\Descuento;
 use App\Models\Centros_Medico;
 use Carbon\Carbon;
 
