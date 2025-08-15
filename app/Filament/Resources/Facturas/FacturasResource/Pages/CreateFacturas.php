@@ -7,7 +7,7 @@ use App\Filament\Resources\Consultas\ConsultasResource;
 use App\Models\Consulta;
 use App\Models\FacturaDetalle;
 use App\Models\Descuento;
-use App\Models\Pagos_Factura;
+use App\Models\PagosFactura;
 use Filament\Actions;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Auth;
