@@ -36,6 +36,12 @@ class EditMedico extends EditRecord
         // Obtener datos del contrato activo
         $contrato = $this->record->contratoActivo;
         $usuario = $this->record->persona->user;
+        $persona = $this->record->persona;
+
+        if ($persona->fotografia) {
+            // FileUpload espera solo el path relativo, no la URL completa
+            $data['fotografia'] = $persona->fotografia;
+        }
 
         return array_merge($data, [
             // Datos personales
@@ -49,6 +55,7 @@ class EditMedico extends EditRecord
             'sexo' => $this->record->persona->sexo ?? null,
             'fecha_nacimiento' => $this->record->persona->fecha_nacimiento ?? null,
             'nacionalidad_id' => $this->record->persona->nacionalidad_id ?? null,
+            // 'persona.foto' eliminado, solo se usa 'fotografia'
             'especialidades' => $this->record->especialidades->pluck('id')->toArray(),
             
             // Datos del contrato
@@ -119,7 +126,7 @@ class EditMedico extends EditRecord
             }
         }
         // 1. Actualizar datos de la persona
-        $record->persona->update([
+        $personaData = [
             'primer_nombre' => $data['primer_nombre'],
             'segundo_nombre' => $data['segundo_nombre'],
             'primer_apellido' => $data['primer_apellido'],
@@ -129,7 +136,14 @@ class EditMedico extends EditRecord
             'sexo' => $data['sexo'],
             'fecha_nacimiento' => $data['fecha_nacimiento'],
             'nacionalidad_id' => $data['nacionalidad_id'],
-        ]);
+        ];
+
+        // Actualizar fotografía si se proporcionó
+        if (isset($data['fotografia']) && $data['fotografia']) {
+            $personaData['fotografia'] = $data['fotografia'];
+        }
+
+        $record->persona->update($personaData);
 
         // 2. Actualizar datos del médico
         $record->update([

@@ -29,7 +29,7 @@ class Consulta extends ModeloBase
 
     public function facturas(): HasMany
     {
-        return $this->hasMany(Factura::class);
+        return $this->hasMany(Factura::class, 'consulta_id');
     }
     
 

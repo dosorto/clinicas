@@ -228,20 +228,24 @@ class UserResource extends Resource
                                 ->unique(ignoreRecord: true)
                                 ->maxLength(255),
                             
-                            TextInput::make('password')
+                            Forms\Components\TextInput::make('password')
                                 ->label('Contraseña')
                                 ->password()
                                 ->required(fn($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
                                 ->dehydrateStateUsing(fn($state) => !empty($state) ? bcrypt($state) : null)
                                 ->dehydrated(fn($state) => filled($state))
-                                ->minLength(8),
-                            
-                            TextInput::make('password_confirmation')
+                                ->minLength(8)
+                                ->revealable()
+                                ->autocomplete('new-password'),
+
+                            Forms\Components\TextInput::make('password_confirmation')
                                 ->label('Confirmar Contraseña')
                                 ->password()
                                 ->required(fn($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord)
                                 ->same('password')
-                                ->dehydrated(false),
+                                ->dehydrated(false)
+                                ->revealable()
+                                ->autocomplete('new-password'),
                             
                             Select::make('roles')
                                 ->label('Roles')
@@ -277,9 +281,6 @@ class UserResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
-                    ->sortable(),
                 
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre de Usuario')
@@ -326,6 +327,7 @@ class UserResource extends Resource
                     ->preload(),
             ])
             ->actions([
+                Tables\Actions\ViewAction::make(),  
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
@@ -348,6 +350,7 @@ class UserResource extends Resource
         return [
             'index' => Pages\ListUsers::route('/'),
             'create' => Pages\CreateUser::route('/create'),
+            'view' => Pages\ViewUser::route('/{record}'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
     }

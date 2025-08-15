@@ -189,9 +189,9 @@ class CreateNomina extends CreateRecord
         
         // Recalcular totales cuando cambian los valores
         if (strpos($key, 'deducciones') !== false || strpos($key, 'percepciones') !== false || strpos($key, 'salario_base') !== false) {
-            $salario = $this->medicosSeleccionados[$index]['salario_base'] ?? 0;
-            $deducciones = $this->medicosSeleccionados[$index]['deducciones'] ?? 0;
-            $percepciones = $this->medicosSeleccionados[$index]['percepciones'] ?? 0;
+            $salario = floatval($this->medicosSeleccionados[$index]['salario_base'] ?? 0);
+            $deducciones = floatval($this->medicosSeleccionados[$index]['deducciones'] ?? 0);
+            $percepciones = floatval($this->medicosSeleccionados[$index]['percepciones'] ?? 0);
             
             $this->medicosSeleccionados[$index]['total'] = $salario + $percepciones - $deducciones;
         }

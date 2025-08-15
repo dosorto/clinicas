@@ -236,12 +236,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->placeholder('Ej: Loratadina 500 mg, Ibuprofeno 400 mg')
                                     ->columnSpan(1)
                                     ->reactive()
-                                    ->debounce(500) // Esperar 500ms antes de actualizar
-                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                        // Forzar actualización de la previsualización
-                                        $set('../../recetas_preview_trigger', uniqid());
-                                    })
-                                    ->helperText('💡 La previsualización se actualiza automáticamente'),
+                                    ,
 
                                 Forms\Components\TextInput::make('indicaciones')
                                     ->label('Indicaciones')
@@ -249,12 +244,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                                     ->placeholder('Tomar una diaria, cada 8 horas por 3 días')
                                     ->columnSpan(1)
                                     ->reactive()
-                                    ->debounce(500) // Esperar 500ms antes de actualizar
-                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                        // Forzar actualización de la previsualización
-                                        $set('../../recetas_preview_trigger', uniqid());
-                                    })
-                                    ->helperText('💡 La previsualización se actualiza automáticamente'),
+                                    ,
                             ])
                             ->columns(2)
                             ->addActionLabel('➕ Agregar Nueva Receta')

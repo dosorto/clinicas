@@ -21,7 +21,7 @@
         </thead>
         <tbody class="bg-white dark:bg-gray-900">
             @forelse($getRecord()->detalles as $detalle)
-                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <tr>
                     <td class="px-4 py-3 border border-gray-300 dark:border-gray-600">
                         <div class="font-medium text-gray-900 dark:text-white">
                             {{ $detalle->medico_nombre }}

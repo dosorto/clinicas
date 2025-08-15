@@ -24,10 +24,10 @@ class ContratoMedico extends ModeloBase
     protected static function booted()
     {
         parent::booted();
-        
         static::addGlobalScope('relaciones', function (Builder $builder) {
             $builder->with(['centro', 'medico.persona']);
         });
+        // La validación se maneja en el formulario para mejor experiencia de usuario
     }
 
     protected $table = 'contratos_medicos';

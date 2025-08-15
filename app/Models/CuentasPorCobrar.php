@@ -66,7 +66,7 @@ class CuentasPorCobrar extends Model
     // Obtener todos los pagos de la factura asociada
     public function pagosFactura(): HasMany
     {
-        return $this->hasMany(Pagos_Factura::class, 'factura_id', 'factura_id');
+    return $this->hasMany(PagosFactura::class, 'factura_id', 'factura_id');
     }
 
     // Métodos

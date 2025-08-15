@@ -28,6 +28,135 @@
                 opacity: .5;
             }
         }
+
+        /* Doctor Carousel Styles */
+        .doctor-carousel {
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+            border-radius: 20px;
+            margin: 3rem auto;
+            max-width: 600px;
+        }
+
+        .doctor-slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease-in-out;
+        }
+
+        .doctor-slide.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .doctor-slide.prev {
+            transform: translateX(-100%);
+        }
+
+        .doctor-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 20px;
+        }
+
+        .doctor-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            color: white;
+            padding: 2rem;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .doctor-specialty {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .doctor-description {
+            font-size: 1rem;
+            opacity: 0.9;
+            color: #e2e8f0;
+        }
+
+        .carousel-controls {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 1rem;
+            pointer-events: none;
+        }
+
+        .carousel-btn {
+            background: rgba(255,255,255,0.9);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: all;
+            color: #2563eb;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .carousel-btn:hover {
+            background: white;
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+        }
+
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: #3b82f6;
+            transform: scale(1.2);
+        }
+
+        @media (max-width: 768px) {
+            .doctor-carousel {
+                height: 300px;
+                margin: 2rem auto;
+            }
+            
+            .doctor-specialty {
+                font-size: 1.2rem;
+            }
+            
+            .doctor-description {
+                font-size: 0.9rem;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -41,7 +170,7 @@
                     <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-8 w-8 mr-2"> -->
                     
                     <!-- Opción 2: Logo MEDIANO (48px) - Recomendado para header -->
-                    <img src="{{ asset('images/logo.jpg') }}" alt="Sanare Logo" class="h-12 w-12 mr-3">
+                    <img src="{{ asset('images/logo.png') }}" alt="Sanare Logo" class="h-12 w-12 mr-3">
                     
                     <!-- Opción 3: Logo GRANDE (64px) -->
                     <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-16 w-16 mr-4"> -->
@@ -71,7 +200,7 @@
                 <!-- Logo grande en el centro -->
                 <div class="mb-8 flex justify-center">
                     <!-- Opción 1: Logo MUY GRANDE (128px) -->
-                    <img src="{{ asset('images/logo.jpg') }}" alt="Sanare Logo"  class="h-40 w-40 rounded-2xl border-4 border-blue-500 shadow-xl bg-white p-3">
+                    <img src="{{ asset('images/logo.png') }}" alt="Sanare Logo"  class="h-40 w-40 rounded-2xl  shadow-xl bg-white p-3">
                     
                     <!-- Opción 2: Logo GIGANTE (160px) -->
                     <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-40 w-40"> -->
@@ -91,8 +220,62 @@
                     Optimiza tu práctica médica con tecnología de vanguardia.
                 </p>
                 
+                <!-- Doctor Carousel -->
+                <div class="doctor-carousel" id="doctorCarousel">
+                    <div class="doctor-slide active">
+                        <img src="{{ asset('images/Cardiologo.jpg') }}" alt="Especialista en Cardiología" class="doctor-image">
+                        <div class="doctor-overlay">
+                            <div class="doctor-specialty">Cardiología</div>
+                            <div class="doctor-description">Especialistas en salud cardiovascular con tecnología de vanguardia</div>
+                        </div>
+                    </div>
+                    
+                    <div class="doctor-slide">
+                        <img src="{{ asset('images/Pediatria.jpg') }}" alt="Especialista en Pediatría" class="doctor-image">
+                        <div class="doctor-overlay">
+                            <div class="doctor-specialty">Pediatría</div>
+                            <div class="doctor-description">Atención especializada para el cuidado integral de los niños</div>
+                        </div>
+                    </div>
+                    
+                    <div class="doctor-slide">
+                        <img src="{{ asset('images/neurologia.jpg') }}" alt="Especialista en Neurología" class="doctor-image">
+                        <div class="doctor-overlay">
+                            <div class="doctor-specialty">Neurología</div>
+                            <div class="doctor-description">Diagnóstico y tratamiento de trastornos del sistema nervioso</div>
+                        </div>
+                    </div>
+                    
+                    <div class="doctor-slide">
+                        <img src="{{ asset('images/ginecologia.jpg') }}" alt="Especialista en Ginecología" class="doctor-image">
+                        <div class="doctor-overlay">
+                            <div class="doctor-specialty">Ginecología</div>
+                            <div class="doctor-description">Cuidado integral de la salud femenina en todas las etapas</div>
+                        </div>
+                    </div>
+                    
+                    <div class="doctor-slide">
+                        <img src="{{ asset('images/traumatologia.jpg') }}" alt="Especialista en Traumatología" class="doctor-image">
+                        <div class="doctor-overlay">
+                            <div class="doctor-specialty">Traumatología</div>
+                            <div class="doctor-description">Especialistas en lesiones del sistema musculoesquelético</div>
+                        </div>
+                    </div>
+                    
+                    <div class="carousel-controls">
+                        <button class="carousel-btn" id="prevBtn">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="carousel-btn" id="nextBtn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="carousel-dots" id="carouselDots"></div>
+                
                 <!-- Features Icons -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 mt-12">
                     <div class="text-center">
                         <i class="fas fa-user-md text-3xl text-blue-600 mb-2"></i>
                         <p class="text-sm text-gray-700 font-medium">Gestión de Médicos</p>
@@ -304,7 +487,7 @@
                     <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-12 w-12 mr-3"> -->
                     
                     <!-- Opción 3: Logo GRANDE (64px) - Recomendado para footer -->
-                    <img src="{{ asset('images/logo.jpg') }}" alt="Sanare Logo" class="h-16 w-16 rounded-2xl border-4 border-yellow-500 shadow-xl bg-white p-3">
+                    <img src="{{ asset('images/logo_LETRAS_BLANCAS.png') }}" alt="Sanare Logo" class="h-16 w-16 p-3">
                     
                     <!-- Opción 4: Logo MUY GRANDE (80px) -->
                     <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-20 w-20 mr-4"> -->
@@ -329,6 +512,94 @@
             </div>
         </div>
     </footer>
+
+    <script>
+        class DoctorCarousel {
+            constructor() {
+                this.currentSlide = 0;
+                this.slides = document.querySelectorAll('.doctor-slide');
+                this.totalSlides = this.slides.length;
+                this.autoSlideInterval = null;
+                
+                this.init();
+            }
+            
+            init() {
+                this.createDots();
+                this.bindEvents();
+                this.startAutoSlide();
+            }
+            
+            createDots() {
+                const dotsContainer = document.getElementById('carouselDots');
+                for (let i = 0; i < this.totalSlides; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = i === 0 ? 'dot active' : 'dot';
+                    dot.addEventListener('click', () => this.goToSlide(i));
+                    dotsContainer.appendChild(dot);
+                }
+            }
+            
+            bindEvents() {
+                document.getElementById('prevBtn').addEventListener('click', () => this.prevSlide());
+                document.getElementById('nextBtn').addEventListener('click', () => this.nextSlide());
+                
+                // Pause on hover
+                const carousel = document.getElementById('doctorCarousel');
+                carousel.addEventListener('mouseenter', () => this.stopAutoSlide());
+                carousel.addEventListener('mouseleave', () => this.startAutoSlide());
+            }
+            
+            updateSlides() {
+                this.slides.forEach((slide, index) => {
+                    slide.classList.remove('active', 'prev');
+                    if (index === this.currentSlide) {
+                        slide.classList.add('active');
+                    } else if (index < this.currentSlide) {
+                        slide.classList.add('prev');
+                    }
+                });
+                
+                // Update dots
+                const dots = document.querySelectorAll('.dot');
+                dots.forEach((dot, index) => {
+                    dot.classList.toggle('active', index === this.currentSlide);
+                });
+            }
+            
+            nextSlide() {
+                this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
+                this.updateSlides();
+            }
+            
+            prevSlide() {
+                this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
+                this.updateSlides();
+            }
+            
+            goToSlide(index) {
+                this.currentSlide = index;
+                this.updateSlides();
+            }
+            
+            startAutoSlide() {
+                this.stopAutoSlide();
+                this.autoSlideInterval = setInterval(() => this.nextSlide(), 4000);
+            }
+            
+            stopAutoSlide() {
+                if (this.autoSlideInterval) {
+                    clearInterval(this.autoSlideInterval);
+                    this.autoSlideInterval = null;
+                }
+            }
+        }
+
+        // Initialize carousel when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new DoctorCarousel();
+        });
+    </script>
 
 </body>
 </html>

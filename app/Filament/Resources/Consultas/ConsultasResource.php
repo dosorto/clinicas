@@ -19,10 +19,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\ListConsultas;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\CreateConsultas;
+use App\Filament\Resources\Consultas\ConsultasResource\Pages\CreateConsultaWithPatientSearch;
 use App\Filament\Resources\Consultas\ConsultasResource\Pages\EditConsultas;
+use App\Filament\Resources\Consultas\ConsultasResource\Pages\ViewConsultas;
+use App\Filament\Resources\Consultas\ConsultasResource\Pages\ManageServiciosConsulta;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
-use App\Filament\Resources\Consultas\ConsultasResource\Pages\ViewConsultas;
 
 
 class ConsultasResource extends Resource
@@ -666,8 +668,7 @@ class ConsultasResource extends Resource
             'create-simple' => Pages\CreateConsultas::route('/create-simple'),
             'view' => Pages\ViewConsultas::route('/{record}'),
             'edit' => Pages\EditConsultas::route('/{record}/edit'),
-            'view' => Pages\ViewConsultas::route('/{record}'),
-            'servicios' => Pages\ManageServiciosConsulta::route('/{record}/servicios'),
+            'manage-servicios' => Pages\ManageServiciosConsulta::route('/{record}/servicios'),
         ];
     }
 
@@ -728,15 +729,7 @@ class ConsultasResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        try {
-            $modelClass = static::getModel();
-            if (!$modelClass) {
-                return null;
-            }
-            return (string) $modelClass::count();
-        } catch (\Exception $e) {
-            return null;
-        }
+        return null;
     }
 
 

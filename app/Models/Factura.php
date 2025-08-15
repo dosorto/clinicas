@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, HasOne};
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Traits\TenantScoped;
 
-class Factura extends Model
+class Factura extends ModeloBase
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
+    use TenantScoped;
 
     protected $fillable = [
         'paciente_id',
@@ -99,7 +102,7 @@ class Factura extends Model
 
     public function pagos(): HasMany
     {
-        return $this->hasMany(Pagos_Factura::class);
+    return $this->hasMany(PagosFactura::class);
     }
 
     public function cuentasPorCobrar(): HasOne
@@ -133,12 +136,28 @@ class Factura extends Model
 
     public function generarNumeroSinCAI(): string
     {
-        $year = $this->fecha_emision ? $this->fecha_emision->year : now()->year;
-        $month = $this->fecha_emision ? str_pad($this->fecha_emision->month, 2, '0', STR_PAD_LEFT) : str_pad(now()->month, 2, '0', STR_PAD_LEFT);
-        $facturaId = $this->id ?? 0;
-        return "PROV-{$this->centro_id}-{$year}-{$month}-" . str_pad($facturaId, 6, '0', STR_PAD_LEFT);
+        // Obtener el último número de factura sin CAI del centro actual
+        $ultimaFactura = static::where('centro_id', $this->centro_id)
+            ->where('usa_cai', false)
+            ->orderBy('id', 'desc')
+            ->first();
+        
+        if ($ultimaFactura && isset($ultimaFactura->numero_sin_cai)) {
+            $ultimoNumero = (int) $ultimaFactura->numero_sin_cai;
+            $nuevoNumero = $ultimoNumero + 1;
+        } else {
+            $nuevoNumero = 1;
+        }
+        
+        // Actualizar el campo numero_sin_cai en la factura actual
+        $this->update(['numero_sin_cai' => $nuevoNumero]);
+        
+        // Formatear como PROV-YYYY-MM-NNNNNN
+        return sprintf('PROV-%s-%06d', 
+            now()->format('Y-m'), 
+            $nuevoNumero
+        );
     }
-
     protected static function booted(): void
     {
         parent::booted();
@@ -280,6 +299,11 @@ class Factura extends Model
                 ]);
             }
         }
+    }
+
+    public function factura()
+    {
+        return $this->belongsTo(Factura::class);
     }
 
     /**
