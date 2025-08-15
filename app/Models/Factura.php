@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, HasOne};
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Traits\TenantScoped;
 
-class Factura extends Model
+class Factura extends ModeloBase
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
+    use TenantScoped;
 
     protected $fillable = [
         'paciente_id',

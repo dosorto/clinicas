@@ -142,9 +142,6 @@ class RecetaResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
-                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('paciente_nombre')
                     ->label('Paciente')
@@ -234,13 +231,39 @@ class RecetaResource extends Resource
                 //     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('medico')
-                    ->relationship('medico', 'id')
+                Tables\Filters\SelectFilter::make('medico_id')
+                    ->label('Médico')
+                    ->options(function() {
+                        $centro_id = auth()->user()->centro_id;
+                        return \App\Models\Medico::withoutGlobalScopes()
+                            ->where('centro_id', $centro_id)
+                            ->with('persona')
+                            ->get()
+                            ->mapWithKeys(function($medico) {
+                                if ($medico->persona) {
+                                    return [$medico->id => $medico->persona->nombre_completo];
+                                }
+                                return [];
+                            });
+                    })
                     ->searchable()
                     ->preload(),
 
-                Tables\Filters\SelectFilter::make('paciente')
-                    ->relationship('paciente', 'id')
+                Tables\Filters\SelectFilter::make('paciente_id')
+                    ->label('Paciente')
+                    ->options(function() {
+                        $centro_id = auth()->user()->centro_id;
+                        return \App\Models\Pacientes::withoutGlobalScopes()
+                            ->where('centro_id', $centro_id)
+                            ->with('persona')
+                            ->get()
+                            ->mapWithKeys(function($paciente) {
+                                if ($paciente->persona) {
+                                    return [$paciente->id => $paciente->persona->nombre_completo];
+                                }
+                                return [];
+                            });
+                    })
                     ->searchable()
                     ->preload(),
 
