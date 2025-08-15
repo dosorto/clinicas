@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Models\Centros_Medico;
+use Illuminate\Support\Str;
 
 
 class MedicoResource extends Resource
@@ -39,45 +40,42 @@ class MedicoResource extends Resource
     public static function form(Form $form): Form
     {
     return $form
-    ->schema([
-        Forms\Components\Hidden::make('centro_id')
-            ->default(fn() => Auth::user()->centro_id),
+        ->schema([
+            Wizard::make([
+                Wizard\Step::make('Datos Personales')
+                    ->schema([
 
-        Wizard::make([
-            Wizard\Step::make('Datos Personales')
-                ->schema([
+                            Forms\Components\TextInput::make('dni')
+                                ->label('DNI')
+                                ->required()
+                                ->maxLength(255)
+                                ->placeholder('Ingrese su DNI')
+                                ->disabled(fn ($operation) => $operation === 'edit')
+                                ->dehydrated()
+                                ->live(debounce: 500) // Esto hace que se actualice cada 500ms después de dejar de escribir
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    if (strlen($state) >= 1) { // Asumiendo que el DNI tiene al menos 1 carácter
+                                        $existingPersona = Persona::where('dni', $state)->first();
+                                        if ($existingPersona) {
+                                            $set('primer_nombre', $existingPersona->primer_nombre);
+                                            $set('segundo_nombre', $existingPersona->segundo_nombre);
+                                            $set('primer_apellido', $existingPersona->primer_apellido);
+                                            $set('segundo_apellido', $existingPersona->segundo_apellido);
+                                            $set('telefono', $existingPersona->telefono);
+                                            $set('direccion', $existingPersona->direccion);
+                                            $set('sexo', $existingPersona->sexo);
+                                            $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
+                                            $set('nacionalidad_id', $existingPersona->nacionalidad_id);
+                                            $set('persona_id', $existingPersona->id);
 
-                        Forms\Components\TextInput::make('dni')
-                            ->label('DNI')
-                            ->required()
-                            ->maxLength(255)
-                            ->placeholder('Ingrese su DNI')
-                            ->disabled(fn ($operation) => $operation === 'edit')
-                            ->dehydrated()
-                            ->live(debounce: 500) // Esto hace que se actualice cada 500ms después de dejar de escribir
-                            ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                                if (strlen($state) >= 1) { // Asumiendo que el DNI tiene al menos 1 carácter
-                                    $existingPersona = Persona::where('dni', $state)->first();
-                                    if ($existingPersona) {
-                                        $set('primer_nombre', $existingPersona->primer_nombre);
-                                        $set('segundo_nombre', $existingPersona->segundo_nombre);
-                                        $set('primer_apellido', $existingPersona->primer_apellido);
-                                        $set('segundo_apellido', $existingPersona->segundo_apellido);
-                                        $set('telefono', $existingPersona->telefono);
-                                        $set('direccion', $existingPersona->direccion);
-                                        $set('sexo', $existingPersona->sexo);
-                                        $set('fecha_nacimiento', $existingPersona->fecha_nacimiento);
-                                        $set('nacionalidad_id', $existingPersona->nacionalidad_id);
-                                        $set('persona_id', $existingPersona->id);
-
-                                        Notification::make()
-                                            ->title('Persona encontrada')
-                                            ->body("Se encontró: {$existingPersona->nombre_completo}")
-                                            ->success()
-                                            ->send();
-                                        } else {
-                                            $set('persona_id', null);
-                                                            // Opcional: limpiar campos si no se encuentra la persona
+                                            Notification::make()
+                                                ->title('Persona encontrada')
+                                                ->body("Se encontró: {$existingPersona->nombre_completo}")
+                                                ->success()
+                                                ->send();
+                                            } else {
+                                                $set('persona_id', null);
+                                                                // Opcional: limpiar campos si no se encuentra la persona
                                         if ($get('id') === null) { // Solo en creación
                                             $set('primer_nombre', '');
                                             $set('segundo_nombre', '');
@@ -177,15 +175,25 @@ class MedicoResource extends Resource
                         ->placeholder('Seleccione una nacionalidad')
                         ->required(),
 
-                    Forms\Components\FileUpload::make('persona.foto')
+                    Forms\Components\FileUpload::make('fotografia')
                     ->label('Fotografía')
                     ->image()
+                    ->directory('personas/fotos')
+                    ->disk('public')
+                    ->visibility('public')
+                    ->imageEditor()
                     ->maxSize(2048)
-                    ->placeholder('Seleccione una fotografía')
-                    ->directory('personas/fotos') // Carpeta donde se guardarán las imágenes
-                    ->visibility('public') // O 'private' según tus necesidades
-                    ->imageEditor(), // Opcional: permite recortar/editar la imagen
-                    //->columnSpanFull(),
+                    ->acceptedFileTypes(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'])
+                    ->preserveFilenames(false)
+                    ->getUploadedFileNameForStorageUsing(function ($file) {
+                        $extension = $file->getClientOriginalExtension();
+                        $timestamp = now()->format('YmdHis');
+                        $random = Str::random(8);
+                        return "foto_{$timestamp}_{$random}.{$extension}";
+                    })
+                    ->downloadable()
+                    ->openable()
+                    ->columnSpanFull(),
 
                 ])
                 ->columns(2),
@@ -264,6 +272,7 @@ class MedicoResource extends Resource
                     Forms\Components\Grid::make(2)
                         ->schema([
                             Forms\Components\TextInput::make('salario_quincenal')
+                                ->default(0)
                                 ->label('Salario Quincenal')
                                 ->required(fn ($operation) => $operation === 'create')
                                 ->numeric()
@@ -316,6 +325,7 @@ class MedicoResource extends Resource
                     Forms\Components\Grid::make(2)
                         ->schema([
                             Forms\Components\TextInput::make('porcentaje_servicio')
+                                ->default(0)
                                 ->label('Porcentaje por Servicios')
                                 ->numeric()
                                 ->suffix('%')
@@ -964,7 +974,7 @@ class MedicoResource extends Resource
             $persona = Persona::where('dni', $data['dni'])->first();
 
             if (!$persona) {
-                $persona = Persona::create([
+                $personaData = [
                     'dni' => $data['dni'],
                     'primer_nombre' => $data['primer_nombre'],
                     'segundo_nombre' => $data['segundo_nombre'] ?? null,
@@ -975,7 +985,13 @@ class MedicoResource extends Resource
                     'sexo' => $data['sexo'],
                     'fecha_nacimiento' => $data['fecha_nacimiento'] ?? null,
                     'nacionalidad_id' => $data['nacionalidad_id'] ?? null,
-                ]);
+                ];
+                $persona = Persona::create($personaData);
+            }
+            // Siempre guardar la fotografía si viene en el formulario
+            if (isset($data['fotografia']) && $data['fotografia']) {
+                $persona->fotografia = $data['fotografia'];
+                $persona->save();
             }
 
             // Crear el médico con el centro_id verificado

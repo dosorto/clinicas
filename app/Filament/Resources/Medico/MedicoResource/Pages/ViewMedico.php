@@ -19,6 +19,14 @@ class ViewMedico extends ViewRecord
 {
     protected static string $resource = MedicoResource::class;
 
+    protected function resolveRecord(int | string $key): \App\Models\Medico
+    {
+        // Forzar la carga de la relación persona sin scopes globales
+        return \App\Models\Medico::withoutGlobalScopes()
+            ->with(['persona', 'especialidades', 'contratoActivo'])
+            ->findOrFail($key);
+    }
+
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist
@@ -28,34 +36,16 @@ class ViewMedico extends ViewRecord
                         Split::make([
                             Grid::make(1)
                                 ->schema([
-                                    ImageEntry::make('persona.foto')
-                                        ->hiddenLabel()
-                                        ->size(150)
+                                    ImageEntry::make('persona.fotografia')
+                                        ->label('Fotografía')
+                                        ->circular()
+                                        ->size(180)
                                         ->getStateUsing(function ($record) {
-                                            if ($record->persona && !empty($record->persona->foto)) {
-                                                return Storage::url($record->persona->foto);
+                                            if ($record->persona->fotografia) {
+                                                return asset('storage/' . $record->persona->fotografia);
                                             }
-                                            $iniciales = 'DR';
-                                            if ($record->persona) {
-                                                $iniciales = strtoupper(substr($record->persona->primer_nombre, 0, 1));
-                                                $iniciales .= strtoupper(substr($record->persona->primer_apellido, 0, 1));
-                                            }
-                                            return "https://ui-avatars.com/api/?name={$iniciales}&size=150&background=3b82f6&color=ffffff&bold=true&format=svg";
-                                        })
-                                        ->extraAttributes([
-                                            'style' => '
-                                                width: 150px !important; 
-                                                height: 150px !important; 
-                                                border-radius: 50% !important; 
-                                                border: 4px solid #e5e7eb; 
-                                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); 
-                                                object-fit: cover; 
-                                                display: block; 
-                                                margin: 0 auto;
-                                                aspect-ratio: 1/1;
-                                                overflow: hidden;
-                                            '
-                                        ]),
+                                            return 'https://ui-avatars.com/api/?name=' . urlencode($record->persona->primer_nombre . ' ' . $record->persona->primer_apellido);
+                                        }),
                                 ])
                                 ->columnSpan(1),
                             
