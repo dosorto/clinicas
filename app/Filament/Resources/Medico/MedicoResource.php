@@ -607,8 +607,7 @@ class MedicoResource extends Resource
                                 ->label('Rol en el sistema')
                                 ->options([
                                     'medico' => 'Médico - Puede gestionar pacientes y consultas',
-                                    'admin' => 'Administrador - Acceso completo al sistema',
-                                    'recepcionista' => 'Recepcionista - Gestión de citas y pacientes',
+                                    
                                 ])
                                 ->default('medico')
                                 ->required(fn (Forms\Get $get, $operation) => 
@@ -836,8 +835,7 @@ class MedicoResource extends Resource
                                         ->label('Rol en el sistema')
                                         ->options([
                                             'medico' => 'Médico - Puede gestionar pacientes y consultas',
-                                            'administrador centro' => 'Administrador Centro - Gestión completa del centro',
-                                            'root' => 'Root - Acceso completo al sistema',
+                                            
                                         ])
                                         ->default('medico')
                                         ->required(),
