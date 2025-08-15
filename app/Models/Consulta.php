@@ -68,4 +68,9 @@ class Consulta extends ModeloBase
     {
         return $this->hasMany(Receta::class, 'consulta_id');
     }
+    
+    public function examenes()
+    {
+        return $this->hasMany(Examenes::class, 'consulta_id');
+    }
 }

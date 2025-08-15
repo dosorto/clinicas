@@ -42,6 +42,20 @@ class ViewConsultas extends ViewRecord
                 )
                 ->visible(fn ($record) => $record->facturas()->exists()),
 
+            // Botón principal para crear nuevo examen
+            Actions\Action::make('crear_examen')
+                ->label('Nuevo Examen')
+                ->icon('heroicon-o-clipboard-document-check')
+                ->color('primary')
+                ->size('lg')
+                ->url(function (Consulta $record) {
+                    return \App\Filament\Resources\Examenes\ExamenesResource::getUrl('create') .
+                           '?paciente_id=' . $record->paciente_id .
+                           '&consulta_id=' . $record->id .
+                           '&medico_id=' . $record->medico_id;
+                })
+                ->openUrlInNewTab(false),
+
             // Botón principal para crear nueva receta
             Actions\Action::make('crear_receta')
                 ->label('Nueva Receta')
@@ -332,6 +346,141 @@ class ViewConsultas extends ViewRecord
                     ->collapsible()
                     ->collapsed(false)
                     ->icon('heroicon-o-clipboard-document-list'),
+
+                // 🔬 NUEVA SECCIÓN DE EXÁMENES MÉDICOS
+                Infolists\Components\Section::make('🔬 Exámenes Médicos')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('examenes')
+                            ->label('')
+                            ->state(function (Consulta $record): string {
+                                if (!$record->examenes()->exists()) {
+                                    return '<div class="flex items-center justify-center p-8 space-y-4">
+                                        <div class="text-center">
+                                            <div class="text-5xl mb-4">🔬</div>
+                                            <p class="text-gray-500 dark:text-gray-400 text-lg">No hay exámenes médicos asociados a esta consulta</p>
+                                            <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">Use el botón "Nuevo Examen" para solicitar exámenes médicos</p>
+                                        </div>
+                                    </div>';
+                                }
+
+                                $html = '<div class="overflow-x-auto shadow-sm rounded-lg">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead class="bg-gray-50 dark:bg-gray-800">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tipo de Examen</th>
+                                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Estado</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fecha Solicitado</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Observaciones</th>
+                                                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">';
+
+                                foreach ($record->examenes as $index => $examen) {
+                                    $examenNum = $index + 1;
+                                    $fechaCreado = $examen->created_at ? 
+                                        \Carbon\Carbon::parse($examen->created_at)->format('d/m/Y H:i') : 'N/A';
+                                    
+                                    // Estado con colores
+                                    $estadoBadge = match($examen->estado) {
+                                        'Solicitado' => '<span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">⏳ Solicitado</span>',
+                                        'Completado' => '<span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">✅ Completado</span>',
+                                        'No presentado' => '<span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">❌ No presentado</span>',
+                                        default => '<span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">📝 ' . htmlspecialchars($examen->estado) . '</span>'
+                                    };
+
+                                    $observaciones = $examen->observaciones ? htmlspecialchars($examen->observaciones) : '<span class="text-gray-400 italic">Sin observaciones</span>';
+
+                                    $html .= '<tr class="hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">' . $examenNum . '</td>
+                                        <td class="px-4 py-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            <div class="flex items-center">
+                                                <span class="text-lg mr-2">🔬</span>
+                                                ' . htmlspecialchars($examen->tipo_examen) . '
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-4 text-center">' . $estadoBadge . '</td>
+                                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">' . $fechaCreado . '</td>
+                                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate" title="' . htmlspecialchars($examen->observaciones ?: '') . '">' . $observaciones . '</td>
+                                        <td class="px-4 py-4 text-center text-sm font-medium">
+                                            <div class="flex justify-center space-x-2">
+                                                <a href="' . route('examenes.imprimir', $examen) . '" target="_blank" 
+                                                   class="inline-flex items-center px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors text-xs font-medium" 
+                                                   title="Imprimir orden de examen">
+                                                    🖨️ Imprimir
+                                                </a>
+                                                <a href="' . \App\Filament\Resources\Examenes\ExamenesResource::getUrl('edit', ['record' => $examen->id]) . '" 
+                                                   class="inline-flex items-center px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors text-xs font-medium" 
+                                                   title="Editar examen">
+                                                    ✏️ Editar
+                                                </a>
+                                                <a href="' . \App\Filament\Resources\Examenes\ExamenesResource::getUrl('view', ['record' => $examen->id]) . '" 
+                                                   class="inline-flex items-center px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors text-xs font-medium" 
+                                                   title="Ver detalles">
+                                                    👁️ Ver
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>';
+                                }
+                                $html .= '</tbody></table></div>';
+
+                                return $html;
+                            })
+                            ->html()
+                            ->columnSpanFull(),
+
+                        // Mensaje cuando no hay exámenes
+                        Infolists\Components\TextEntry::make('no_examenes')
+                            ->label('')
+                            ->state('🔬 No hay exámenes médicos asociados a esta consulta')
+                            ->color('gray')
+                            ->weight('medium')
+                            ->extraAttributes([
+                                'style' => 'text-align: center; padding: 40px; border: 2px dashed; border-radius: 12px; background: linear-gradient(135deg, rgba(156, 163, 175, 0.1), rgba(209, 213, 219, 0.1));',
+                                'class' => 'border-gray-300 dark:border-gray-600'
+                            ])
+                            ->visible(function (Consulta $record): bool {
+                                return !$record->examenes()->exists();
+                            }),
+
+                        // Botones de acción para gestionar exámenes
+                        Infolists\Components\Actions::make([
+                            Infolists\Components\Actions\Action::make('ver_todos_examenes')
+                                ->label('Ver todos los exámenes')
+                                ->icon('heroicon-o-clipboard-document-check')
+                                ->color('info')
+                                ->url(function (Consulta $record) {
+                                    return \App\Filament\Resources\Examenes\ExamenesResource::getUrl('index') . 
+                                           '?tableFilters[consulta_id][value]=' . $record->id;
+                                })
+                                ->openUrlInNewTab(false)
+                                ->visible(function (Consulta $record) {
+                                    return $record->examenes()->count() > 0;
+                                }),
+
+                            Infolists\Components\Actions\Action::make('imprimir_examenes')
+                                ->label('Imprimir Lista de Exámenes')
+                                ->icon('heroicon-o-printer')
+                                ->color('success')
+                                ->url(function (Consulta $record) {
+                                    return route('examenes.imprimir.consulta', ['consulta' => $record->id]);
+                                })
+                                ->openUrlInNewTab(true)
+                                ->visible(function (Consulta $record) {
+                                    return $record->examenes()->count() > 0;
+                                }),
+                        ])
+                        ->columnSpanFull()
+                        ->visible(function (Consulta $record) {
+                            return $record->examenes()->count() > 0;
+                        }),
+                    ])
+                    ->description('Lista de todos los exámenes médicos solicitados durante esta consulta')
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->icon('heroicon-o-clipboard-document-check'),
             ]);
     }
 }

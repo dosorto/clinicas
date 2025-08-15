@@ -129,7 +129,12 @@ class ConsultasResource extends Resource
                             ->maxLength(65535)
                             ->columnSpanFull()
                             ->autosize(),
+                    ]),
 
+               
+
+                Forms\Components\Section::make('Detalles Adicionales')
+                    ->schema([
                         Forms\Components\Textarea::make('observaciones')
                             ->label('Observaciones')
                             ->rows(3)
@@ -207,8 +212,82 @@ class ConsultasResource extends Resource
                     ->description('Gestione las recetas médicas asociadas a esta consulta')
                     ->icon('heroicon-o-clipboard-document-list')
                     ->collapsible()
-                    ->collapsed(false)
-                    ->visible(fn (string $operation): bool => $operation === 'edit'),
+                    ->collapsed(false),
+
+                // 🔬 EXÁMENES MÉDICOS - SECCIÓN CORREGIDA
+                Forms\Components\Section::make('🔬 Exámenes Médicos')
+                    ->schema([
+                        Forms\Components\Repeater::make('examenes')
+                            ->relationship('examenes')
+                            ->label('Solicitar Exámenes Médicos')
+                            ->schema([
+                                Forms\Components\TextInput::make('tipo_examen')
+                                    ->label('Tipo de Examen')
+                                    ->required()
+                                    ->placeholder('Ej: Examen de orina, Hemograma completo, Rayos X'),
+
+                                Forms\Components\Textarea::make('observaciones')
+                                    ->label('Observaciones del Examen')
+                                    ->placeholder('Instrucciones especiales para el examen')
+                                    ->rows(2),
+
+                                // Solo mostrar estos campos en modo edición
+                                Forms\Components\Select::make('estado')
+                                    ->label('Estado')
+                                    ->options([
+                                        'Solicitado' => 'Solicitado',
+                                        'Completado' => 'Completado',
+                                        'No presentado' => 'No presentado',
+                                    ])
+                                    ->default('Solicitado')
+                                    ->visible(fn (string $operation): bool => $operation === 'edit'),
+
+                                Forms\Components\FileUpload::make('imagen_resultado')
+                                    ->label('🖼️ Resultado del Examen')
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'application/pdf'])
+                                    ->maxSize(10240) // 10MB
+                                    ->directory('examenes')
+                                    ->visibility('private')
+                                    ->downloadable()
+                                    ->previewable()
+                                    ->visible(fn (string $operation): bool => $operation === 'edit')
+                                    ->afterStateUpdated(function ($state, callable $set) {
+                                        if ($state) {
+                                            $set('estado', 'Completado');
+                                            $set('fecha_completado', now());
+                                        }
+                                    }),
+
+                                Forms\Components\Hidden::make('fecha_completado'),
+                            ])
+                            ->addActionLabel('➕ Agregar Examen')
+                            ->itemLabel(fn (array $state): ?string => 
+                                !empty($state['tipo_examen']) ? '🔬 ' . $state['tipo_examen'] : 'Nuevo examen'
+                            )
+                            ->collapsible()
+                            ->collapsed(false)
+                            ->columnSpanFull()
+                            ->minItems(0)
+                            ->maxItems(10)
+                            ->defaultItems(0)
+                            ->mutateRelationshipDataBeforeCreateUsing(function (array $data, $livewire): array {
+                                $data['centro_id'] = \Illuminate\Support\Facades\Auth::user()->centro_id ?? null;
+                                $data['medico_id'] = \Illuminate\Support\Facades\Auth::user()->medico?->id;
+                                $data['paciente_id'] = $livewire->data['paciente_id'] ?? null;
+                                $data['estado'] = 'Solicitado';
+                                return $data;
+                            })
+                            ->mutateRelationshipDataBeforeSaveUsing(function (array $data, $livewire): array {
+                                $data['centro_id'] = \Illuminate\Support\Facades\Auth::user()->centro_id ?? null;
+                                $data['medico_id'] = \Illuminate\Support\Facades\Auth::user()->medico?->id;
+                                $data['paciente_id'] = $livewire->record->paciente_id ?? $livewire->data['paciente_id'] ?? null;
+                                return $data;
+                            }),
+                    ])
+                    ->description('Solicite los exámenes médicos necesarios para el diagnóstico')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->collapsible()
+                    ->collapsed(false),
             ]);
     }
 
@@ -496,6 +575,63 @@ class ConsultasResource extends Resource
                     ->collapsed(false)
                     ->icon('heroicon-o-clipboard-document-list'),
 
+                // NUEVA SECCIÓN DE EXÁMENES EN VISTA
+                Infolists\Components\Section::make('Exámenes Médicos')
+                    ->schema([
+                        Infolists\Components\Split::make([
+                            Infolists\Components\Tabs::make('Examenes')
+                                ->tabs([
+                                    Infolists\Components\Tabs\Tab::make('examenes_tab')
+                                        ->label('Exámenes Solicitados')
+                                        ->schema([
+                                            Infolists\Components\RepeatableEntry::make('examenes')
+                                                ->label('')
+                                                ->schema([
+                                                    Infolists\Components\TextEntry::make('tipo_examen')
+                                                        ->label('Tipo de Examen')
+                                                        ->extraAttributes([
+                                                            'class' => 'font-semibold text-primary-600 dark:text-primary-400',
+                                                        ]),
+                                                    Infolists\Components\TextEntry::make('estado')
+                                                        ->label('Estado')
+                                                        ->badge()
+                                                        ->color(fn (string $state): string => match ($state) {
+                                                            'Solicitado' => 'warning',
+                                                            'Completado' => 'success',
+                                                            'No presentado' => 'danger',
+                                                            default => 'secondary',
+                                                        }),
+                                                    Infolists\Components\TextEntry::make('fecha_completado')
+                                                        ->label('Fecha Completado')
+                                                        ->date()
+                                                        ->placeholder('Pendiente'),
+                                                    Infolists\Components\TextEntry::make('observaciones')
+                                                        ->label('Observaciones')
+                                                        ->placeholder('Sin observaciones')
+                                                        ->extraAttributes([
+                                                            'class' => 'prose max-w-none text-gray-600 dark:text-gray-400',
+                                                        ])
+                                                        ->columnSpanFull(),
+                                                    Infolists\Components\ImageEntry::make('imagen_resultado')
+                                                        ->label('Resultado')
+                                                        ->placeholder('Sin resultado subido')
+                                                        ->columnSpanFull()
+                                                        ->height(200)
+                                                        ->visibility('private')
+                                                        ->disk('local'),
+                                                ])
+                                                ->columns(3),
+                                        ]),
+                                ])
+                                ->contained(false),
+                        ])
+                            ->from('md'),
+                    ])
+                    ->description('Lista de todos los exámenes médicos solicitados durante esta consulta')
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->icon('heroicon-o-clipboard-document-check'),
+
                 // Sección de información del sistema ocultada por solicitud del usuario
                 // Infolists\Components\Section::make('Información de Sistema')
                 //     ->schema([
@@ -538,7 +674,7 @@ class ConsultasResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()
-            ->with(['paciente.persona', 'medico.persona', 'recetas'])
+            ->with(['paciente.persona', 'medico.persona', 'recetas', 'examenes'])
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);

@@ -463,6 +463,70 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                     ->extraAttributes([
                         'style' => 'border: 2px solid rgb(34, 197, 94); border-radius: 12px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.05), rgba(16, 185, 129, 0.05));'
                     ]),
+
+                // 🔬 EXÁMENES MÉDICOS - NUEVA SECCIÓN AGREGADA
+                Forms\Components\Section::make('🔬 Exámenes Médicos')
+                    ->description('Solicitar exámenes médicos necesarios para el diagnóstico (opcional)')
+                    ->schema([
+                        Forms\Components\Repeater::make('examenes')
+                            ->label('')
+                            ->schema([
+                                Forms\Components\TextInput::make('tipo_examen')
+                                    ->label('Tipo de Examen')
+                                    ->required()
+                                    ->placeholder('Ej: Examen de orina, Hemograma completo, Rayos X')
+                                    ->columnSpan(1),
+
+                                Forms\Components\Textarea::make('observaciones')
+                                    ->label('Observaciones del Examen')
+                                    ->placeholder('Instrucciones especiales para el examen')
+                                    ->rows(2)
+                                    ->columnSpan(1),
+                            ])
+                            ->columns(2)
+                            ->addActionLabel('➕ Agregar Nuevo Examen')
+                            ->deleteAction(
+                                fn ($action) => $action
+                                    ->requiresConfirmation()
+                                    ->modalHeading('¿Eliminar examen?')
+                                    ->modalDescription('¿Está seguro de que desea eliminar este examen?')
+                                    ->modalSubmitActionLabel('Sí, eliminar')
+                                    ->color('danger')
+                                    ->icon('heroicon-o-trash')
+                            )
+                            ->reorderAction(
+                                fn ($action) => $action
+                                    ->icon('heroicon-o-bars-3')
+                                    ->color('gray')
+                            )
+                            ->itemLabel(function (array $state): ?string {
+                                static $numero = 0;
+                                $numero++;
+
+                                if (empty($state['tipo_examen'])) {
+                                    return "Examen #{$numero}";
+                                }
+
+                                $tipoExamen = substr($state['tipo_examen'], 0, 40);
+                                if (strlen($state['tipo_examen']) > 40) {
+                                    $tipoExamen .= '...';
+                                }
+
+                                return "🔬 Examen #{$numero}: {$tipoExamen}";
+                            })
+                            ->columnSpanFull()
+                            ->defaultItems(0)
+                            ->extraAttributes([
+                                'style' => 'border: 1px solid rgb(59, 130, 246); border-radius: 8px; padding: 16px; background-color: rgba(239, 246, 255, 0.5);'
+                            ])
+                            ->hint('💡 Los exámenes se crearán automáticamente al guardar la consulta')
+                            ->hintColor('info'),
+                    ])
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->extraAttributes([
+                        'style' => 'border: 2px solid rgb(59, 130, 246); border-radius: 12px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(99, 102, 241, 0.05));'
+                    ]),
             ])
             ->statePath('consultaData');
     }
@@ -587,9 +651,11 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
             'session_cita_id' => session('cita_en_consulta')
         ]);
 
-        // Extraer las recetas del data para procesarlas por separado
+        // Extraer las recetas y exámenes del data para procesarlas por separado
         $recetas = $data['recetas'] ?? [];
+        $examenes = $data['examenes'] ?? [];
         unset($data['recetas']); // Remover recetas del data de consulta
+        unset($data['examenes']); // Remover exámenes del data de consulta
 
         try {
             // Crear la consulta
@@ -602,6 +668,7 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
             ]);
 
             $recetasCreadas = 0;
+            $examenesCreados = 0;
 
             // Crear las recetas si existen
             if (!empty($recetas)) {
@@ -620,9 +687,30 @@ class CreateConsultaWithPatientSearch extends Page implements HasForms
                 }
             }
 
+            // Crear los exámenes si existen
+            if (!empty($examenes)) {
+                foreach ($examenes as $examenData) {
+                    if (!empty($examenData['tipo_examen'])) {
+                        \App\Models\Examenes::create([
+                            'tipo_examen' => $examenData['tipo_examen'],
+                            'observaciones' => $examenData['observaciones'] ?? null,
+                            'paciente_id' => $this->selectedPatient->id,
+                            'consulta_id' => $consulta->id,
+                            'medico_id' => $data['medico_id'],
+                            'centro_id' => $data['centro_id'] ?? null,
+                            'estado' => 'Solicitado',
+                        ]);
+                        $examenesCreados++;
+                    }
+                }
+            }
+
             $message = 'La consulta para ' . $this->selectedPatient->persona->nombre_completo . ' ha sido creada.';
             if ($recetasCreadas > 0) {
                 $message .= " Se crearon {$recetasCreadas} receta(s) médica(s).";
+            }
+            if ($examenesCreados > 0) {
+                $message .= " Se solicitaron {$examenesCreados} examen(es) médico(s).";
             }
 
             // Actualizar estado de la cita si existe

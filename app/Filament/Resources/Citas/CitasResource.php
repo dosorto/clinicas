@@ -43,7 +43,7 @@ public static function form(Form $form): Form
 {
     return $form
         ->schema([
-            // Campo médico - Mostrar select solo si no es médico
+            // Campo médico - Solo visible para administradores y root
             Select::make('medico_id')
                 ->label('Médico asignado')
                 ->options(function () {
@@ -65,16 +65,9 @@ public static function form(Form $form): Form
                 ->visible(function () {
                     $user = Auth::user();
                     return $user && ($user->roles->contains('name', 'root') || $user->roles->contains('name', 'administrador'));
-                })
-                ->default(function () {
-                    $user = Auth::user();
-                    if ($user && $user->roles->contains('name', 'medico')) {
-                        return $user->medico?->id;
-                    }
-                    return null;
                 }),
 
-            // Campo oculto para médicos
+            // Campo oculto para médicos - asigna automáticamente su ID
             Forms\Components\Hidden::make('medico_id')
                 ->default(function () {
                     $user = Auth::user();
@@ -250,11 +243,26 @@ public static function form(Form $form): Form
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
-
-        // Si no es usuario root, filtrar por centro actual
         $user = Auth::user();
-        if ($user && !$user->roles->contains('name', 'root')) {
-            $query->where('centro_id', session('current_centro_id'));
+
+        if ($user) {
+            // Si es root, puede ver todo
+            if ($user->roles->contains('name', 'root')) {
+                return $query;
+            }
+
+            // Si es médico, solo ve sus propias citas
+            if ($user->roles->contains('name', 'medico') && $user->medico) {
+                return $query->where('medico_id', $user->medico->id);
+            }
+
+            // Si es administrador, ve las citas de su centro
+            if ($user->roles->contains('name', 'administrador')) {
+                return $query->where('centro_id', session('current_centro_id'));
+            }
+
+            // Para otros roles, filtrar por centro actual
+            return $query->where('centro_id', session('current_centro_id'));
         }
 
         return $query;

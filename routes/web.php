@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\ExamenController;
 use App\Http\Controllers\FacturaPdfController;
 use App\Http\Controllers\NominaController;
 use App\Http\Controllers\FacturaController;
@@ -31,6 +32,10 @@ Route::get('/facturas/pdf/lote', [FacturaPdfController::class, 'generarPdfLote']
 // Rutas para imprimir recetas
 Route::get('/receta/{receta}/imprimir', [RecetaController::class, 'imprimir'])->name('recetas.imprimir');
 Route::get('/consulta/{consulta}/recetas/imprimir', [RecetaController::class, 'imprimirPorConsulta'])->name('recetas.imprimir.consulta');
+
+// Rutas para imprimir exámenes
+Route::get('/examen/{examen}/imprimir', [ExamenController::class, 'imprimir'])->name('examenes.imprimir');
+Route::get('/consulta/{consulta}/examenes/imprimir', [ExamenController::class, 'imprimirPorConsulta'])->name('examenes.imprimir.consulta');
 
 // Rutas para nóminas
 Route::get('/nomina/{nomina}/pdf', [NominaController::class, 'generarPDFNomina'])->name('nomina.pdf');

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Consultas\ConsultasResource\Pages;
 
 use App\Filament\Resources\Consultas\ConsultasResource;
 use App\Filament\Resources\Receta\RecetaResource;
+use App\Filament\Resources\Consultas\Widgets\HistorialExamenes;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
@@ -125,5 +126,12 @@ class EditConsultas extends EditRecord
                     ->body('La consulta ha sido enviada a la papelera.')
                     ->send();
             });
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            HistorialExamenes::class,
+        ];
     }
 }

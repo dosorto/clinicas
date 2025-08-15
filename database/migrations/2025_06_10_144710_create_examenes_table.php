@@ -22,9 +22,12 @@ return new class extends Migration
             $table->unsignedBigInteger("centro_id")->nullable(); // ID del centro médico, puede ser nulo
             $table->foreign("centro_id")->references("id")->on("centros_medicos");
 
-            $table->text('descripcion');
-            $table->string('url_archivo')->nullable();
-            $table->date('fecha_resultado');
+            $table->string('tipo_examen'); // Texto libre: "Examen de orina", "Hemograma completo", etc.
+            $table->text('observaciones')->nullable(); // Observaciones opcionales del médico
+            $table->enum('estado', ['Solicitado', 'Completado', 'No presentado'])->default('Solicitado');
+            $table->string('imagen_resultado')->nullable(); // Ruta del archivo subido (cambio de url_archivo)
+            $table->timestamp('fecha_completado')->nullable(); // Cuando se sube la imagen
+            $table->date('fecha_resultado'); // Mantener campo original
 
             $table->timestamps();
             $table->softDeletes();

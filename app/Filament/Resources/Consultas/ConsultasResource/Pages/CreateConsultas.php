@@ -30,7 +30,7 @@ class CreateConsultas extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-
+        // Ya no necesitamos procesar examenes_data porque ahora usamos relaciones directas
         return $data;
     }
         public function mount(): void
@@ -220,6 +220,8 @@ class CreateConsultas extends CreateRecord
                 ->send();
         }
         
+        // Ya no necesitamos crear exámenes manualmente porque ahora se crean automáticamente via relaciones
+        
         Log::info('=== FIN afterCreate ===');
     }
 
@@ -245,6 +247,13 @@ class CreateConsultas extends CreateRecord
                 ->url($this->getResource()::getUrl('index'))
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray'),
+        ];
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            \App\Filament\Resources\Consultas\Widgets\HistorialExamenes::class,
         ];
     }
   

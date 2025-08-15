@@ -69,9 +69,9 @@ class CitasPolicy
             return $user->can('crear citas');
         }
 
-        // Médicos NO pueden crear citas
+        // Médicos SÍ pueden crear citas (para sí mismos)
         if ($user->hasRole('medico')) {
-            return false;
+            return $user->can('crear citas') && $user->medico; // Debe tener registro de médico
         }
 
         return false;
@@ -92,9 +92,9 @@ class CitasPolicy
             return $user->centro_id === $cita->centro_id && $user->can('actualizar citas');
         }
 
-        // Médicos NO pueden actualizar citas (solo confirmar/cancelar desde el calendario)
+        // Médicos pueden actualizar sus propias citas (cambiar estado, etc.)
         if ($user->hasRole('medico')) {
-            return false;
+            return $user->medico && $user->medico->id === $cita->medico_id && $user->can('actualizar citas');
         }
 
         return false;

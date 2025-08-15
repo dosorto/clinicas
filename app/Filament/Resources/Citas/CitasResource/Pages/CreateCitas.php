@@ -29,24 +29,31 @@ class CreateCitas extends CreateRecord
             return;
         }
 
+        $user = Auth::user();
+        $defaultData = [];
+
+        // Si es médico, asignar automáticamente su ID
+        if ($user && $user->roles->contains('name', 'medico') && $user->medico) {
+            $defaultData['medico_id'] = $user->medico->id;
+        }
+
         // Si viene una fecha desde el calendario, establecer datos por defecto
         if (request()->has('fecha')) {
             $fechaDesdeCalendario = request()->get('fecha');
             
             try {
                 $fechaFormateada = \Carbon\Carbon::parse($fechaDesdeCalendario)->format('Y-m-d');
-                
-                $this->defaultData = [
-                    'medico_id' => 21, // Usar un ID fijo por ahora para testing
-                    'fecha' => $fechaFormateada,
-                    'hora' => '09:00',
-                    'estado' => 'Pendiente',
-                ];
-                
+                $defaultData['fecha'] = $fechaFormateada;
+                $defaultData['hora'] = '09:00';
             } catch (\Exception $e) {
                 // Error al parsear fecha
             }
         }
+
+        // Siempre establecer estado por defecto
+        $defaultData['estado'] = 'Pendiente';
+
+        $this->defaultData = $defaultData;
         
         parent::mount();
         
@@ -58,14 +65,32 @@ class CreateCitas extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // IMPORTANTE: Asegurar que el medico_id esté presente
+        $user = Auth::user();
+
+        // IMPORTANTE: Si es médico, asegurar que el medico_id sea el suyo
+        if ($user && $user->roles->contains('name', 'medico') && $user->medico) {
+            $data['medico_id'] = $user->medico->id;
+        }
+
+        // Verificar que medico_id esté presente
         if (!isset($data['medico_id']) || empty($data['medico_id'])) {
-            $data['medico_id'] = 21; // Usar un ID fijo por ahora
+            throw new \Exception('No se pudo determinar el médico para la cita');
         }
         
         // Asegurar que siempre tenga estado por defecto
         if (!isset($data['estado']) || empty($data['estado'])) {
             $data['estado'] = 'Pendiente';
+        }
+
+        // Asegurar que tenga centro_id
+        if (!isset($data['centro_id']) || empty($data['centro_id'])) {
+            // Obtener centro_id del médico
+            $medico = \App\Models\Medico::find($data['medico_id']);
+            if ($medico) {
+                $data['centro_id'] = $medico->centro_id;
+            } else {
+                $data['centro_id'] = session('current_centro_id');
+            }
         }
 
         // Asegurar formato correcto de fecha
