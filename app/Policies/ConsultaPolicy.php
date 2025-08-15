@@ -12,8 +12,22 @@ class ConsultaPolicy
      */
     public function viewAny(User $user): bool
     {
-        if ($user->hasRole('root')) return true;
-        return $user->can('ver consultas');
+        // Root puede ver todas las consultas
+        if ($user->hasRole('root')) {
+            return true;
+        }
+
+        // Administradores pueden ver consultas de su centro
+        if ($user->hasRole('administrador')) {
+            return $user->can('ver consultas');
+        }
+
+        // Médicos pueden ver sus propias consultas
+        if ($user->hasRole('medico')) {
+            return $user->can('ver consultas');
+        }
+
+        return false;
     }
 
     /**
@@ -21,8 +35,24 @@ class ConsultaPolicy
      */
     public function view(User $user, Consulta $consulta): bool
     {
-        if ($user->hasRole('root')) return true;
-        return $user->can('ver consultas');
+        // Root puede ver cualquier consulta
+        if ($user->hasRole('root')) {
+            return true;
+        }
+
+        // Administradores pueden ver consultas de su centro
+        if ($user->hasRole('administrador')) {
+            // Verificar si la consulta pertenece al centro del administrador
+            $consultaCentro = $consulta->medico?->centro_id ?? $consulta->paciente?->centro_id;
+            return $user->centro_id === $consultaCentro && $user->can('ver consultas');
+        }
+
+        // Médicos solo pueden ver sus propias consultas
+        if ($user->hasRole('medico')) {
+            return $user->medico && $user->medico->id === $consulta->medico_id && $user->can('ver consultas');
+        }
+
+        return false;
     }
 
     /**
@@ -30,8 +60,19 @@ class ConsultaPolicy
      */
     public function create(User $user): bool
     {
-        if ($user->hasRole('root')) return true;
-        return $user->can('crear consultas');
+        // Root puede crear consultas
+        if ($user->hasRole('root')) {
+            return true;
+        }
+
+        // Médicos pueden crear consultas (para sus propias citas)
+        if ($user->hasRole('medico')) {
+            return $user->can('crear consultas');
+        }
+
+        // Administradores NO pueden crear consultas directamente
+        // Solo los médicos crean consultas
+        return false;
     }
 
     /**
@@ -39,8 +80,18 @@ class ConsultaPolicy
      */
     public function update(User $user, Consulta $consulta): bool
     {
-        if ($user->hasRole('root')) return true;
-        return $user->can('actualizar consultas');
+        // Root puede actualizar cualquier consulta
+        if ($user->hasRole('root')) {
+            return true;
+        }
+
+        // Médicos pueden actualizar sus propias consultas
+        if ($user->hasRole('medico')) {
+            return $user->medico && $user->medico->id === $consulta->medico_id && $user->can('actualizar consultas');
+        }
+
+        // Administradores NO pueden actualizar consultas directamente
+        return false;
     }
 
     /**
@@ -48,8 +99,18 @@ class ConsultaPolicy
      */
     public function delete(User $user, Consulta $consulta): bool
     {
-        if ($user->hasRole('root')) return true;
-        return $user->can('borrar consultas');
+        // Root puede eliminar cualquier consulta
+        if ($user->hasRole('root')) {
+            return true;
+        }
+
+        // Médicos pueden eliminar sus propias consultas
+        if ($user->hasRole('medico')) {
+            return $user->medico && $user->medico->id === $consulta->medico_id && $user->can('borrar consultas');
+        }
+
+        // Administradores NO pueden eliminar consultas directamente
+        return false;
     }
 
     /**

@@ -4,7 +4,7 @@ namespace App\Filament\Resources\PagosFacturas;
 
 use App\Filament\Resources\PagosFacturas\PagosFacturasResource\Pages;
 use App\Filament\Resources\PagosFacturas\PagosFacturasResource\RelationManagers;
-use App\Models\Pagos_Factura;
+use App\Models\PagosFactura;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Select;
@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PagosFacturasResource extends Resource
 {
-    protected static ?string $model = Pagos_Factura::class;
+    protected static ?string $model = PagosFactura::class;
     protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
     protected static ?string $navigationGroup = 'Gestión de Facturación';
 
@@ -68,7 +68,7 @@ class PagosFacturasResource extends Resource
                     ->label('Factura')
                     ->searchable()
                     ->sortable()
-                    ->getStateUsing(function (Pagos_Factura $record): string {
+                    ->getStateUsing(function (PagosFactura $record): string {
                         if ($record->factura->usa_cai && $record->factura->caiCorrelativo) {
                             return $record->factura->caiCorrelativo->numero_factura;
                         }
@@ -107,9 +107,9 @@ class PagosFacturasResource extends Resource
                     
                 TextColumn::make('pagos_de_factura')
                     ->label('Resumen de Pagos')
-                    ->getStateUsing(function (Pagos_Factura $record): string {
+                    ->getStateUsing(function (PagosFactura $record): string {
                         // Obtener todos los pagos de esta factura
-                        $todosPagos = Pagos_Factura::where('factura_id', $record->factura_id)
+                        $todosPagos = PagosFactura::where('factura_id', $record->factura_id)
                             ->with('tipoPago')
                             ->get();
                             

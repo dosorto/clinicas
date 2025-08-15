@@ -33,7 +33,7 @@ class EditFacturas extends EditRecord
         
         if ($factura) {
             // Cargar pagos desde el modelo pagos_factura
-            $pagosExistentes = \App\Models\pagos_factura::where('factura_id', $factura->id)
+            $pagosExistentes = \App\Models\PagosFactura::where('factura_id', $factura->id)
                 ->with('tipoPago')
                 ->get();
             
@@ -70,7 +70,7 @@ class EditFacturas extends EditRecord
         }
         
         // Para facturas parcialmente pagadas o pendientes, preservar los pagos existentes
-        $pagosExistentes = \App\Models\pagos_factura::where('factura_id', $this->record->id)->get();
+    $pagosExistentes = \App\Models\PagosFactura::where('factura_id', $this->record->id)->get();
         
         if ($pagosExistentes->count() > 0) {
             // Preservar pagos existentes en el formulario
@@ -128,7 +128,7 @@ class EditFacturas extends EditRecord
                     
                     // Si el pago tiene ID, verificar si existe y actualizar
                     if (isset($pago['id'])) {
-                        $pagoExistente = \App\Models\pagos_factura::find($pago['id']);
+                        $pagoExistente = \App\Models\PagosFactura::find($pago['id']);
                         if ($pagoExistente && $pagoExistente->factura_id == $this->record->id) {
                             // Solo actualizar si no está marcado como preservado
                             if (!isset($pago['existia_previamente']) || !$pago['existia_previamente']) {
@@ -140,7 +140,7 @@ class EditFacturas extends EditRecord
                         }
                     } else {
                         // Es un pago nuevo, crear
-                        \App\Models\pagos_factura::create([
+                        \App\Models\PagosFactura::create([
                             'factura_id' => $this->record->id,
                             'paciente_id' => $this->record->paciente_id,
                             'centro_id' => $this->record->centro_id,

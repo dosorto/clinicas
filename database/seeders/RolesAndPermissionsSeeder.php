@@ -36,6 +36,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'ver contratomedico']);
         Permission::create(['name' => 'ver nomina']);
         Permission::create(['name' => 'ver detallenomina']);
+        Permission::create(['name' => 'ver citas']); // NUEVO
         Permission::create(['name' => 'ver cai_correlativos']);
         Permission::create(['name' => 'ver cai_autorizaciones']);
         Permission::create(['name' => 'ver cuentas_por_cobrars']);
@@ -63,6 +64,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'crear contratomedico']);
         Permission::create(['name' => 'crear nomina']);
         Permission::create(['name' => 'crear detallenomina']);
+        Permission::create(['name' => 'crear citas']); // NUEVO
         Permission::create(['name' => 'crear cai_correlativos']);
         Permission::create(['name' => 'crear cai_autorizaciones']);
         Permission::create(['name' => 'crear cuentas_por_cobrars']);
@@ -91,6 +93,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'actualizar contratomedico']);
         Permission::create(['name' => 'actualizar nomina']);
         Permission::create(['name' => 'actualizar detallenomina']);
+        Permission::create(['name' => 'actualizar citas']); // NUEVO
         Permission::create(['name' => 'actualizar cai_correlativos']);
         Permission::create(['name' => 'actualizar cai_autorizaciones']);
         Permission::create(['name' => 'actualizar cuentas_por_cobrars']);
@@ -119,6 +122,7 @@ class RolesAndPermissionsSeeder extends Seeder
         Permission::create(['name' => 'borrar contratomedico']);
         Permission::create(['name' => 'borrar nomina']);
         Permission::create(['name' => 'borrar detallenomina']);
+        Permission::create(['name' => 'borrar citas']); // NUEVO
         Permission::create(['name' => 'borrar cai_correlativos']);
         Permission::create(['name' => 'borrar cai_autorizaciones']);
         Permission::create(['name' => 'borrar cuentas_por_cobrars']);
@@ -145,22 +149,23 @@ class RolesAndPermissionsSeeder extends Seeder
         $roleAdminCentro = Role::create(['name' => 'administrador']);
         $roleAdminCentro->givePermissionTo([
             // VER
-            'ver medicos', 'ver pacientes', 'ver usuario', 'ver enfermedades', 'ver especialidad', 'ver recetas', 'ver consultas', 'ver contratomedico', 'ver nomina', 'ver detallenomina',
+            'ver medicos', 'ver pacientes', 'ver usuario', 'ver enfermedades', 'ver especialidad', 'ver recetas', 'ver consultas', 'ver citas', 'ver contratomedico', 'ver nomina', 'ver detallenomina',
             // CREAR
-            'crear medicos', 'crear pacientes', 'crear usuario', 'crear recetas', 'crear consultas', 'crear contratomedico', 'crear nomina', 'crear detallenomina',
+            'crear medicos', 'crear pacientes', 'crear usuario', 'crear recetas', 'crear consultas', 'crear citas', 'crear contratomedico', 'crear nomina', 'crear detallenomina',
             // ACTUALIZAR
-            'actualizar medicos', 'actualizar pacientes', 'actualizar usuario', 'actualizar recetas', 'actualizar consultas', 'actualizar contratomedico', 'actualizar nomina', 'actualizar detallenomina',
+            'actualizar medicos', 'actualizar pacientes', 'actualizar usuario', 'actualizar recetas', 'actualizar consultas', 'actualizar citas', 'actualizar contratomedico', 'actualizar nomina', 'actualizar detallenomina',
             // BORRAR
-            'borrar medicos', 'borrar pacientes', 'borrar usuario', 'borrar recetas', 'borrar consultas', 'borrar contratomedico', 'borrar nomina', 'borrar detallenomina'
+            'borrar medicos', 'borrar pacientes', 'borrar usuario', 'borrar recetas', 'borrar consultas', 'borrar citas', 'borrar contratomedico', 'borrar nomina', 'borrar detallenomina'
         ]);
 
        
 
         $roleAdminMedicos = Role::create(['name' => 'medico']);
         $roleAdminMedicos->givePermissionTo(['crear pacientes', 'ver pacientes', 'actualizar pacientes', 'borrar pacientes',
-            'crear consultas', 'ver consultas', 'actualizar consultas', 'borrar consultas','ver contratomedico', 'ver nomina', 'ver detallenomina',
-            'crear recetas', 'ver recetas', 'actualizar recetas', 'borrar recetas', 'crear nomina', 'crear detallenomina','crear contratomedico',
-            
+            'crear consultas', 'ver consultas', 'actualizar consultas', 'borrar consultas',
+            'crear recetas', 'ver recetas', 'actualizar recetas', 'borrar recetas',
+            'ver citas', // Solo pueden VER sus propias citas, NO crear/modificar/borrar
+            'ver contratomedico', // Permiso para ver sus contratos
         ]);
     }
 }

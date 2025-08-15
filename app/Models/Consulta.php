@@ -24,11 +24,12 @@ class Consulta extends ModeloBase
         'paciente_id',
         'medico_id',
         'centro_id',
+        'cita_id',
     ];
 
     public function facturas(): HasMany
     {
-        return $this->hasMany(Factura::class);
+        return $this->hasMany(Factura::class, 'consulta_id');
     }
     
 

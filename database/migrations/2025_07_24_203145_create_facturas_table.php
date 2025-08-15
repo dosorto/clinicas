@@ -31,6 +31,7 @@ return new class extends Migration
             $table->foreignId('descuento_id')->nullable()->constrained('descuentos');
             $table->foreignId('tipo_pago_id')->nullable()->constrained('tipo_pagos');
             $table->foreignId('cai_correlativo_id')->nullable()->constrained('cai_correlativos');
+            
 
             /* logs */
             $table->timestamps();

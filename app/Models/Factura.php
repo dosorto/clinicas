@@ -9,10 +9,13 @@ use Illuminate\Database\Eloquent\Relations\{BelongsTo, HasMany, HasOne};
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Traits\TenantScoped;
 
-class Factura extends Model
+class Factura extends ModeloBase
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
+    use TenantScoped;
 
     protected $fillable = [
         'paciente_id',
@@ -31,6 +34,7 @@ class Factura extends Model
         'descuento_id',
         'cai_correlativo_id',
         'usa_cai',
+        'factura_diseno_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -46,6 +50,11 @@ class Factura extends Model
     ];
 
     // Relaciones
+    public function facturaDiseno(): BelongsTo
+    {
+        return $this->belongsTo(FacturaDiseno::class, 'factura_diseno_id');
+    }
+
     public function caiCorrelativo(): BelongsTo
     {
         return $this->belongsTo(CAI_Correlativos::class, 'cai_correlativo_id');
@@ -93,7 +102,7 @@ class Factura extends Model
 
     public function pagos(): HasMany
     {
-        return $this->hasMany(Pagos_Factura::class);
+    return $this->hasMany(PagosFactura::class);
     }
 
     public function cuentasPorCobrar(): HasOne

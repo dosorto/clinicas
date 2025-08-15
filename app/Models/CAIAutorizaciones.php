@@ -46,7 +46,7 @@ class CAIAutorizaciones extends ModeloBase
 
     public function caiCorrelativos(): HasMany
     {
-        return $this->hasMany(Cai_Correlativos::class, 'autorizacion_id');
+        return $this->hasMany(CAI_Correlativos::class, 'autorizacion_id');
     }
 
     public function numerosDisponibles(): int

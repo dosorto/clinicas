@@ -60,7 +60,7 @@ class ViewNomina extends ViewRecord
                     ->icon('heroicon-o-clipboard-document')
                     ->schema([
                         TextEntry::make('empresa')
-                            ->label('Empresa'),
+                            ->label('Centro Médico'),
 
                         TextEntry::make('mes')
                             ->label('Mes')
@@ -150,6 +150,12 @@ class ViewNomina extends ViewRecord
         // Calcular total de la nómina
         $totalNomina = $nomina->detalles->sum('total_pagar');
         
+        // Obtener información del centro médico
+        $centroMedico = null;
+        if ($nomina->centro_id) {
+            $centroMedico = \App\Models\Centros_Medico::find($nomina->centro_id);
+        }
+
         // Generar HTML para el PDF
         $html = view('pdf.nomina-medica', [
             'nomina' => $nomina,
@@ -159,6 +165,7 @@ class ViewNomina extends ViewRecord
             'detalles' => $nomina->detalles,
             'totalNomina' => $totalNomina,
             'fechaGeneracion' => now()->format('d/m/Y H:i'),
+            'centroMedico' => $centroMedico,
         ])->render();
         
         // Usar dompdf para generar el PDF

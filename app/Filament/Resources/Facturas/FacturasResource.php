@@ -233,7 +233,68 @@ class FacturasResource extends Resource
                                         } else {
                                             $set('../../estado', 'PENDIENTE');
                                         }
+                                    })
+                                    ->columnSpan(1),
+                                    
+                                // Campos ocultos - VERSIÓN MEJORADA Y MÁS AGRESIVA
+                                Forms\Components\Hidden::make('paciente_id')
+                                    ->default(function (callable $get) {
+                                        // Estrategia múltiple para obtener paciente_id
+                                        
+                                        // 1. Del formulario principal
+                                        $pacienteId = $get('../../paciente_id');
+                                        if ($pacienteId && $pacienteId !== '?') {
+                                            return $pacienteId;
+                                        }
+                                        
+                                        // 2. De la consulta desde URL
+                                        $consultaId = request()->get('consulta_id') ?? $get('../../consulta_id');
+                                        if ($consultaId) {
+                                            try {
+                                                $consulta = \App\Models\Consulta::find($consultaId);
+                                                if ($consulta && $consulta->paciente_id) {
+                                                    return $consulta->paciente_id;
+                                                }
+                                            } catch (\Exception $e) {
+                                                // Si hay error, continuar con otros métodos
+                                            }
+                                        }
+                                        
+                                        // 3. Si estamos editando, del record actual
+                                        if (request()->route('record')) {
+                                            try {
+                                                $factura = \App\Models\Factura::find(request()->route('record'));
+                                                if ($factura && $factura->paciente_id) {
+                                                    return $factura->paciente_id;
+                                                }
+                                            } catch (\Exception $e) {
+                                                // Si hay error, continuar
+                                            }
+                                        }
+                                        
+                                        return null;
+                                    })
+                                    ->live()
+                                    ->reactive()
+                                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                        // Forzar la propagación del paciente_id si se actualiza
+                                        if ($state && $state !== '?') {
+                                            \Log::info('Paciente ID actualizado en campo hidden', ['paciente_id' => $state]);
+                                        }
                                     }),
+                                    
+                                Forms\Components\Hidden::make('centro_id')
+                                    ->default(Auth::user()->centro_id),
+                                    
+                                
+                                Forms\Components\Hidden::make('fecha_pago')
+                                    ->default(now()),
+                                    
+                                Forms\Components\Hidden::make('created_by')
+                                    ->default(Auth::id()),
+                                    
+                                Forms\Components\Hidden::make('monto_devolucion')
+                                    ->default(0),
                             ])
                             ->columns(2)
                             ->addActionLabel('Agregar método de pago')

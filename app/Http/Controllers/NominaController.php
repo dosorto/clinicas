@@ -167,6 +167,12 @@ class NominaController extends Controller
             $nombreArchivo = "nomina_" . ($nomina->quincena == 1 ? 'primera' : 'segunda') . "_quincena_{$mesNombre}_{$nomina->año}";
         }
 
+        // Obtener información del centro médico
+        $centroMedico = null;
+        if ($nomina->centro_id) {
+            $centroMedico = \App\Models\Centros_Medico::find($nomina->centro_id);
+        }
+
         $data = [
             'nomina' => $nomina,
             'detalles' => $nomina->detalles,
@@ -176,6 +182,7 @@ class NominaController extends Controller
             'fechaGeneracion' => Carbon::now()->format('d/m/Y H:i'),
             'totalNomina' => $nomina->detalles->sum('total_pagar'),
             'numeroEmpleados' => $nomina->detalles->count(),
+            'centroMedico' => $centroMedico,
         ];
 
         $pdf = PDF::loadView('pdf.nomina-medica', $data);

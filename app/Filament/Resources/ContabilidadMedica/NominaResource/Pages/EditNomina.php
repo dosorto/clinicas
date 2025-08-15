@@ -146,15 +146,87 @@ class EditNomina extends EditRecord
 
     public function updatedMedicosSeleccionados($value, $key): void
     {
+        // Separar el key para obtener índice y campo
+        $parts = explode('.', $key);
+        $index = $parts[0];
+        $campo = $parts[1] ?? '';
+        
+        // Si el campo actualizado es 'seleccionado' y está marcado como true
+        if ($campo === 'seleccionado' && $value === true) {
+            // Calcular automáticamente las comisiones para este médico
+            $this->calcularComisionesParaMedico($index);
+        }
+        
+        // Recalcular totales cuando cambian los valores
         if (strpos($key, 'deducciones') !== false || strpos($key, 'percepciones') !== false || strpos($key, 'salario_base') !== false) {
-            $parts = explode('.', $key);
-            $index = $parts[0];
-            
             $salario = $this->medicosSeleccionados[$index]['salario_base'] ?? 0;
             $deducciones = $this->medicosSeleccionados[$index]['deducciones'] ?? 0;
             $percepciones = $this->medicosSeleccionados[$index]['percepciones'] ?? 0;
             
             $this->medicosSeleccionados[$index]['total'] = $salario + $percepciones - $deducciones;
+        }
+    }
+    
+    /**
+     * Calcula las comisiones solo para un médico específico
+     */
+    protected function calcularComisionesParaMedico($index): void
+    {
+        $medico = $this->medicosSeleccionados[$index] ?? null;
+        if (!$medico) {
+            return;
+        }
+        
+        $comisionService = app(\App\Services\ComisionMedicoService::class);
+        $formData = $this->form->getState();
+        $año = $formData['año'] ?? date('Y');
+        $mes = $formData['mes'] ?? date('n');
+        
+        // Determinar si es quincenal
+        $quincena = null;
+        if (($formData['tipo_pago'] ?? null) === 'quincenal') {
+            $quincena = $formData['quincena'] ?? 1;
+        }
+        
+        // Calcular comisión para este médico
+        $resultado = $comisionService->calcularComision(
+            $medico['id'],
+            $año,
+            $mes,
+            $quincena
+        );
+        
+        if ($resultado['total_comision'] > 0) {
+            // Agregar la comisión como percepción
+            $this->medicosSeleccionados[$index]['percepciones'] += $resultado['total_comision'];
+            
+            // Recalcular total
+            $this->medicosSeleccionados[$index]['total'] = 
+                $this->medicosSeleccionados[$index]['salario_base'] + 
+                $this->medicosSeleccionados[$index]['percepciones'] - 
+                $this->medicosSeleccionados[$index]['deducciones'];
+            
+            // Generar detalle para mostrar
+            $nombreMedico = $medico['nombre'];
+            $totalFacturado = number_format($resultado['total_facturado'], 2);
+            $porcentaje = $resultado['porcentaje_servicio'];
+            $comision = number_format($resultado['total_comision'], 2);
+            
+            // Agregar información de comisión como detalle
+            if (!isset($this->medicosSeleccionados[$index]['percepciones_detalle'])) {
+                $this->medicosSeleccionados[$index]['percepciones_detalle'] = '';
+            }
+            
+            $this->medicosSeleccionados[$index]['percepciones_detalle'] .= 
+                "Comisión por servicios: L. {$comision} " .
+                "({$porcentaje}% de L. {$totalFacturado})\n";
+                
+            // Mostrar una notificación discreta
+            \Filament\Notifications\Notification::make()
+                ->title('Comisión calculada')
+                ->body("Se ha calculado la comisión para {$nombreMedico}.")
+                ->success()
+                ->send();
         }
     }
 
@@ -205,10 +277,16 @@ class EditNomina extends EditRecord
             Actions\ViewAction::make(),
             Actions\DeleteAction::make()
                 ->visible(fn () => !$this->record->cerrada),
-            // El botón de calcular comisiones se ha movido a la interfaz
+            // Ya no necesitamos botones de acción para las comisiones
+            // porque estas se calculan automáticamente al seleccionar un médico
         ];
     }
     
+    /**
+     * Calcula comisiones para todos los médicos seleccionados
+     * NOTA: Esta función se mantiene para uso interno, pero ya no es accesible desde la interfaz
+     * ya que las comisiones se calculan automáticamente al seleccionar un médico
+     */
     public function calcularComisiones(): void
     {
         $comisionService = app(\App\Services\ComisionMedicoService::class);

@@ -55,6 +55,10 @@ class ConsultasResource extends Resource
                 Forms\Components\Hidden::make('paciente_id')
                     ->default(null),
 
+                // Campo cita_id oculto - se debe asignar al crear la consulta desde el calendario
+                Forms\Components\Hidden::make('cita_id')
+                    ->default(null),
+
                 Forms\Components\Section::make('Información de la Consulta')
                     ->schema([
                         Forms\Components\Placeholder::make('medico_info')
@@ -536,29 +540,52 @@ class ConsultasResource extends Resource
     {
         $query = parent::getEloquentQuery()
             ->with(['paciente.persona', 'medico.persona', 'recetas'])
-            ->where('centro_id', \Filament\Facades\Filament::auth()->user()->centro_id)
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ]);
 
         $user = \Illuminate\Support\Facades\Auth::user();
 
-        // Si el usuario es un médico, solo mostrar sus consultas
-        if ($user) {
-            // Primero intentar con la relación directa
+        if (!$user) {
+            return $query->whereRaw('1 = 0'); // No mostrar nada si no hay usuario
+        }
+
+        // Filtrar según el rol del usuario
+        if ($user->roles->contains('name', 'root')) {
+            // Root puede ver todas las consultas del centro seleccionado
+            $centroActual = session('current_centro_id');
+            if ($centroActual) {
+                $query->where('centro_id', $centroActual);
+            }
+        } elseif ($user->roles->contains('name', 'administrador')) {
+            // Administradores ven todas las consultas de su centro
+            $query->where('centro_id', $user->centro_id);
+        } elseif ($user->roles->contains('name', 'medico')) {
+            // Médicos solo ven sus propias consultas
+            $query->where('centro_id', $user->centro_id);
+            
+            // Buscar el médico asociado al usuario
             if ($user->medico) {
                 $query->where('medico_id', $user->medico->id);
-            }
-            // Si no tiene relación directa, buscar por persona_id
-            elseif ($user->persona_id) {
+            } elseif ($user->persona_id) {
+                // Fallback: buscar por persona_id
                 $medico = \App\Models\Medico::withoutGlobalScopes()
                     ->where('persona_id', $user->persona_id)
                     ->first();
                     
                 if ($medico) {
                     $query->where('medico_id', $medico->id);
+                } else {
+                    // Si no encuentra médico asociado, no mostrar nada
+                    $query->whereRaw('1 = 0');
                 }
+            } else {
+                // Si no tiene médico ni persona asociada, no mostrar nada
+                $query->whereRaw('1 = 0');
             }
+        } else {
+            // Otros roles no ven consultas
+            $query->whereRaw('1 = 0');
         }
 
         return $query;
@@ -566,15 +593,7 @@ class ConsultasResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        try {
-            $modelClass = static::getModel();
-            if (!$modelClass) {
-                return null;
-            }
-            return (string) $modelClass::count();
-        } catch (\Exception $e) {
-            return null;
-        }
+        return null;
     }
 
 

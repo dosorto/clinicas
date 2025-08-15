@@ -265,14 +265,13 @@ class MedicoResource extends Resource
                         ->schema([
                             Forms\Components\TextInput::make('salario_quincenal')
                                 ->label('Salario Quincenal')
+                                ->required(fn ($operation) => $operation === 'create')
                                 ->numeric()
-                                ->default(0)
                                 ->prefix('L')
                                 ->placeholder('0.00')
                                 ->extraAttributes([
-                                    'title' => 'Monto que recibirá el médico cada quincena (15 días) - Puede ser 0 si solo es por comisión'
+                                    'title' => 'Monto que recibirá el médico cada quincena (15 días)'
                                 ])
-                                ->helperText('Puede ser 0 si el contrato es solo por porcentaje')
                                 ->live(onBlur: true)
                                 ->afterStateUpdated(function ($state, callable $set, Forms\Get $get) {
                                     // Asegurarse de que sea un número, defecto 0
@@ -299,24 +298,19 @@ class MedicoResource extends Resource
                                         };
                                     },
                                 ]),
+                                
 
                             Forms\Components\TextInput::make('salario_mensual')
                                 ->label('Salario Mensual')
+                                ->required(fn ($operation) => $operation === 'create')
                                 ->numeric()
-                                ->default(0)
                                 ->prefix('L')
                                 ->placeholder('0.00')
                                 ->extraAttributes([
                                     'title' => 'Salario completo mensual (calculado automáticamente)'
                                 ])
-                                ->helperText('Calculado como el doble del salario quincenal')
                                 ->disabled()
                                 ->dehydrated(),
-                                
-                            // Campo oculto para validación
-                            Forms\Components\Hidden::make('validacion_compensacion')
-                                ->default(false)
-                                ->dehydrated(false),
                         ]),
 
                     Forms\Components\Grid::make(2)
@@ -329,40 +323,18 @@ class MedicoResource extends Resource
                                 ->default(0)
                                 ->minValue(0)
                                 ->maxValue(100)
+                                ->required(fn ($operation) => $operation === 'create')
                                 ->extraAttributes([
                                     'title' => 'Porcentaje de comisión que recibe por servicios médicos realizados'
                                 ])
-                                ->helperText('Puede ser 0 si el contrato es solo por salario fijo')
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(function ($state, callable $set, Forms\Get $get) {
+                                ->afterStateUpdated(function ($state, callable $set) {
                                     if ($state === '' || $state === null) {
                                         $set('porcentaje_servicio', 0);
-                                        $state = 0;
                                     }
                                     // Convertir a número para evitar problemas con strings vacíos
-                                    $porcentaje = floatval($state ?? 0);
-                                    $set('porcentaje_servicio', $porcentaje);
-                                    
-                                    // Validación para verificar si ambos valores son cero
-                                    $salario = (float) ($get('salario_quincenal') ?? 0);
-                                    if ($porcentaje <= 0 && $salario <= 0) {
-                                        $set('validacion_compensacion', false);
-                                    } else {
-                                        $set('validacion_compensacion', true);
-                                    }
-                                })
-                                ->rules([
-                                    function (Forms\Get $get) {
-                                        return function (string $attribute, $value, \Closure $fail) use ($get) {
-                                            $salarioQuincenal = (float)($get('salario_quincenal') ?? 0);
-                                            $porcentaje = (float)($value ?? 0);
-                                            
-                                            if ($porcentaje <= 0 && $salarioQuincenal <= 0) {
-                                                $fail('Debe especificar al menos una forma de compensación (salario o porcentaje por servicio).');
-                                            }
-                                        };
-                                    },
-                                ]),
+                                    $set('porcentaje_servicio', floatval($state ?? 0));
+                                }),
 
                             Forms\Components\DatePicker::make('fecha_inicio')
                                 ->label('Fecha de Inicio')
@@ -428,6 +400,70 @@ class MedicoResource extends Resource
                                 ->inline(false)
                                 ->dehydrated(),
                         ]),
+
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('auto_generate')
+                            ->label('🎲 Generar datos automáticamente')
+                            ->icon('heroicon-o-sparkles')
+                            ->size('lg')
+                            ->color('success')
+                            ->outlined()
+                            ->extraAttributes([
+                                'class' => 'w-full justify-center'
+                            ])
+                            ->action(function (callable $set, Forms\Get $get) {
+                                // Obtener nombre de los datos de persona
+                                $primerNombre = $get('primer_nombre');
+                                $primerApellido = $get('primer_apellido');
+
+                                if ($primerNombre && $primerApellido) {
+                                    $username = strtolower($primerNombre . '.' . $primerApellido);
+                                    $username = preg_replace('/[^a-z0-9.]/', '', $username);
+
+                                    $email = $username . '@clinica.com';
+                                    $password = 'Temp' . rand(1000, 9999);
+
+                                    $set('username', $username);
+                                    $set('user_email', $email);
+                                    $set('user_password', $password);
+                                    $set('user_password_confirmation', $password);
+
+                                    Notification::make()
+                                        ->title('Datos generados automáticamente')
+                                        ->body("Usuario: {$username}\nEmail: {$email}\nContraseña: {$password}")
+                                        ->icon('heroicon-o-sparkles')
+                                        ->iconColor('success')
+                                        ->success()
+                                        ->persistent()
+                                        ->actions([
+                                            \Filament\Notifications\Actions\Action::make('copy')
+                                                ->label('Copiar contraseña')
+                                                ->icon('heroicon-o-clipboard')
+                                                ->button()
+                                                ->color('success')
+                                                ->action(function () use ($password) {
+                                                    // Copiar la contraseña al portapapeles
+                                                    Notification::make()
+                                                        ->title('¡Copiado!')
+                                                        ->body('La contraseña ha sido copiada al portapapeles')
+                                                        ->success()
+                                                        ->send();
+
+                                                    return $password;
+                                                }),
+                                        ])
+                                        ->send();
+                                } else {
+                                    Notification::make()
+                                        ->title('Error')
+                                        ->body('Se necesita el nombre y apellido del médico para generar los datos')
+                                        ->danger()
+                                        ->send();
+                                }
+                            })
+                    ])
+                    ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
+                    ->columnSpanFull(),
 
                     Forms\Components\Section::make('Datos del Usuario')
                         ->description('Complete la información de acceso del médico')
@@ -533,6 +569,7 @@ class MedicoResource extends Resource
                                                 ? 'Solo complete si desea cambiar la contraseña'
                                                 : 'Contraseña inicial del médico (puede cambiarla después)'
                                         )
+                                        ->revealable()
                                         ->dehydrated(),
 
                                     Forms\Components\TextInput::make('user_password_confirmation')
@@ -541,6 +578,7 @@ class MedicoResource extends Resource
                                         ->required(fn (Forms\Get $get, $operation) => 
                                             $get('crear_usuario') && $operation === 'create' && $get('user_password')
                                         )
+                                        ->revealable()
                                         ->same('user_password')
                                         ->placeholder(fn ($operation) => 
                                             $operation === 'edit' 
@@ -581,37 +619,7 @@ class MedicoResource extends Resource
                         ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
                         ->columns(1),
 
-                    Forms\Components\Section::make('Generación Automática')
-                        ->description('Opción rápida: generar datos automáticamente')
-                        ->schema([
-                            Forms\Components\Actions::make([
-                                Forms\Components\Actions\Action::make('auto_generate')
-                                    ->label('🎲 Generar datos automáticamente')
-                                    ->icon('heroicon-o-sparkles')
-                                    ->color('info')
-                                    ->action(function (callable $set, Forms\Get $get) {
-                                        // Obtener nombre de los datos de persona
-                                        $primerNombre = $get('primer_nombre');
-                                        $primerApellido = $get('primer_apellido');
-
-                                        if ($primerNombre && $primerApellido) {
-                                            $username = strtolower($primerNombre . '.' . $primerApellido);
-                                            $username = preg_replace('/[^a-z0-9.]/', '', $username);
-
-                                            $email = $username . '@clinica.com';
-                                            $password = 'Temp' . rand(1000, 9999);
-
-                                            $set('username', $username);
-                                            $set('user_email', $email);
-                                            $set('user_password', $password);
-                                            $set('user_password_confirmation', $password);
-                                        }
-                                    }),
-                            ])
-                        ])
-                        ->visible(fn (Forms\Get $get) => $get('crear_usuario'))
-                        ->collapsible()
-                        ->collapsed(),
+                    
                 ]),
         ])
         ->columnSpanFull() //  Esto hará que el Wizard ocupe el 100% del ancho
@@ -690,6 +698,70 @@ class MedicoResource extends Resource
                         ->modalHeading('Crear Usuario de Acceso')
                         ->modalDescription('Complete los datos para crear un usuario de acceso al sistema para este médico')
                         ->form([
+                            Forms\Components\Actions::make([
+                                Forms\Components\Actions\Action::make('auto_generate_modal')
+                                    ->label('🎲 Generar datos automáticamente')
+                                    ->icon('heroicon-o-sparkles')
+                                    ->size('lg')
+                                    ->color('success')
+                                    ->outlined()
+                                    ->extraAttributes([
+                                        'class' => 'w-full justify-center'
+                                    ])
+                                    ->action(function (callable $set, Medico $record) {
+                                        $primerNombre = $record->persona->primer_nombre;
+                                        $primerApellido = $record->persona->primer_apellido;
+
+                                        if ($primerNombre && $primerApellido) {
+                                            $username = strtolower($primerNombre . '.' . $primerApellido);
+                                            $username = preg_replace('/[^a-z0-9.]/', '', $username);
+
+                                            $email = $username . '@clinica.com';
+                                            $password = 'Temp' . rand(1000, 9999);
+
+                                            $set('username', $username);
+                                            $set('user_email', $email);
+                                            $set('password', $password);
+                                            $set('password_confirmation', $password);
+
+                                            Notification::make()
+                                                ->title('Datos generados automáticamente')
+                                                ->body("Usuario: {$username}\nEmail: {$email}\nContraseña: {$password}")
+                                                ->icon('heroicon-o-sparkles')
+                                                ->iconColor('success')
+                                                ->success()
+                                                ->persistent()
+                                                ->actions([
+                                                    \Filament\Notifications\Actions\Action::make('copy')
+                                                        ->label('Copiar contraseña')
+                                                        ->icon('heroicon-o-clipboard')
+                                                        ->button()
+                                                        ->color('success')
+                                                        ->close()
+                                                        ->action(function () use ($password) {
+                                                            return $password;
+                                                        }),
+                                                ])
+                                                ->send();
+                                            $username = strtolower($primerNombre . '.' . $primerApellido);
+                                            $username = preg_replace('/[^a-z0-9.]/', '', $username);
+
+                                            $email = $username . '@clinica.com';
+                                            $password = 'Temp' . rand(1000, 9999);
+
+                                            $set('username', $username);
+                                            $set('user_email', $email);
+                                            $set('password', $password);
+                                            $set('password_confirmation', $password);
+
+                                            Notification::make()
+                                                ->title('Datos generados automáticamente')
+                                                ->success()
+                                                ->send();
+                                        }
+                                    }),
+                            ])->columnSpanFull(),
+
                             Forms\Components\Section::make('Datos del Usuario')
                                 ->schema([
                                     Forms\Components\Grid::make(2)
@@ -920,25 +992,12 @@ class MedicoResource extends Resource
             }
 
             // Crear el contrato médico
-            if (isset($data['salario_quincenal']) || isset($data['porcentaje_servicio'])) {
-                $salarioQuincenal = isset($data['salario_quincenal']) ? (float) $data['salario_quincenal'] : 0;
-                $porcentajeServicio = isset($data['porcentaje_servicio']) ? (float) $data['porcentaje_servicio'] : 0;
-                
-                // Validar que al menos uno de los dos valores sea mayor que cero
-                if ($salarioQuincenal <= 0 && $porcentajeServicio <= 0) {
-                    // Mostrar notificación de advertencia
-                    \Filament\Notifications\Notification::make()
-                        ->title('⚠️ Advertencia: Contrato sin compensación')
-                        ->body('Se ha creado un contrato sin salario ni porcentaje por servicio. Debe establecer al menos una forma de compensación.')
-                        ->warning()
-                        ->send();
-                }
-                
+            if (isset($data['salario_quincenal']) && isset($data['porcentaje_servicio'])) {
                 $contrato = \App\Models\ContabilidadMedica\ContratoMedico::create([
                     'medico_id' => $medico->id,
-                    'salario_quincenal' => $salarioQuincenal,
-                    'salario_mensual' => $salarioQuincenal * 2,
-                    'porcentaje_servicio' => $porcentajeServicio,
+                    'salario_quincenal' => $data['salario_quincenal'],
+                    'salario_mensual' => $data['salario_quincenal'] * 2,
+                    'porcentaje_servicio' => $data['porcentaje_servicio'] ?? 0,
                     'fecha_inicio' => $data['fecha_inicio'],
                     'fecha_fin' => isset($data['fecha_fin']) && $data['fecha_fin'] ? $data['fecha_fin'] : null,
                     'activo' => $data['activo'] ?? true,

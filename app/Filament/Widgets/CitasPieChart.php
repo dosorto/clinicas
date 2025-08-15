@@ -4,57 +4,72 @@ namespace App\Filament\Widgets;
 
 use Filament\Widgets\ChartWidget;
 use App\Models\Citas;
+use Illuminate\Support\Facades\Auth;
 
 class CitasPieChart extends ChartWidget
 {
-    protected static ?string $heading = 'Estado de las Citas';
-    protected static ?int $sort = 1;
-    protected int | string | array $columnSpan = 'full';
+    protected static ?string $heading = '📊 Estado de Citas Hoy';
+    protected static ?int $sort = 3;
+    protected int | string | array $columnSpan = 1;
+    protected static ?string $maxHeight = '250px';
     
     protected function getData(): array
     {
-        // Obtener las citas agrupadas por estado, filtradas por centro actual
         $currentCentroId = session('current_centro_id');
+        $user = Auth::user();
         
         $query = Citas::query();
         
-        // Si no es usuario root, filtrar por centro actual
-        if (!auth()->user()?->hasRole('root')) {
-            $query->where('centro_id', $currentCentroId);
+        // Aplicar filtros según el usuario y centro
+        if ($user && !$user->hasRole('root')) {
+            if ($currentCentroId) {
+                $query->where('centro_id', $currentCentroId);
+            } elseif ($user->centro_id) {
+                $query->where('centro_id', $user->centro_id);
+            }
         }
+        
+        // Solo citas de hoy para simplificar
+        $query->whereDate('fecha', today());
         
         $pendientes = $query->clone()->where('estado', 'Pendiente')->count();
         $confirmadas = $query->clone()->where('estado', 'Confirmado')->count();
-        $canceladas = $query->clone()->where('estado', 'Cancelado')->count();
         $realizadas = $query->clone()->where('estado', 'Realizada')->count();
+        $canceladas = $query->clone()->where('estado', 'Cancelado')->count();
         
         return [
             'datasets' => [
                 [
-                    'label' => 'Citas por Estado',
-                    'data' => [$pendientes, $confirmadas, $canceladas, $realizadas],
+                    'label' => 'Citas de Hoy',
+                    'data' => [$pendientes, $confirmadas, $realizadas, $canceladas],
                     'backgroundColor' => [
-                        '#fbbf24', // Amarillo para pendientes
-                        '#10b981', // Verde para confirmadas
-                        '#ef4444', // Rojo para canceladas
-                        '#3b82f6', // Azul para realizadas
+                        '#fbbf24',  // Amarillo para pendientes
+                        '#22c55e',  // Verde para confirmadas  
+                        '#3b82f6',  // Azul para realizadas
+                        '#ef4444',  // Rojo para canceladas
                     ],
                     'borderColor' => [
                         '#f59e0b',
-                        '#059669',
-                        '#dc2626',
+                        '#16a34a',
                         '#2563eb',
+                        '#dc2626',
                     ],
                     'borderWidth' => 2,
+                    'hoverOffset' => 6,
                 ],
             ],
-            'labels' => ['Pendientes', 'Confirmadas', 'Canceladas', 'Realizadas'],
+            'labels' => [
+                "⏳ Pendientes ({$pendientes})",
+                "✅ Confirmadas ({$confirmadas})", 
+                "✨ Realizadas ({$realizadas})",
+                "❌ Canceladas ({$canceladas})"
+            ],
         ];
     }
 
     protected function getType(): string
     {
-        return 'pie';
+        return 'doughnut';
     }
     
     protected function getOptions(): array
@@ -65,17 +80,27 @@ class CitasPieChart extends ChartWidget
             'plugins' => [
                 'legend' => [
                     'position' => 'bottom',
+                    'labels' => [
+                        'usePointStyle' => true,
+                        'padding' => 12,
+                        'font' => [
+                            'size' => 10
+                        ]
+                    ]
                 ],
-                'title' => [
-                    'display' => true,
-                    'text' => 'Distribución de Citas por Estado',
-                ],
+                'tooltip' => [
+                    'backgroundColor' => 'rgba(0, 0, 0, 0.8)',
+                    'titleColor' => 'white',
+                    'bodyColor' => 'white',
+                    'borderColor' => 'rgba(255, 255, 255, 0.1)',
+                    'borderWidth' => 1
+                ]
             ],
+            'cutout' => '60%',
+            'animation' => [
+                'animateRotate' => true,
+                'animateScale' => false
+            ]
         ];
-    }
-
-    public static function canView(): bool
-    {
-        return true; // Simplificado para debugging
     }
 }
