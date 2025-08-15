@@ -120,16 +120,210 @@ class CaiNumerador
         return "{$establecimiento}-{$puntoEmision}-{$tipoDocumento}-{$correlativo}";
     }
 
-    public static function obtenerCAIDisponible(int $centroId): ?CAIAutorizaciones
+    /**
+     * Obtener CAI disponible para un centro
+     */
+    public static function obtenerCAIDisponible($centroId)
     {
-        return CAIAutorizaciones::where('centro_id', $centroId)
-            ->where('estado', 'ACTIVA')
-            ->where('fecha_limite', '>=', now()->toDateString())
+        $cai = CAIAutorizaciones::where('centro_id', $centroId)
+            ->where('fecha_limite', '>', now()) // No vencido
             ->where(function($query) {
-                $query->whereNull('numero_actual')
-                      ->orWhere('numero_actual', '<=', DB::raw('rango_final'));
+                $query->where('estado', 'ACTIVA')
+                    ->orWhere(function($subQuery) {
+                        // Re-evaluar CAIs marcados como agotados por error
+                        $subQuery->where('estado', 'AGOTADA')
+                                ->whereRaw('numero_actual < rango_final');
+                    });
             })
-            ->orderBy('fecha_limite', 'asc') // Usar el que vence primero
+            ->orderBy('fecha_limite', 'asc')
             ->first();
+        
+        // Si encontramos un CAI que estaba marcado como agotado incorrectamente
+        if ($cai && $cai->estado === 'AGOTADA' && $cai->numero_actual < $cai->rango_final) {
+            $cai->update(['estado' => 'ACTIVA']);
+            
+            Log::info('🔧 CAI reactivado automáticamente', [
+                'cai_id' => $cai->id,
+                'numero_actual' => $cai->numero_actual,
+                'rango_final' => $cai->rango_final
+            ]);
+        }
+        
+        return $cai;
+    }
+
+    /**
+     * Asignar número de factura con CAI
+     */
+    public function asignarNumeroFactura($centroId, $facturaId)
+    {
+        try {
+            Log::info('🏷️ Iniciando asignación de número CAI', [
+                'centro_id' => $centroId,
+                'factura_id' => $facturaId
+            ]);
+
+            // ✅ VERIFICAR SI YA EXISTE UN CORRELATIVO PARA ESTA FACTURA
+            $existeCorrelativo = CAI_Correlativos::where('factura_id', $facturaId)->first();
+            if ($existeCorrelativo) {
+                Log::warning('⚠️ Ya existe correlativo para esta factura', [
+                    'factura_id' => $facturaId,
+                    'correlativo_id' => $existeCorrelativo->id,
+                    'numero_factura' => $existeCorrelativo->numero_factura
+                ]);
+                return $existeCorrelativo;
+            }
+
+            // Buscar CAI disponible
+            $cai = self::obtenerCAIDisponible($centroId);
+            
+            if (!$cai) {
+                Log::warning('⚠️ No hay CAI disponible', [
+                    'centro_id' => $centroId
+                ]);
+                return null;
+            }
+
+            // Usar transacción para evitar problemas de concurrencia
+            return DB::transaction(function () use ($cai, $facturaId, $centroId) {
+                // Bloquear el registro CAI para evitar duplicados
+                $caiLocked = CAIAutorizaciones::where('id', $cai->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$caiLocked) {
+                    throw new \Exception('No se pudo bloquear el CAI');
+                }
+
+                // ✅ MEJORADO: Verificar disponibilidad real
+                if ($caiLocked->numero_actual >= $caiLocked->rango_final) {
+                    // Marcar como agotada
+                    $caiLocked->update(['estado' => 'AGOTADA']);
+                    throw new \Exception('CAI agotado');
+                }
+
+                // ✅ MEJORADO: Calcular próximo número disponible
+                $proximoNumero = $caiLocked->numero_actual + 1;
+                
+                // ✅ VERIFICAR QUE NO EXCEDA EL RANGO
+                if ($proximoNumero > $caiLocked->rango_final) {
+                    $caiLocked->update(['estado' => 'AGOTADA']);
+                    throw new \Exception('CAI agotado - número excede rango final');
+                }
+                
+                // Generar número de factura formateado
+                $numeroFactura = $this->generarNumeroFactura($caiLocked, $proximoNumero);
+
+                // Crear el correlativo
+                $correlativo = CAI_Correlativos::create([
+                    'autorizacion_id' => $caiLocked->id,
+                    'factura_id' => $facturaId,
+                    'numero_correlativo' => $proximoNumero,
+                    'numero_factura' => $numeroFactura,
+                    'fecha_emision' => now(),
+                    'usuario_id' => auth()->id(),
+                    'centro_id' => $centroId,
+                ]);
+
+                // Actualizar el número actual en la autorización
+                $caiLocked->update([
+                    'numero_actual' => $proximoNumero
+                ]);
+
+                // Verificar si se agotó
+                if ($proximoNumero >= $caiLocked->rango_final) {
+                    $caiLocked->update(['estado' => 'AGOTADA']);
+                    Log::info('🏁 CAI agotado', [
+                        'cai_id' => $caiLocked->id,
+                        'ultimo_numero' => $proximoNumero
+                    ]);
+                }
+
+                Log::info('✅ Número CAI asignado exitosamente', [
+                    'correlativo_id' => $correlativo->id,
+                    'numero_factura' => $numeroFactura,
+                    'numero_correlativo' => $proximoNumero,
+                    'numeros_disponibles' => $caiLocked->rango_final - $proximoNumero
+                ]);
+
+                return $correlativo;
+            });
+
+        } catch (\Exception $e) {
+            Log::error('❌ Error al asignar número CAI', [
+                'centro_id' => $centroId,
+                'factura_id' => $facturaId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            throw $e;
+        }
+    }
+
+    /**
+     * Generar número de factura formateado
+     */
+    private function generarNumeroFactura(CAIAutorizaciones $cai, int $numeroCorrelativo): string
+    {
+        // Formato típico: 001-001-01-00000001
+        $establecimiento = str_pad(1, 3, '0', STR_PAD_LEFT);
+        $puntoEmision = str_pad(1, 3, '0', STR_PAD_LEFT);
+        $tipoDocumento = '01';
+        $correlativo = str_pad($numeroCorrelativo, 8, '0', STR_PAD_LEFT);
+        
+        return "{$establecimiento}-{$puntoEmision}-{$tipoDocumento}-{$correlativo}";
+    }
+
+    /**
+     * Verificar si un CAI está por vencerse
+     */
+    public static function verificarVencimiento($caiId): array
+    {
+        $cai = CAIAutorizaciones::find($caiId);
+        
+        if (!$cai) {
+            return ['status' => 'not_found'];
+        }
+
+        $diasRestantes = now()->diffInDays($cai->fecha_limite, false);
+        $numerosRestantes = $cai->rango_final - $cai->numero_actual;
+        
+        return [
+            'status' => 'active',
+            'dias_restantes' => $diasRestantes,
+            'numeros_restantes' => $numerosRestantes,
+            'porcentaje_utilizado' => $cai->porcentajeUtilizado(),
+            'requiere_atencion' => $diasRestantes <= 30 || $numerosRestantes <= 100
+        ];
+    }
+
+    /**
+     * Obtener estadísticas de uso de CAI
+     */
+    public static function obtenerEstadisticas($centroId): array
+    {
+        $cais = CAIAutorizaciones::where('centro_id', $centroId)->get();
+        
+        $estadisticas = [
+            'total_cais' => $cais->count(),
+            'activos' => $cais->where('estado', 'ACTIVA')->count(),
+            'vencidos' => $cais->where('estado', 'VENCIDA')->count(),
+            'agotados' => $cais->where('estado', 'AGOTADA')->count(),
+            'por_vencer' => 0,
+            'facturas_emitidas' => 0
+        ];
+
+        foreach ($cais as $cai) {
+            // Contar CAIs por vencer (próximos 30 días)
+            if ($cai->estado === 'ACTIVA' && $cai->fecha_limite <= now()->addDays(30)) {
+                $estadisticas['por_vencer']++;
+            }
+            
+            // Contar facturas emitidas
+            $estadisticas['facturas_emitidas'] += $cai->numero_actual - $cai->rango_inicial;
+        }
+
+        return $estadisticas;
     }
 }
