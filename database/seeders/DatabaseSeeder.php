@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
             EnfermedadeSeeder::class,
             
             //MedicoSeeder::class,
-            EspecialidadMedicoSeeder::class,
+            //EspecialidadMedicoSeeder::class,
             //PacientesSeeder::class,
             //CitasSeeder::class,
             
