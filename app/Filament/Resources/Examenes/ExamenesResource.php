@@ -228,7 +228,8 @@ class ExamenesResource extends Resource
                     ->label('Centro Médico')
                     ->options(function () {
                         return \App\Models\Centros_Medico::all()
-                            ->mapWithKeys(fn($c) => [$c->id => $c->nombre]);
+                            ->filter(fn($c) => !empty($c->nombre_centro))
+                            ->mapWithKeys(fn($c) => [$c->id => $c->nombre_centro ?? "Centro ID: {$c->id}"]);
                     })
                     ->searchable()
                     ->visible(fn () => Auth::user()->roles->contains('name', 'root')),

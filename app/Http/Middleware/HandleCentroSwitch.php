@@ -23,7 +23,10 @@ class HandleCentroSwitch
                     
                     // Mostrar mensaje de éxito en la siguiente carga
                     $centro = Centros_Medico::find($centroId);
-                    session()->flash('filament.centro_switched', "Centro cambiado a: {$centro->nombre_centro}");
+                    if ($centro) {
+                        $nombreCentro = $centro->nombre_centro ?? "Centro ID: {$centro->id}";
+                        session()->flash('filament.centro_switched', "Centro cambiado a: {$nombreCentro}");
+                    }
                     
                     // Redireccionar sin el parámetro para limpiar la URL
                     return redirect()->to($request->url());

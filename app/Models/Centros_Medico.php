@@ -35,8 +35,17 @@ class Centros_Medico extends ModeloBase
         );
     }
 
-   
-        
+    // Accesores
+    public function getNombreAttribute()
+    {
+        return $this->nombre_centro ?? 'Sin nombre';
+    }
 
-
+    // Método para usar en selects de Filament
+    public static function getSelectOptions()
+    {
+        return static::all()->mapWithKeys(function ($centro) {
+            return [$centro->id => $centro->nombre_centro ?? "Centro ID: {$centro->id}"];
+        })->toArray();
+    }
 }
