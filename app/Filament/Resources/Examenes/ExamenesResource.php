@@ -147,17 +147,23 @@ class ExamenesResource extends Resource
             ->columns([
                 TextColumn::make('paciente.persona.primer_nombre')
                     ->label('Paciente')
-                    ->formatStateUsing(fn($state, $record) => 
-                        "{$record->paciente->persona->primer_nombre} {$record->paciente->persona->primer_apellido}"
-                    )
+                    ->formatStateUsing(function($state, $record) {
+                        if ($record->paciente && $record->paciente->persona) {
+                            return $record->paciente->persona->nombre_completo;
+                        }
+                        return "Paciente ID: {$record->paciente_id}";
+                    })
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('medico.persona.primer_nombre')
                     ->label('Médico')
-                    ->formatStateUsing(fn($state, $record) => 
-                        "{$record->medico->persona->primer_nombre} {$record->medico->persona->primer_apellido}"
-                    )
+                    ->formatStateUsing(function($state, $record) {
+                        if ($record->medico && $record->medico->persona) {
+                            return $record->medico->persona->nombre_completo;
+                        }
+                        return "Médico ID: {$record->medico_id}";
+                    })
                     ->searchable()
                     ->sortable(),
 
@@ -210,8 +216,9 @@ class ExamenesResource extends Resource
                         }
 
                         return $query->get()
+                            ->filter(fn($m) => $m->persona !== null)
                             ->mapWithKeys(fn($m) => [
-                                $m->id => "{$m->persona->primer_nombre} {$m->persona->primer_apellido}",
+                                $m->id => $m->persona->nombre_completo ?? "Médico ID: {$m->id}",
                             ]);
                     })
                     ->searchable()
