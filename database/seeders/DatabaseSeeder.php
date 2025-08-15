@@ -22,14 +22,14 @@ class DatabaseSeeder extends Seeder
             CentrosMedicoSeeder::class, // Crear centros antes de asignar usuarios
             EspecialidadSeeder::class,
             NacionalidadSeeder::class,
-            PersonaSeeder::class,
+            //PersonaSeeder::class,
             
             EnfermedadeSeeder::class,
             
-            MedicoSeeder::class,
+            //MedicoSeeder::class,
             EspecialidadMedicoSeeder::class,
-            PacientesSeeder::class,
-            CitasSeeder::class,
+            //PacientesSeeder::class,
+            //CitasSeeder::class,
             
             // Seeders para contabilidad y facturación
             ImpuestoSeeder::class,

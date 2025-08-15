@@ -20,7 +20,7 @@ class CentrosMedicoSeeder extends Seeder
                 'telefono' => '2233-4455',
                 'rtn' => '0801199901234'
             ],
-            [
+            /*[
                 'nombre_centro' => 'Clínica Viera',
                 'direccion' => 'San Pedro Sula',
                 'telefono' => '2541-7896',
@@ -133,7 +133,7 @@ class CentrosMedicoSeeder extends Seeder
                 'direccion' => 'Gracias',
                 'telefono' => '2656-7870',
                 'rtn' => '0801199902347'
-            ]
+            ]*/
         ];
 
         foreach ($centros as $centroData) {
