@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sanare - Sistema de Gestión Médica</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <link rel="shortcut icon" href="{{ asset('images/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}">
+    
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -166,20 +171,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <!-- Opción 1: Logo PEQUEÑO (32px) -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-8 w-8 mr-2"> -->
-                    
-                    <!-- Opción 2: Logo MEDIANO (48px) - Recomendado para header -->
+                    <!-- Logo MEDIANO (48px) - Recomendado para header -->
                     <img src="{{ asset('images/logo.png') }}" alt="Sanare Logo" class="h-12 w-12 mr-3">
-                    
-                    <!-- Opción 3: Logo GRANDE (64px) -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-16 w-16 mr-4"> -->
-                    
-                    <!-- Opción 4: Logo MUY GRANDE (80px) -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-20 w-20 mr-4"> -->
-                    
-                    <!-- Opción 5: Tamaño personalizado -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-14 w-auto mr-3"> -->
                     
                     <h1 class="text-2xl font-bold text-gray-800">Sanare</h1>
                 </div>
@@ -199,17 +192,7 @@
             <div class="text-center">
                 <!-- Logo grande en el centro -->
                 <div class="mb-8 flex justify-center">
-                    <!-- Opción 1: Logo MUY GRANDE (128px) -->
                     <img src="{{ asset('images/logo.png') }}" alt="Sanare Logo"  class="h-40 w-40 rounded-2xl  shadow-xl bg-white p-3">
-                    
-                    <!-- Opción 2: Logo GIGANTE (160px) -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-40 w-40"> -->
-                    
-                    <!-- Opción 3: Logo SÚPER GRANDE (192px) -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-48 w-48"> -->
-                    
-                    <!-- Opción 4: Logo con ancho automático -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-32 w-auto"> -->
                 </div>
                 <h1 class="text-5xl font-bold text-gray-900 mb-6">
                     Sistema de Gestión Médica
@@ -309,33 +292,36 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
                 <h2 class="text-4xl font-bold text-gray-900 mb-4">Planes de Membresía</h2>
-                <p class="text-xl text-gray-600">Elige el plan que mejor se adapte a las necesidades de tu práctica médica</p>
+                <p class="text-xl text-gray-600">Comienza gratis y elige el plan que mejor se adapte a tus necesidades</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 
-                <!-- Plan Básico -->
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200 card-hover overflow-hidden">
-                    <div class="p-8">
+                <!-- Plan Gratuito -->
+                <div class="bg-white rounded-xl shadow-lg border-2 border-green-200 card-hover overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center py-2 text-sm font-semibold">
+                        <i class="fas fa-gift mr-2"></i>GRATIS 15 DÍAS
+                    </div>
+                    <div class="p-8 pt-12">
                         <div class="text-center mb-6">
-                            <i class="fas fa-clinic-medical text-4xl text-blue-500 mb-4"></i>
-                            <h3 class="text-2xl font-bold text-gray-900">Plan Básico</h3>
-                            <p class="text-gray-600 mt-2">Ideal para consultorios pequeños</p>
+                            <i class="fas fa-seedling text-4xl text-green-500 mb-4"></i>
+                            <h3 class="text-2xl font-bold text-gray-900">Plan Gratuito</h3>
+                            <p class="text-gray-600 mt-2">Prueba Sanare sin compromisos</p>
                         </div>
                         
                         <div class="text-center mb-6">
-                            <span class="text-4xl font-bold text-blue-600">$29</span>
-                            <span class="text-gray-600">/mes</span>
+                            <span class="text-4xl font-bold text-green-600">$0</span>
+                            <span class="text-gray-600">/15 días</span>
                         </div>
 
                         <ul class="space-y-3 mb-8">
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
-                                <span class="text-gray-700">Hasta 100 pacientes</span>
+                                <span class="text-gray-700">Hasta 50 pacientes</span>
                             </li>
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
-                                <span class="text-gray-700">Gestión de citas básica</span>
+                                <span class="text-gray-700">Gestión básica de citas</span>
                             </li>
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
@@ -343,31 +329,36 @@
                             </li>
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
+                                <span class="text-gray-700">1 médico</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-500 mr-3"></i>
                                 <span class="text-gray-700">Soporte por email</span>
                             </li>
                         </ul>
 
-                        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition duration-300">
-                            Comenzar Ahora
+                        <button class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition duration-300 transform hover:scale-105">
+                            <i class="fas fa-rocket mr-2"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Plan Profesional -->
-                <div class="bg-white rounded-xl shadow-xl border-2 border-purple-500 card-hover overflow-hidden relative">
-                    <div class="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center py-2 text-sm font-semibold">
-                        MÁS POPULAR
+                <!-- Plan Mensual -->
+                <div class="bg-white rounded-xl shadow-xl border-2 border-blue-500 card-hover overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-center py-2 text-sm font-semibold">
+                        <i class="fas fa-star mr-2"></i>MÁS POPULAR
                     </div>
                     <div class="p-8 pt-12">
                         <div class="text-center mb-6">
-                            <i class="fas fa-hospital text-4xl text-purple-500 mb-4"></i>
-                            <h3 class="text-2xl font-bold text-gray-900">Plan Profesional</h3>
-                            <p class="text-gray-600 mt-2">Para clínicas y centros médicos</p>
+                            <i class="fas fa-hospital text-4xl text-blue-500 mb-4"></i>
+                            <h3 class="text-2xl font-bold text-gray-900">Plan Mensual</h3>
+                            <p class="text-gray-600 mt-2">Flexibilidad total mes a mes</p>
                         </div>
                         
                         <div class="text-center mb-6">
-                            <span class="text-4xl font-bold text-purple-600">$79</span>
+                            <span class="text-4xl font-bold text-blue-600">$89.99</span>
                             <span class="text-gray-600">/mes</span>
+                            <div class="text-sm text-gray-500 mt-1">Sin permanencia</div>
                         </div>
 
                         <ul class="space-y-3 mb-8">
@@ -389,57 +380,80 @@
                             </li>
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
+                                <span class="text-gray-700">Recetas digitales</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-500 mr-3"></i>
                                 <span class="text-gray-700">Soporte prioritario 24/7</span>
                             </li>
                         </ul>
 
-                        <button class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-lg font-semibold transition duration-300 transform hover:scale-105">
-                            Comenzar Ahora
+                        <button class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-lg font-semibold transition duration-300 transform hover:scale-105">
+                            <i class="fas fa-credit-card mr-2"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Plan Empresarial -->
-                <div class="bg-white rounded-xl shadow-lg border border-gray-200 card-hover overflow-hidden">
-                    <div class="p-8">
+                <!-- Plan Anual -->
+                <div class="bg-white rounded-xl shadow-lg border-2 border-yellow-400 card-hover overflow-hidden relative">
+                    <div class="absolute top-0 left-0 right-0 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-center py-2 text-sm font-semibold">
+                        <i class="fas fa-percentage mr-2"></i>AHORRA 44%
+                    </div>
+                    <div class="p-8 pt-12">
                         <div class="text-center mb-6">
-                            <i class="fas fa-building text-4xl text-yellow-500 mb-4"></i>
-                            <h3 class="text-2xl font-bold text-gray-900">Plan Empresarial</h3>
-                            <p class="text-gray-600 mt-2">Para hospitales y redes médicas</p>
+                            <i class="fas fa-crown text-4xl text-yellow-500 mb-4"></i>
+                            <h3 class="text-2xl font-bold text-gray-900">Plan Anual</h3>
+                            <p class="text-gray-600 mt-2">El mejor valor para tu práctica</p>
                         </div>
                         
                         <div class="text-center mb-6">
-                            <span class="text-4xl font-bold text-yellow-600">$199</span>
-                            <span class="text-gray-600">/mes</span>
+                            <span class="text-4xl font-bold text-yellow-600">$599</span>
+                            <span class="text-gray-600">/año</span>
+                            <div class="text-sm text-green-600 font-semibold mt-1">
+                                Equivale a $49.92/mes
+                            </div>
+                            <div class="text-xs text-gray-500 line-through">$1,079.88/año mensual</div>
                         </div>
 
                         <ul class="space-y-3 mb-8">
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
-                                <span class="text-gray-700">Sin límites</span>
+                                <span class="text-gray-700">Todo del plan mensual</span>
                             </li>
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
-                                <span class="text-gray-700">Múltiples sedes</span>
+                                <span class="text-gray-700">2 meses gratis incluidos</span>
                             </li>
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
-                                <span class="text-gray-700">API personalizada</span>
+                                <span class="text-gray-700">Integraciones premium</span>
                             </li>
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
-                                <span class="text-gray-700">Integraciones avanzadas</span>
+                                <span class="text-gray-700">Backup automático diario</span>
                             </li>
                             <li class="flex items-center">
                                 <i class="fas fa-check text-green-500 mr-3"></i>
-                                <span class="text-gray-700">Gerente de cuenta dedicado</span>
+                                <span class="text-gray-700">Capacitación personalizada</span>
+                            </li>
+                            <li class="flex items-center">
+                                <i class="fas fa-check text-green-500 mr-3"></i>
+                                <span class="text-gray-700">Soporte telefónico directo</span>
                             </li>
                         </ul>
 
-                        <button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-3 rounded-lg font-semibold transition duration-300">
-                            Contactar Ventas
+                        <button class="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white py-3 rounded-lg font-semibold transition duration-300 transform hover:scale-105">
+                            <i class="fas fa-calendar-check mr-2"></i>
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Money Back Guarantee -->
+            <div class="text-center mt-12">
+                <div class="inline-flex items-center bg-green-50 px-6 py-3 rounded-full border border-green-200">
+                    <i class="fas fa-shield-alt text-green-600 mr-3"></i>
+                    <span class="text-green-800 font-semibold">Garantía de devolución de 30 días en todos los planes</span>
                 </div>
             </div>
         </div>
@@ -461,11 +475,12 @@
                 </div>
                 
                 <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6 text-center">
-                    <i class="fas fa-mobile-alt text-4xl text-white mb-4"></i>
-                    <h3 class="text-xl font-semibold text-white mb-2">Acceso Móvil</h3>
-                    <p class="text-blue-100">Disponible en cualquier dispositivo, en cualquier lugar</p>
+                    <i class="fas fa-users text-4xl text-white mb-4"></i>
+                    <h3 class="text-xl font-semibold text-white mb-2">Colaboración Efectiva</h3>
+                    <p class="text-blue-100">Facilita la comunicación entre médicos y pacientes</p>
                 </div>
                 
+                            
                 <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6 text-center">
                     <i class="fas fa-chart-line text-4xl text-white mb-4"></i>
                     <h3 class="text-xl font-semibold text-white mb-2">Reportes Inteligentes</h3>
@@ -480,17 +495,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center">
                 <div class="flex items-center justify-center mb-4">
-                    <!-- Opción 1: Logo PEQUEÑO (32px) -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-8 w-8 mr-2"> -->
-                    
-                    <!-- Opción 2: Logo MEDIANO (48px) -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-12 w-12 mr-3"> -->
-                    
-                    <!-- Opción 3: Logo GRANDE (64px) - Recomendado para footer -->
                     <img src="{{ asset('images/logo_LETRAS_BLANCAS.png') }}" alt="Sanare Logo" class="h-16 w-16 p-3">
-                    
-                    <!-- Opción 4: Logo MUY GRANDE (80px) -->
-                    <!-- <img src="{{ asset('images/logo.png') }}" alt="MediSystem Logo" class="h-20 w-20 mr-4"> -->
                     
                     <h3 class="text-2xl font-bold">Sanare</h3>
                 </div>
@@ -507,7 +512,7 @@
                     </a>
                 </div>
                 <div class="mt-8 pt-8 border-t border-gray-800">
-                    <p class="text-gray-500">© 2024 Sanare. Todos los derechos reservados.</p>
+                    <p class="text-gray-500">© 2025 Sanare. Todos los derechos reservados.</p>
                 </div>
             </div>
         </div>
