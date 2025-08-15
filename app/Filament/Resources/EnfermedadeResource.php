@@ -46,10 +46,7 @@ class EnfermedadeResource extends Resource
                     
                     ->sortable(),
                 
-                Tables\Columns\TextColumn::make('createdBy.name')
-                    ->label('Creado por')
-                    ->sortable()
-                    ->toggleable(),
+                
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha de creación')
